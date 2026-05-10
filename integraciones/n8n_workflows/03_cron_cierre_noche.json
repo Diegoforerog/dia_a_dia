@@ -1,0 +1,59 @@
+{
+  "name": "Organizador - Cierre 9PM",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {"interval": [{"field": "cronExpression", "expression": "0 21 * * *"}]}
+      },
+      "id": "cron-9pm",
+      "name": "Todos los días 9PM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.ORGANIZADOR_API_URL }}/api/resumen",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "X-API-Token", "value": "={{ $env.ORGANIZADOR_API_TOKEN }}"}]}
+      },
+      "id": "http-resumen",
+      "name": "Obtener resumen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nconst h = r.habitos_hoy;\nlet msg = `*🌙 Cierre del día — ${r.fecha}*\\n\\n`;\nmsg += `🎯 Hábitos cumplidos: *${h.cumplidos}/${h.total}* (${h.pct}%)\\n`;\nmsg += `📌 Tareas pendientes: *${r.tareas_pendientes}*\\n`;\nmsg += `🏢 Proyectos activos: ${r.proyectos_activos}\\n\\n`;\nif (h.pct >= 80) msg += '🔥 Día sólido. Buen trabajo.\\n\\n';\nelse if (h.pct >= 50) msg += '👍 Día decente. Mañana mejor.\\n\\n';\nelse msg += '💪 Mañana retomamos con todo.\\n\\n';\nmsg += '💤 Buen descanso.';\nreturn [{json: {text: msg}}];"
+      },
+      "id": "format-cierre",
+      "name": "Formatear cierre",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {"parse_mode": "Markdown"}
+      },
+      "id": "tg-send",
+      "name": "Enviar a Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [900, 300],
+      "credentials": {"telegramApi": {"id": "TU_CREDENCIAL_TELEGRAM", "name": "Telegram Organizador"}}
+    }
+  ],
+  "connections": {
+    "Todos los días 9PM": {"main": [[{"node": "Obtener resumen", "type": "main", "index": 0}]]},
+    "Obtener resumen": {"main": [[{"node": "Formatear cierre", "type": "main", "index": 0}]]},
+    "Formatear cierre": {"main": [[{"node": "Enviar a Telegram", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"},
+  "active": false,
+  "tags": []
+}

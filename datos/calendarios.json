@@ -1,0 +1,31 @@
+{
+  "calendarios_gmail": [
+    {
+      "id": "ejemplo_dropi",
+      "email": "tu_correo_negocio@gmail.com",
+      "ical_url": "",
+      "nombre_para_mostrar": "Dropshipping",
+      "cliente_asociado": "dropi",
+      "color": "#FF6B35",
+      "activo": false
+    },
+    {
+      "id": "ejemplo_personal",
+      "email": "tu_correo_personal@gmail.com",
+      "ical_url": "",
+      "nombre_para_mostrar": "Personal",
+      "cliente_asociado": "personal",
+      "color": "#4ECDC4",
+      "activo": false
+    },
+    {
+      "id": "cal_20260510180357",
+      "email": "",
+      "ical_url": "https://calendar.google.com/calendar/ical/diegoforerogarzon%40gmail.com/private-c5e4cd3dec8cb5c5bd573eab659c51a3/basic.ics",
+      "nombre_para_mostrar": "diegoforerogarzon@gmail.com",
+      "cliente_asociado": "personal",
+      "color": "#4a4d7a",
+      "activo": true
+    }
+  ]
+}

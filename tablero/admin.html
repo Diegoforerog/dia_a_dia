@@ -1,0 +1,2603 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Día a día — Configuración</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,0..100&family=Geist:wght@300..700&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
+<style>
+  /* ─────────────────────────────────────────────
+     DÍA A DÍA — Editorial Productivity System
+     Inspired by the warmth of a paper planner,
+     the rigor of Linear, the calm of Notion.
+     ───────────────────────────────────────────── */
+
+  :root {
+    /* paper palette */
+    --paper:        #FBFAF6;
+    --paper-deep:   #F5F2EA;
+    --surface:      #FFFFFF;
+    --surface-2:    #F8F6F0;
+
+    /* ink scale */
+    --ink:          #0E0D0B;
+    --charcoal:     #3A3733;
+    --stone:        #7A746B;
+    --mist:         #A8A29A;
+
+    /* lines */
+    --line:         #E8E4DA;
+    --line-soft:    #F0ECE2;
+    --line-strong:  #D5CFC2;
+
+    /* accents — warm, considered */
+    --burnt:        #C25B2C;        /* primary action */
+    --burnt-hover:  #A84A22;
+    --burnt-soft:   #FAEEDD;
+    --burnt-line:   #E8C5A4;
+
+    --sage:         #5C8A6F;        /* positive */
+    --sage-soft:    #E8F0EA;
+
+    --crimson:      #A8392F;        /* danger */
+    --crimson-soft: #F4E5E3;
+
+    --amber:        #B47B1E;        /* warning */
+    --amber-soft:   #F8EFDB;
+
+    --indigo:       #4A4D7A;        /* info / cliente */
+    --indigo-soft:  #ECEDF4;
+
+    /* typography */
+    --font-display: "Fraunces", "Times New Roman", serif;
+    --font-body:    "Geist", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+    /* motion */
+    --ease:         cubic-bezier(.4, 0, .2, 1);
+    --ease-out:     cubic-bezier(0, 0, .2, 1);
+  }
+
+  * { box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink);
+    background: var(--paper);
+    font-feature-settings: "ss01", "ss02", "cv11";
+    /* subtle paper grain */
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(194, 91, 44, .02) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(74, 77, 122, .015) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' /%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .03 0' /%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' /%3E%3C/svg%3E");
+  }
+
+  /* ───── LAYOUT ───── */
+  .app {
+    display: grid;
+    grid-template-columns: 264px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ───── SIDEBAR ───── */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 28px 20px;
+    border-right: 1px solid var(--line);
+    background: var(--surface-2);
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .brand-mark {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: italic;
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: -.02em;
+    color: var(--ink);
+    font-variation-settings: "SOFT" 100, "opsz" 144;
+  }
+  .brand-tag {
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--stone);
+    font-weight: 500;
+  }
+
+  /* date card — the soul of the sidebar */
+  .date-card {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    background: var(--surface);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .date-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--burnt);
+  }
+  .date-day-num {
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: 44px;
+    line-height: 1;
+    color: var(--ink);
+    font-variation-settings: "opsz" 144;
+  }
+  .date-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .date-weekday {
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--burnt);
+    font-weight: 600;
+  }
+  .date-month {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 16px;
+    color: var(--charcoal);
+    text-transform: lowercase;
+  }
+  .date-year {
+    font-size: 11px;
+    color: var(--mist);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* nav */
+  .nav-section { display: flex; flex-direction: column; gap: 2px; }
+  .nav-label {
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--mist);
+    padding: 0 10px 8px;
+    font-weight: 600;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    color: var(--charcoal);
+    font-size: 14px;
+    font-weight: 450;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: background .15s var(--ease), color .15s var(--ease);
+    font-family: inherit;
+    position: relative;
+  }
+  .nav-item:hover { background: rgba(14, 13, 11, .04); }
+  .nav-item.active {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow:
+      inset 0 0 0 1px var(--line),
+      0 1px 0 rgba(14, 13, 11, .02);
+    font-weight: 500;
+  }
+  .nav-item.active::before {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 16px;
+    background: var(--burnt);
+    border-radius: 0 2px 2px 0;
+  }
+  .nav-icon {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+  }
+  .nav-count {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--mist);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sidebar-foot {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .foot-link {
+    color: var(--stone);
+    text-decoration: none;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color .15s;
+  }
+  .foot-link:hover { color: var(--ink); }
+  .foot-link svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+
+  /* ───── MAIN AREA ───── */
+  main {
+    padding: 44px 56px 80px;
+    max-width: 1100px;
+    width: 100%;
+  }
+
+  .page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 36px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+  }
+  .page-crumbs {
+    font-size: 12px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--stone);
+    margin-bottom: 8px;
+  }
+  .page-crumbs span { color: var(--burnt); font-weight: 600; }
+  .page-title {
+    font-family: var(--font-display);
+    font-weight: 350;
+    font-size: 42px;
+    line-height: 1;
+    letter-spacing: -.02em;
+    color: var(--ink);
+    margin: 0 0 8px;
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+  }
+  .page-title em { font-style: italic; color: var(--burnt); font-variation-settings: "SOFT" 100; }
+  .page-sub {
+    color: var(--stone);
+    font-size: 14px;
+    max-width: 50ch;
+    margin: 0;
+  }
+
+  /* token warning banner */
+  .banner {
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    background: var(--amber-soft);
+    border: 1px solid color-mix(in srgb, var(--amber) 25%, transparent);
+    color: color-mix(in srgb, var(--amber) 60%, var(--ink));
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .banner code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: rgba(180, 123, 30, .12);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  /* ───── CARDS ───── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px 26px;
+    margin-bottom: 18px;
+    position: relative;
+  }
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 18px;
+    gap: 16px;
+  }
+  .card-head h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1.1;
+    letter-spacing: -.01em;
+    margin: 0 0 4px;
+    color: var(--ink);
+    font-variation-settings: "opsz" 144, "SOFT" 50;
+  }
+  .card-head p {
+    margin: 0;
+    color: var(--stone);
+    font-size: 13px;
+  }
+  .card-eyebrow {
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--burnt);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  /* ───── FORMS ───── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 18px;
+    margin-bottom: 22px;
+  }
+  .form-grid.three { grid-template-columns: repeat(3, 1fr); }
+  .form-grid > .full { grid-column: 1 / -1; }
+  @media (max-width: 760px) {
+    .form-grid, .form-grid.three { grid-template-columns: 1fr; }
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--charcoal);
+    font-weight: 500;
+    margin-bottom: 6px;
+    letter-spacing: .005em;
+  }
+  label .req { color: var(--burnt); }
+
+  input, select, textarea {
+    width: 100%;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+  }
+  input::placeholder, textarea::placeholder { color: var(--mist); }
+  input:hover, select:hover, textarea:hover { border-color: var(--line-strong); }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--burnt);
+    box-shadow: 0 0 0 3px var(--burnt-soft);
+  }
+
+  input[type="color"] {
+    padding: 2px;
+    cursor: pointer;
+    width: 44px;
+    height: 38px;
+    border-radius: 8px;
+  }
+
+  .color-input {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  /* ───── BUTTONS ───── */
+  button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 9px 16px;
+    transition: all .15s var(--ease);
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+  }
+  button:focus-visible {
+    outline: 2px solid var(--burnt);
+    outline-offset: 2px;
+  }
+
+  button.primary {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  button.primary:hover {
+    background: var(--burnt);
+    border-color: var(--burnt);
+  }
+  button.primary svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+  button.ghost {
+    background: transparent;
+    color: var(--charcoal);
+    border-color: var(--line-strong);
+  }
+  button.ghost:hover {
+    background: var(--surface-2);
+    border-color: var(--charcoal);
+    color: var(--ink);
+  }
+
+  button.danger {
+    background: transparent;
+    color: var(--crimson);
+    border-color: transparent;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  button.danger:hover {
+    background: var(--crimson-soft);
+    border-color: color-mix(in srgb, var(--crimson) 25%, transparent);
+  }
+
+  button.subtle {
+    background: var(--surface-2);
+    color: var(--charcoal);
+    border-color: var(--line);
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+  button.subtle:hover {
+    background: var(--paper-deep);
+    color: var(--ink);
+  }
+
+  /* ───── TABLES ───── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 12px 12px;
+    color: var(--stone);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+    position: sticky;
+    top: 0;
+  }
+  th:first-child { border-radius: 8px 0 0 0; }
+  th:last-child { border-radius: 0 8px 0 0; text-align: right; }
+  td {
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 13.5px;
+    color: var(--ink);
+    vertical-align: middle;
+  }
+  td:last-child { text-align: right; }
+  tbody tr { transition: background .12s; }
+  tbody tr:hover { background: var(--surface-2); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .row-name { display: flex; align-items: center; gap: 10px; }
+  .row-name strong {
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .row-sub {
+    color: var(--stone);
+    font-size: 12px;
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+
+  /* table empty state */
+  .empty-row td {
+    text-align: center;
+    padding: 36px 12px;
+    color: var(--stone);
+    font-style: italic;
+    font-family: var(--font-display);
+    font-size: 14px;
+  }
+
+  /* ───── PILLS & DOTS ───── */
+  .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .01em;
+    border: 1px solid;
+    line-height: 1.4;
+  }
+  .pill.alta    { background: var(--crimson-soft); color: var(--crimson); border-color: color-mix(in srgb, var(--crimson) 20%, transparent); }
+  .pill.media   { background: var(--amber-soft);   color: var(--amber);   border-color: color-mix(in srgb, var(--amber) 20%, transparent); }
+  .pill.baja    { background: var(--surface-2);    color: var(--stone);   border-color: var(--line); }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--indigo-soft);
+    color: var(--indigo);
+    border: 1px solid color-mix(in srgb, var(--indigo) 15%, transparent);
+  }
+
+  .badge-streak {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--burnt);
+    font-weight: 600;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ───── VISTAS ───── */
+  .vista { display: none; }
+  .vista.active { display: block; animation: fadeUp .35s var(--ease-out); }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ───── TOAST ───── */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 18px;
+    border-radius: 10px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity .25s var(--ease), transform .25s var(--ease);
+    pointer-events: none;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 12px 32px -8px rgba(14, 13, 11, .25);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.err { background: var(--crimson); }
+
+  /* ───── CALENDARIO ESPECIAL ───── */
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 20px 0 12px;
+  }
+  @media (max-width: 760px) { .steps-grid { grid-template-columns: 1fr; } }
+
+  .step-card {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px;
+    position: relative;
+  }
+  .step-num {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 300;
+    font-size: 28px;
+    color: var(--burnt);
+    line-height: 1;
+    font-variation-settings: "opsz" 144, "SOFT" 100;
+  }
+  .step-card h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 15px;
+    margin: 24px 0 6px;
+    color: var(--ink);
+  }
+  .step-card p {
+    font-size: 12px;
+    color: var(--stone);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .ical-input { font-family: var(--font-mono); font-size: 12px; }
+
+  .event-card {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--indigo);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin: 8px 0;
+    background: var(--surface);
+  }
+  .event-card strong { color: var(--ink); font-weight: 500; }
+  .event-meta {
+    color: var(--stone);
+    font-size: 12px;
+    margin-top: 4px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .event-meta span { display: inline-flex; align-items: center; gap: 4px; }
+
+  details {
+    margin-top: 16px;
+    border-top: 1px solid var(--line-soft);
+    padding-top: 14px;
+  }
+  details summary {
+    cursor: pointer;
+    color: var(--charcoal);
+    font-size: 13px;
+    font-weight: 500;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before {
+    content: "›";
+    transition: transform .2s;
+    font-family: var(--font-display);
+    color: var(--burnt);
+    font-size: 16px;
+  }
+  details[open] summary::before { transform: rotate(90deg); }
+  details ol { padding-left: 18px; color: var(--charcoal); }
+  details li { margin: 6px 0; line-height: 1.55; }
+  details a { color: var(--burnt); text-decoration: none; border-bottom: 1px solid var(--burnt-line); }
+
+  .note {
+    background: var(--amber-soft);
+    border: 1px solid color-mix(in srgb, var(--amber) 22%, transparent);
+    color: color-mix(in srgb, var(--amber) 60%, var(--ink));
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    margin-top: 12px;
+  }
+
+  /* status indicator */
+  .status-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  .status-dot.on { background: var(--sage); box-shadow: 0 0 0 3px var(--sage-soft); }
+  .status-dot.off { background: var(--mist); }
+  .status-line {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    color: var(--charcoal);
+  }
+
+  /* config code display */
+  .code-display {
+    font-family: var(--font-mono);
+    background: var(--surface-2);
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    word-break: break-all;
+    line-height: 1.6;
+  }
+
+  /* skip link */
+  .skip { position: absolute; left: -9999px; }
+  .skip:focus { left: 16px; top: 16px; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 6px; z-index: 999; }
+
+  /* ───── PROGRESO ───── */
+  .metric-banner {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 8px 0 22px;
+  }
+  @media (max-width: 780px) { .metric-banner { grid-template-columns: repeat(2, 1fr); } }
+  .metric-cell {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .metric-num {
+    font-family: var(--font-display);
+    font-weight: 350;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--ink);
+    font-variation-settings: "opsz" 144;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .metric-fire { font-size: 18px; }
+  .metric-label {
+    font-size: 10.5px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--stone);
+    font-weight: 600;
+  }
+
+  /* segmented control */
+  .seg-control {
+    display: inline-flex;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 4px;
+    margin: 8px 0 18px;
+    gap: 2px;
+  }
+  .seg-btn {
+    background: transparent;
+    border: none;
+    color: var(--stone);
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .15s var(--ease);
+  }
+  .seg-btn:hover { color: var(--ink); background: rgba(14, 13, 11, .03); }
+  .seg-btn.active {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgba(14, 13, 11, .06), inset 0 0 0 1px var(--line);
+    font-weight: 600;
+  }
+
+  /* habit row in progreso */
+  .habit-progress-row {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .habit-progress-row:last-child { border-bottom: none; }
+  .habit-progress-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 16px;
+  }
+  .habit-progress-name {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+  }
+  .habit-progress-name .icon { font-size: 16px; }
+  .habit-progress-name .nombre {
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 14.5px;
+  }
+  .habit-progress-name .cat {
+    color: var(--stone);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* heatmap diario — 30 días */
+  .heatmap {
+    display: grid;
+    grid-template-columns: repeat(30, 1fr);
+    gap: 3px;
+    max-width: 580px;
+  }
+  .heat-cell {
+    aspect-ratio: 1;
+    border-radius: 3px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-soft);
+    position: relative;
+    cursor: default;
+    transition: transform .15s, border-color .15s;
+  }
+  .heat-cell.on {
+    background: var(--burnt);
+    border-color: var(--burnt);
+  }
+  .heat-cell.future {
+    background: transparent;
+    border-style: dashed;
+    opacity: .4;
+  }
+  .heat-cell:hover {
+    transform: scale(1.25);
+    border-color: var(--ink);
+    z-index: 2;
+  }
+  .heat-cell:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 10;
+    font-family: var(--font-mono);
+  }
+  .heatmap-legend {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--stone);
+    max-width: 580px;
+  }
+  .heatmap-legend-scale {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+  .heatmap-legend-scale .heat-cell { width: 10px; height: 10px; }
+
+  /* weekly bars — 12 weeks */
+  .weekly-bars {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 4px;
+    max-width: 580px;
+    height: 90px;
+    align-items: end;
+  }
+  .week-bar {
+    background: var(--burnt-soft);
+    border: 1px solid var(--burnt-line);
+    border-radius: 3px 3px 0 0;
+    position: relative;
+    transition: transform .15s;
+  }
+  .week-bar:hover { transform: translateY(-2px); }
+  .week-bar:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    margin-bottom: 4px;
+    font-family: var(--font-mono);
+    z-index: 10;
+  }
+  .week-bar-fill {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: var(--burnt);
+    border-radius: 2px;
+  }
+  .weekly-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--mist);
+    max-width: 580px;
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* monthly summary card */
+  .month-summary {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 18px;
+    align-items: center;
+    padding: 14px 18px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    max-width: 580px;
+  }
+  .month-ring {
+    width: 56px;
+    height: 56px;
+    position: relative;
+  }
+  .month-ring .pct {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .month-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .month-info .big {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 18px;
+    color: var(--ink);
+    font-variation-settings: "SOFT" 80;
+  }
+  .month-info .small {
+    font-size: 11.5px;
+    color: var(--stone);
+  }
+
+  .streak-now {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--burnt-soft);
+    color: var(--burnt);
+    border: 1px solid var(--burnt-line);
+    font-size: 11.5px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .streak-now-off {
+    background: var(--surface-2);
+    color: var(--mist);
+    border-color: var(--line);
+  }
+
+  /* achievements grid */
+  .logros-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .logro {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 14px;
+    text-align: center;
+    transition: all .2s var(--ease);
+    position: relative;
+    overflow: hidden;
+  }
+  .logro.unlocked {
+    background: linear-gradient(135deg, var(--burnt-soft), var(--surface));
+    border-color: var(--burnt-line);
+  }
+  .logro.unlocked::after {
+    content: "";
+    position: absolute;
+    top: 0; right: 0;
+    width: 32px; height: 32px;
+    background: radial-gradient(circle at top right, rgba(194, 91, 44, .15), transparent 70%);
+  }
+  .logro-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    margin: 0 auto 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-size: 18px;
+    transition: all .2s;
+  }
+  .logro.unlocked .logro-badge {
+    background: var(--burnt);
+    border-color: var(--burnt);
+    color: var(--paper);
+    box-shadow: 0 4px 12px -2px rgba(194, 91, 44, .35);
+  }
+  .logro-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 14px;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  .logro.locked .logro-title { color: var(--stone); }
+  .logro-desc {
+    font-size: 11.5px;
+    color: var(--stone);
+    line-height: 1.4;
+  }
+  .logro-status {
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-top: 8px;
+    font-weight: 600;
+  }
+  .logro.unlocked .logro-status { color: var(--burnt); }
+  .logro.locked .logro-status { color: var(--mist); }
+
+  /* project row */
+  .proj-row {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .proj-row:last-child { border-bottom: none; }
+  .proj-row-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .proj-row-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .proj-row-name strong {
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 14.5px;
+  }
+  .proj-row-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 12px;
+    color: var(--stone);
+    flex-wrap: wrap;
+  }
+  .progress-bar {
+    height: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--burnt);
+    border-radius: 999px;
+    transition: width .5s var(--ease-out);
+  }
+  .progress-fill.done { background: var(--sage); }
+  .progress-numbers {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-size: 11.5px;
+    color: var(--stone);
+    font-variant-numeric: tabular-nums;
+  }
+  .progress-pct {
+    font-family: var(--font-display);
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* completion sparkline */
+  .sparkline-wrap {
+    margin: 12px 0;
+    max-width: 580px;
+  }
+  .sparkline-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--mist);
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* donut chart for estado */
+  .donut-wrap {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 28px;
+    align-items: center;
+    padding: 18px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+  .donut-legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--charcoal);
+  }
+  .donut-legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .donut-legend-num {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  /* responsive */
+  @media (max-width: 920px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      position: relative;
+      height: auto;
+      flex-direction: row;
+      flex-wrap: wrap;
+      padding: 18px 20px;
+    }
+    .date-card { flex: 0 0 auto; }
+    .nav-section { flex-direction: row; flex-wrap: wrap; flex: 1 1 100%; }
+    .nav-item { flex: 0 0 auto; padding: 8px 12px; }
+    .nav-item.active::before { display: none; }
+    .nav-label, .sidebar-foot { display: none; }
+    main { padding: 24px 20px 60px; }
+    .page-title { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<a href="#contenido" class="skip">Saltar al contenido</a>
+
+<div class="app">
+
+  <!-- ───── SIDEBAR ───── -->
+  <aside class="sidebar">
+
+    <div class="brand">
+      <div class="brand-mark">Día <em>a</em> día</div>
+      <div class="brand-tag">tu ritual diario</div>
+    </div>
+
+    <div class="date-card" id="date-card">
+      <div class="date-day-num" id="date-num">—</div>
+      <div class="date-meta">
+        <div class="date-weekday" id="date-weekday">cargando</div>
+        <div class="date-month" id="date-month">—</div>
+        <div class="date-year" id="date-year">—</div>
+      </div>
+    </div>
+
+    <div class="nav-section" role="tablist" aria-label="Configuración">
+      <div class="nav-label">Configurar</div>
+      <button class="nav-item active" data-vista="empresas" role="tab">
+        <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M3 21c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 11a4 4 0 0 0 0-8"/><path d="M22 21c0-2.5-1.9-4.6-4.3-4.9"/></svg>
+        <span>Clientes</span>
+        <span class="nav-count" id="cnt-clientes"></span>
+      </button>
+      <button class="nav-item" data-vista="proyectos" role="tab">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+        <span>Proyectos</span>
+        <span class="nav-count" id="cnt-proyectos"></span>
+      </button>
+      <button class="nav-item" data-vista="habitos" role="tab">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 4-7.5"/><path d="M3 4v5h5"/></svg>
+        <span>Hábitos</span>
+        <span class="nav-count" id="cnt-habitos"></span>
+      </button>
+      <button class="nav-item" data-vista="tareas" role="tab">
+        <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>Tareas</span>
+        <span class="nav-count" id="cnt-tareas"></span>
+      </button>
+      <button class="nav-item" data-vista="calendarios" role="tab">
+        <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span>Calendarios</span>
+        <span class="nav-count" id="cnt-calendarios"></span>
+      </button>
+      <button class="nav-item" data-vista="progreso" role="tab">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-7"/></svg>
+        <span>Progreso</span>
+      </button>
+      <button class="nav-item" data-vista="config" role="tab">
+        <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Configuración</span>
+      </button>
+    </div>
+
+    <div class="sidebar-foot">
+      <a class="foot-link" href="/" >
+        <svg viewBox="0 0 24 24"><path d="M3 12 12 3l9 9"/><path d="M5 10v10h14V10"/></svg>
+        Volver al tablero
+      </a>
+      <a class="foot-link" href="/tablero/agenda.html">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Ver agenda
+      </a>
+      <a class="foot-link" href="https://t.me/dia_dia_diego_bot" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/></svg>
+        Bot de Telegram
+      </a>
+    </div>
+
+  </aside>
+
+  <!-- ───── MAIN ───── -->
+  <main id="contenido">
+
+    <div class="banner" id="token-warn" style="display:none;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      La API necesita un token. Configúralo en <code>datos/config.json → api.token</code> o variable <code>ORGANIZADOR_TOKEN</code>.
+    </div>
+
+    <!-- ───── VISTA CLIENTES ───── -->
+    <section class="vista active" id="vista-empresas" role="tabpanel">
+      <div class="page-head">
+        <div>
+          <div class="page-crumbs">Configurar <span>· Clientes</span></div>
+          <h1 class="page-title">Tus <em>clientes</em></h1>
+          <p class="page-sub">Cada cliente agrupa proyectos, tareas y calendarios. Pueden ser personas, empresas, áreas tuyas (Personal, Familia) o iniciativas paralelas.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Nuevo</div>
+            <h2>Agregar cliente</h2>
+            <p>Empieza con uno. Después podrás colgar proyectos debajo.</p>
+          </div>
+        </div>
+        <form id="form-empresa" onsubmit="return crearEmpresa(event)">
+          <div class="form-grid">
+            <div>
+              <label>Nombre del cliente <span class="req">*</span></label>
+              <input name="nombre" required placeholder="Ej: Dropi, Cliente Juan Pérez, Personal">
+            </div>
+            <div>
+              <label>Color identificador</label>
+              <div class="color-input">
+                <input type="color" name="color" value="#C25B2C">
+                <input name="color_hex" placeholder="#C25B2C">
+              </div>
+            </div>
+            <div class="full">
+              <label>Descripción breve</label>
+              <input name="descripcion" placeholder="¿De qué se trata? — ej: Negocio de dropshipping con Dropi">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="primary">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Agregar cliente
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Lista</div>
+            <h2>Tus clientes</h2>
+          </div>
+        </div>
+        <table id="tabla-empresas">
+          <thead><tr><th>Cliente</th><th>Descripción</th><th>Proyectos</th><th>Estado</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ───── VISTA PROYECTOS ───── -->
+    <section class="vista" id="vista-proyectos" role="tabpanel">
+      <div class="page-head">
+        <div>
+          <div class="page-crumbs">Configurar <span>· Proyectos</span></div>
+          <h1 class="page-title">Tus <em>proyectos</em></h1>
+          <p class="page-sub">Iniciativas concretas dentro de cada cliente. Un proyecto agrupa tareas hacia un mismo objetivo y tiene su prioridad y deadline.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Nuevo</div>
+            <h2>Agregar proyecto</h2>
+          </div>
+        </div>
+        <form id="form-proyecto" onsubmit="return crearProyecto(event)">
+          <div class="form-grid">
+            <div>
+              <label>Cliente <span class="req">*</span></label>
+              <select name="cliente_id" required id="sel-empresa-proy"></select>
+            </div>
+            <div>
+              <label>Nombre del proyecto <span class="req">*</span></label>
+              <input name="nombre" required placeholder="Ej: Campaña Octubre · Tienda nueva · Curso de logística">
+            </div>
+            <div>
+              <label>Prioridad</label>
+              <select name="prioridad">
+                <option value="alta">Alta</option>
+                <option value="media" selected>Media</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <div>
+              <label>Deadline (opcional)</label>
+              <input type="date" name="deadline">
+            </div>
+            <div class="full">
+              <label>Descripción</label>
+              <input name="descripcion" placeholder="¿Cuál es el objetivo concreto?">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="primary">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Agregar proyecto
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Lista</div>
+            <h2>Tus proyectos</h2>
+          </div>
+        </div>
+        <table id="tabla-proyectos">
+          <thead><tr><th>Cliente</th><th>Proyecto</th><th>Prioridad</th><th>Deadline</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ───── VISTA HÁBITOS ───── -->
+    <section class="vista" id="vista-habitos" role="tabpanel">
+      <div class="page-head">
+        <div>
+          <div class="page-crumbs">Configurar <span>· Hábitos</span></div>
+          <h1 class="page-title">Tus <em>hábitos</em></h1>
+          <p class="page-sub">Las cosas que repites a diario y construyen tu día a día. La IA los mete al plan y llevamos rachas.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Nuevo</div>
+            <h2>Agregar hábito</h2>
+          </div>
+        </div>
+        <form id="form-habito" onsubmit="return crearHabito(event)">
+          <div class="form-grid">
+            <div>
+              <label>Categoría <span class="req">*</span></label>
+              <select name="categoria_id" required id="sel-categoria-hab"></select>
+            </div>
+            <div>
+              <label>Nombre del hábito <span class="req">*</span></label>
+              <input name="nombre" required placeholder="Ej: Meditar 10 min · Revisar panel Dropi">
+            </div>
+            <div>
+              <label>Frecuencia</label>
+              <select name="frecuencia">
+                <option value="diaria">Diaria</option>
+                <option value="semanal">Semanal</option>
+              </select>
+            </div>
+            <div>
+              <label>Horario sugerido</label>
+              <select name="horario_sugerido">
+                <option value="mañana">Mañana</option>
+                <option value="tarde">Tarde</option>
+                <option value="noche">Noche</option>
+                <option value="todo el día">Todo el día</option>
+              </select>
+            </div>
+            <div>
+              <label>Duración (min)</label>
+              <input type="number" name="duracion_min" value="15" min="0">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="primary">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Agregar hábito
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Lista</div>
+            <h2>Tus hábitos</h2>
+          </div>
+        </div>
+        <table id="tabla-habitos">
+          <thead><tr><th>Categoría</th><th>Hábito</th><th>Horario</th><th>Racha</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ───── VISTA TAREAS ───── -->
+    <section class="vista" id="vista-tareas" role="tabpanel">
+      <div class="page-head">
+        <div>
+          <div class="page-crumbs">Configurar <span>· Tareas</span></div>
+          <h1 class="page-title">Tus <em>tareas</em></h1>
+          <p class="page-sub">Todo lo que necesitas hacer. La IA prioriza esto cada mañana para tu plan del día.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Nueva</div>
+            <h2>Agregar tarea</h2>
+          </div>
+        </div>
+        <form id="form-tarea" onsubmit="return crearTarea(event)">
+          <div class="form-grid">
+            <div>
+              <label>Cliente <span class="req">*</span></label>
+              <select name="cliente_id" required id="sel-empresa-tarea" onchange="cargarProyectosFiltrados()"></select>
+            </div>
+            <div>
+              <label>Proyecto (opcional)</label>
+              <select name="proyecto_id" id="sel-proyecto-tarea"><option value="">(Sin proyecto)</option></select>
+            </div>
+            <div class="full">
+              <label>Título de la tarea <span class="req">*</span></label>
+              <input name="titulo" required placeholder="¿Qué hay que hacer?">
+            </div>
+            <div>
+              <label>Prioridad</label>
+              <select name="prioridad">
+                <option value="alta">Alta</option>
+                <option value="media" selected>Media</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <div>
+              <label>Duración estimada (min)</label>
+              <input type="number" name="duracion_min" value="30" min="5">
+            </div>
+            <div>
+              <label>Deadline</label>
+              <input type="date" name="deadline">
+            </div>
+            <div>
+              <label>Notas</label>
+              <input name="notas">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="primary">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Agregar tarea
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Pendientes</div>
+            <h2>Tareas activas</h2>
+          </div>
+        </div>
+        <table id="tabla-tareas">
+          <thead><tr><th>Cliente</th><th>Tarea</th><th>Prioridad</th><th>Deadline</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ───── VISTA CALENDARIOS ───── -->
+    <section class="vista" id="vista-calendarios" role="tabpanel">
+      <div class="page-head">
+        <div>
+          <div class="page-crumbs">Configurar <span>· Calendarios</span></div>
+          <h1 class="page-title">Tus <em>calendarios</em></h1>
+          <p class="page-sub">Conecta tus calendarios de Gmail con enlaces iCal privados. La IA los lee para respetar tus eventos al armar el plan del día.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Conexión</div>
+            <h2>Cómo conectar — 30 segundos por calendario</h2>
+            <p>Sin Google Cloud, sin OAuth. Como hacen Sunsama y Notion Calendar.</p>
+          </div>
+        </div>
+
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <h3>Abre Google Calendar</h3>
+            <p>calendar.google.com en tu navegador.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <h3>Configuración del calendario</h3>
+            <p>Hover en tu calendario · 3 puntos · Configuración.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <h3>Copia el enlace privado</h3>
+            <p>"Dirección secreta en formato iCal" — termina en .ics</p>
+          </div>
+        </div>
+
+        <details>
+          <summary>Ver los clicks exactos</summary>
+          <ol>
+            <li>Abre <a href="https://calendar.google.com/" target="_blank">calendar.google.com</a></li>
+            <li>En el menú izquierdo busca el calendario que quieres conectar</li>
+            <li>Pasa el mouse encima → click en los <strong>3 puntos ⋮</strong> → <strong>Configuración y uso compartido</strong></li>
+            <li>Baja a la sección <strong>"Integrar el calendario"</strong></li>
+            <li>Busca <strong>"Dirección secreta en formato iCal"</strong> — NO la pública</li>
+            <li>Click en el botón de copiar al lado del campo</li>
+            <li>Pega abajo y asigna cliente</li>
+          </ol>
+          <div class="note">Usa la versión <strong>secreta</strong> (privada). La pública expone tu agenda a internet.</div>
+        </details>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Nuevo</div>
+            <h2>Agregar calendario</h2>
+          </div>
+        </div>
+        <form id="form-cal" onsubmit="return crearCalendario(event)">
+          <div style="margin-bottom: 16px;">
+            <label>Enlace iCal privado (.ics) <span class="req">*</span></label>
+            <input name="ical_url" required class="ical-input" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics">
+            <div style="margin-top: 8px; display: flex; align-items: center; gap: 12px;">
+              <button type="button" class="subtle" onclick="probarUrl()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                Probar URL
+              </button>
+              <span id="prueba-resultado" style="font-size: 12.5px;"></span>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div>
+              <label>Nombre que verás <span class="req">*</span></label>
+              <input name="nombre_para_mostrar" required placeholder="Ej: Personal, Dropi, Familia">
+            </div>
+            <div>
+              <label>Cliente asociado <span class="req">*</span></label>
+              <select name="cliente_asociado" required id="sel-empresa-cal"></select>
+            </div>
+            <div>
+              <label>Color</label>
+              <div class="color-input">
+                <input type="color" name="color" value="#4A4D7A">
+                <input name="color_hex" placeholder="#4A4D7A">
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="primary">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Conectar calendario
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Conectados</div>
+            <h2>Tus calendarios</h2>
+          </div>
+          <button class="subtle" onclick="cargarEventosHoy()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            Ver eventos de hoy
+          </button>
+        </div>
+        <table id="tabla-cal">
+          <thead><tr><th>Calendario</th><th>Cliente</th><th>Tipo</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div id="eventos-hoy" style="margin-top: 18px;"></div>
+      </div>
+
+    </section>
+
+    <!-- ───── VISTA PROGRESO ───── -->
+    <section class="vista" id="vista-progreso" role="tabpanel">
+      <div class="page-head">
+        <div>
+          <div class="page-crumbs">Configurar <span>· Progreso</span></div>
+          <h1 class="page-title">Tu <em>progreso</em></h1>
+          <p class="page-sub">Métricas detalladas de hábitos y proyectos. La consistencia se ve aquí.</p>
+        </div>
+      </div>
+
+      <!-- ─── HÁBITOS ─── -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Hábitos</div>
+            <h2>Tus rutinas y rachas</h2>
+            <p>Cada hábito tiene su historia. Pasa el mouse sobre los cuadros para ver el día.</p>
+          </div>
+        </div>
+
+        <div class="metric-banner">
+          <div class="metric-cell">
+            <div class="metric-num" id="m-h-activos">—</div>
+            <div class="metric-label">Activos</div>
+          </div>
+          <div class="metric-cell">
+            <div class="metric-num" id="m-h-hoy">—</div>
+            <div class="metric-label">Cumplidos hoy</div>
+          </div>
+          <div class="metric-cell">
+            <div class="metric-num" id="m-h-racha"><span class="metric-fire">🔥</span> <span id="m-h-racha-n">—</span></div>
+            <div class="metric-label">Mejor racha global</div>
+          </div>
+          <div class="metric-cell">
+            <div class="metric-num" id="m-h-logros">—</div>
+            <div class="metric-label">Logros desbloqueados</div>
+          </div>
+        </div>
+
+        <div class="seg-control" data-target="habitos">
+          <button class="seg-btn active" data-view="diario">Últimos 30 días</button>
+          <button class="seg-btn" data-view="semanal">12 semanas</button>
+          <button class="seg-btn" data-view="mensual">Este mes</button>
+          <button class="seg-btn" data-view="logros">Logros</button>
+        </div>
+
+        <div id="habitos-detalle"></div>
+      </div>
+
+      <!-- ─── PROYECTOS ─── -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Proyectos</div>
+            <h2>Progreso por iniciativa</h2>
+          </div>
+        </div>
+
+        <div class="metric-banner">
+          <div class="metric-cell">
+            <div class="metric-num" id="m-p-activos">—</div>
+            <div class="metric-label">Activos</div>
+          </div>
+          <div class="metric-cell">
+            <div class="metric-num" id="m-p-completados">—</div>
+            <div class="metric-label">Completados</div>
+          </div>
+          <div class="metric-cell">
+            <div class="metric-num" id="m-p-tareas30">—</div>
+            <div class="metric-label">Tareas hechas · 30d</div>
+          </div>
+          <div class="metric-cell">
+            <div class="metric-num" id="m-p-pendientes">—</div>
+            <div class="metric-label">Tareas pendientes</div>
+          </div>
+        </div>
+
+        <div class="seg-control" data-target="proyectos">
+          <button class="seg-btn active" data-view="progreso">Progreso</button>
+          <button class="seg-btn" data-view="tareas">Tareas · 30 días</button>
+          <button class="seg-btn" data-view="estado">Por estado</button>
+          <button class="seg-btn" data-view="logros">Logros</button>
+        </div>
+
+        <div id="proyectos-detalle"></div>
+      </div>
+
+    </section>
+
+    <!-- ───── VISTA CONFIG ───── -->
+    <section class="vista" id="vista-config" role="tabpanel">
+      <div class="page-head">
+        <div>
+          <div class="page-crumbs">Configurar <span>· Sistema</span></div>
+          <h1 class="page-title"><em>Configuración</em></h1>
+          <p class="page-sub">Token de acceso y estado del sistema.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Seguridad</div>
+            <h2>Token de la API</h2>
+            <p>Configurado en <code style="font-family:var(--font-mono);font-size:12px;background:var(--surface-2);padding:1px 6px;border-radius:4px;">datos/config.json</code>. Guardado localmente en tu navegador.</p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="full">
+            <label>Token actual</label>
+            <input id="cfg-token" class="ical-input" placeholder="organizador-...">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="primary" onclick="guardarToken()">
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Guardar token
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Sistema</div>
+            <h2>Estado actual</h2>
+          </div>
+        </div>
+        <div id="estado-api">Comprobando…</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Bot</div>
+            <h2>Telegram conectado</h2>
+            <p>Tu bot personal donde recibes el plan diario y agregas tareas rápido.</p>
+          </div>
+        </div>
+        <div class="code-display">@dia_dia_diego_bot · <a href="https://t.me/dia_dia_diego_bot" target="_blank" style="color:var(--burnt);text-decoration:none;border-bottom:1px solid var(--burnt-line);">t.me/dia_dia_diego_bot</a></div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:5050/api';
+let TOKEN = localStorage.getItem('organizador_token') || '';
+
+/* fecha del día en sidebar */
+(function pintarFecha(){
+  const hoy = new Date();
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('date-num').textContent = hoy.getDate();
+  document.getElementById('date-weekday').textContent = dias[hoy.getDay()];
+  document.getElementById('date-month').textContent = meses[hoy.getMonth()];
+  document.getElementById('date-year').textContent = hoy.getFullYear();
+})();
+
+async function cargarTokenAuto() {
+  if (TOKEN) return;
+  try {
+    const r = await fetch(API + '/local-token');
+    if (r.ok) {
+      const d = await r.json();
+      if (d.token) {
+        TOKEN = d.token;
+        localStorage.setItem('organizador_token', TOKEN);
+      }
+    }
+  } catch(e) { /* ignore */ }
+}
+
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'X-API-Token': TOKEN };
+}
+
+async function api(ruta, opciones = {}) {
+  const r = await fetch(API + ruta, { ...opciones, headers: { ...authHeaders(), ...(opciones.headers || {}) }});
+  if (r.status === 401) {
+    document.getElementById('token-warn').style.display = 'flex';
+    throw new Error('Token inválido');
+  }
+  return r.json();
+}
+
+function toast(msg, tipo = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (tipo === 'err' ? ' err' : '') + ' show';
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+document.querySelectorAll('.nav-item').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.vista').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('vista-' + b.dataset.vista).classList.add('active');
+    cargarVista(b.dataset.vista);
+  };
+});
+
+function emptyRow(colspan, msg) {
+  return `<tr class="empty-row"><td colspan="${colspan}">${msg}</td></tr>`;
+}
+
+/* ───── CLIENTES ───── */
+async function cargarEmpresas() {
+  const data = await api('/clientes');
+  const proys = (await api('/proyectos')).proyectos;
+  const tbody = document.querySelector('#tabla-empresas tbody');
+  const clientes = data.clientes || [];
+  document.getElementById('cnt-clientes').textContent = clientes.length || '';
+  tbody.innerHTML = clientes.length ? clientes.map(e => `
+    <tr>
+      <td><div class="row-name"><span class="dot" style="background:${e.color}"></span><strong>${e.nombre}</strong></div></td>
+      <td style="color:var(--stone)">${e.descripcion || '—'}</td>
+      <td><strong>${proys.filter(p => p.cliente_id === e.id).length}</strong></td>
+      <td><span class="status-line"><span class="status-dot ${e.activo ? 'on' : 'off'}"></span>${e.activo ? 'Activo' : 'Inactivo'}</span></td>
+      <td><button class="danger" onclick="eliminarEmpresa('${e.id}')">Eliminar</button></td>
+    </tr>`).join('') : emptyRow(5, 'Aún sin clientes. Agrega el primero arriba.');
+  const opts = clientes.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+  document.getElementById('sel-empresa-proy').innerHTML = opts;
+  document.getElementById('sel-empresa-tarea').innerHTML = opts;
+  document.getElementById('sel-empresa-cal').innerHTML = opts;
+}
+
+async function crearEmpresa(e) {
+  e.preventDefault();
+  const f = e.target;
+  await api('/clientes', { method: 'POST', body: JSON.stringify({
+    nombre: f.nombre.value,
+    color: f.color_hex.value || f.color.value,
+    descripcion: f.descripcion.value
+  })});
+  toast('Cliente creado');
+  f.reset();
+  cargarEmpresas();
+  return false;
+}
+
+async function eliminarEmpresa(id) {
+  if (!confirm('¿Eliminar cliente?')) return;
+  await api('/clientes/' + id, { method: 'DELETE' });
+  toast('Cliente eliminado');
+  cargarEmpresas();
+}
+
+/* ───── PROYECTOS ───── */
+async function cargarProyectos() {
+  const clientes = (await api('/clientes')).clientes || [];
+  const empMap = {}; clientes.forEach(e => empMap[e.id] = e);
+  const data = await api('/proyectos');
+  document.getElementById('cnt-proyectos').textContent = (data.proyectos || []).length || '';
+  const tbody = document.querySelector('#tabla-proyectos tbody');
+  tbody.innerHTML = (data.proyectos && data.proyectos.length) ? data.proyectos.map(p => {
+    const e = empMap[p.cliente_id] || {nombre: '—', color: '#A8A29A'};
+    return `
+    <tr>
+      <td><div class="row-name"><span class="dot" style="background:${e.color}"></span>${e.nombre}</div></td>
+      <td><strong>${p.nombre}</strong>${p.descripcion ? `<div class="row-sub">${p.descripcion}</div>` : ''}</td>
+      <td><span class="pill ${p.prioridad}">${p.prioridad}</span></td>
+      <td style="color:var(--stone)">${p.deadline || '—'}</td>
+      <td><button class="danger" onclick="eliminarProyecto('${p.id}')">Eliminar</button></td>
+    </tr>`;
+  }).join('') : emptyRow(5, 'Aún sin proyectos. Crea uno para empezar.');
+}
+
+async function crearProyecto(e) {
+  e.preventDefault();
+  const f = e.target;
+  await api('/proyectos', { method: 'POST', body: JSON.stringify({
+    cliente_id: f.cliente_id.value,
+    nombre: f.nombre.value,
+    prioridad: f.prioridad.value,
+    deadline: f.deadline.value || null,
+    descripcion: f.descripcion.value
+  })});
+  toast('Proyecto creado');
+  f.reset();
+  cargarProyectos();
+  return false;
+}
+
+async function eliminarProyecto(id) {
+  if (!confirm('¿Eliminar proyecto?')) return;
+  await api('/proyectos/' + id, { method: 'DELETE' });
+  toast('Proyecto eliminado');
+  cargarProyectos();
+}
+
+/* ───── HÁBITOS ───── */
+async function cargarHabitos() {
+  const data = await api('/habitos');
+  const catMap = {}; (data.categorias || []).forEach(c => catMap[c.id] = c);
+  document.getElementById('cnt-habitos').textContent = (data.habitos || []).length || '';
+  const tbody = document.querySelector('#tabla-habitos tbody');
+  tbody.innerHTML = (data.habitos && data.habitos.length) ? data.habitos.map(h => {
+    const c = catMap[h.categoria_id] || {icono:'•', nombre:'—'};
+    return `
+    <tr>
+      <td><span class="tag">${c.icono} ${c.nombre}</span></td>
+      <td><strong>${h.nombre}</strong></td>
+      <td style="color:var(--stone)">${h.horario_sugerido} · ${h.duracion_min} min</td>
+      <td>${h.racha_actual > 0 ? `<span class="badge-streak">🔥 ${h.racha_actual} días</span>` : '<span style="color:var(--mist)">—</span>'}</td>
+      <td><button class="danger" onclick="eliminarHabito('${h.id}')">Eliminar</button></td>
+    </tr>`;
+  }).join('') : emptyRow(5, 'Aún sin hábitos. Agrega uno para empezar a construir rutina.');
+  document.getElementById('sel-categoria-hab').innerHTML =
+    (data.categorias || []).map(c => `<option value="${c.id}">${c.icono} ${c.nombre}</option>`).join('');
+}
+
+async function crearHabito(e) {
+  e.preventDefault();
+  const f = e.target;
+  await api('/habitos', { method: 'POST', body: JSON.stringify({
+    categoria_id: f.categoria_id.value,
+    nombre: f.nombre.value,
+    frecuencia: f.frecuencia.value,
+    horario_sugerido: f.horario_sugerido.value,
+    duracion_min: parseInt(f.duracion_min.value)
+  })});
+  toast('Hábito creado');
+  f.reset();
+  cargarHabitos();
+  return false;
+}
+
+async function eliminarHabito(id) {
+  if (!confirm('¿Eliminar hábito?')) return;
+  await api('/habitos/' + id, { method: 'DELETE' });
+  toast('Hábito eliminado');
+  cargarHabitos();
+}
+
+/* ───── TAREAS ───── */
+async function cargarTareas() {
+  const clientes = (await api('/clientes')).clientes || [];
+  const empMap = {}; clientes.forEach(e => empMap[e.id] = e);
+  const data = await api('/tareas?estado=pendiente');
+  const lista = data.actividades || [];
+  document.getElementById('cnt-tareas').textContent = lista.length || '';
+  const tbody = document.querySelector('#tabla-tareas tbody');
+  tbody.innerHTML = lista.length ? lista.map(t => {
+    const e = empMap[t.cliente_id] || {nombre: '—', color: '#A8A29A'};
+    return `
+    <tr>
+      <td><div class="row-name"><span class="dot" style="background:${e.color}"></span>${e.nombre}</div></td>
+      <td><strong>${t.titulo}</strong>${t.notas ? `<div class="row-sub">${t.notas}</div>` : ''}</td>
+      <td><span class="pill ${t.prioridad}">${t.prioridad}</span></td>
+      <td style="color:var(--stone)">${t.deadline || '—'}</td>
+      <td><button class="ghost" onclick="cumplirTarea('${t.id}')">✓ Cumplir</button></td>
+    </tr>`;
+  }).join('') : emptyRow(5, 'Sin tareas pendientes. Buen momento para crear una.');
+}
+
+async function cargarProyectosFiltrados() {
+  const cId = document.getElementById('sel-empresa-tarea').value;
+  const data = await api('/proyectos');
+  const filtrados = (data.proyectos || []).filter(p => p.cliente_id === cId);
+  document.getElementById('sel-proyecto-tarea').innerHTML =
+    '<option value="">(Sin proyecto)</option>' +
+    filtrados.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+}
+
+async function crearTarea(e) {
+  e.preventDefault();
+  const f = e.target;
+  await api('/tareas', { method: 'POST', body: JSON.stringify({
+    cliente_id: f.cliente_id.value,
+    proyecto_id: f.proyecto_id.value || null,
+    titulo: f.titulo.value,
+    prioridad: f.prioridad.value,
+    duracion_min: parseInt(f.duracion_min.value),
+    deadline: f.deadline.value || null,
+    notas: f.notas.value
+  })});
+  toast('Tarea creada');
+  f.reset();
+  cargarTareas();
+  return false;
+}
+
+async function cumplirTarea(id) {
+  await api('/tareas/' + id + '/cumplir', { method: 'POST' });
+  toast('Tarea cumplida ✓');
+  cargarTareas();
+}
+
+/* ───── CALENDARIOS ───── */
+async function cargarCalendarios() {
+  const clientes = (await api('/clientes')).clientes || [];
+  const empMap = {}; clientes.forEach(e => empMap[e.id] = e);
+  const data = await api('/calendarios');
+  const lista = data.calendarios_gmail || [];
+  document.getElementById('cnt-calendarios').textContent = lista.length || '';
+  const tbody = document.querySelector('#tabla-cal tbody');
+  tbody.innerHTML = lista.length ? lista.map(c => {
+    const e = empMap[c.cliente_asociado] || {nombre: '—', color: '#A8A29A'};
+    const tipo = c.ical_url ? 'iCal' : 'Email';
+    return `
+    <tr>
+      <td><div class="row-name"><span class="dot" style="background:${c.color}"></span><strong>${c.nombre_para_mostrar}</strong></div></td>
+      <td><span class="tag" style="background:${e.color}1A;color:${e.color};border-color:${e.color}33">${e.nombre}</span></td>
+      <td style="color:var(--stone)">${tipo}</td>
+      <td><button class="danger" onclick="eliminarCalendario('${c.id}')">Eliminar</button></td>
+    </tr>`;
+  }).join('') : emptyRow(4, 'Aún sin calendarios conectados. Pega tu primer enlace iCal arriba.');
+  document.getElementById('sel-empresa-cal').innerHTML =
+    clientes.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+}
+
+async function crearCalendario(e) {
+  e.preventDefault();
+  const f = e.target;
+  await api('/calendarios', { method: 'POST', body: JSON.stringify({
+    ical_url: f.ical_url.value.trim(),
+    nombre_para_mostrar: f.nombre_para_mostrar.value,
+    cliente_asociado: f.cliente_asociado.value,
+    color: f.color_hex.value || f.color.value,
+    activo: true
+  })});
+  toast('Calendario conectado');
+  f.reset();
+  cargarCalendarios();
+  return false;
+}
+
+async function eliminarCalendario(id) {
+  if (!confirm('¿Eliminar este calendario?')) return;
+  await api('/calendarios/' + id, { method: 'DELETE' });
+  toast('Calendario eliminado');
+  cargarCalendarios();
+}
+
+async function probarUrl() {
+  const url = document.querySelector('input[name=ical_url]').value.trim();
+  const span = document.getElementById('prueba-resultado');
+  if (!url) { span.innerHTML = '<span style="color:var(--crimson)">Pega una URL primero</span>'; return; }
+  span.innerHTML = '<span style="color:var(--stone)">Probando…</span>';
+  try {
+    const r = await api('/calendarios/probar_ical', { method: 'POST', body: JSON.stringify({ ical_url: url })});
+    if (r.ok) {
+      span.innerHTML = `<span style="color:var(--sage)">✓ "${r.nombre_detectado}" · ${r.total_eventos} eventos</span>`;
+      const nombre = document.querySelector('input[name=nombre_para_mostrar]');
+      if (!nombre.value) nombre.value = r.nombre_detectado;
+    } else {
+      span.innerHTML = `<span style="color:var(--crimson)">✗ ${r.error}</span>`;
+    }
+  } catch(e) {
+    span.innerHTML = '<span style="color:var(--crimson)">✗ ' + e.message + '</span>';
+  }
+}
+
+async function cargarEventosHoy() {
+  const div = document.getElementById('eventos-hoy');
+  div.innerHTML = '<div style="color:var(--stone);font-style:italic;font-family:var(--font-display);">Leyendo todos tus calendarios…</div>';
+  try {
+    const r = await api('/calendarios/eventos_ical');
+    if (!r.eventos || r.eventos.length === 0) {
+      div.innerHTML = '<div style="color:var(--stone);font-style:italic;font-family:var(--font-display);">Sin eventos hoy en tus calendarios activos.</div>';
+      return;
+    }
+    const buenos = r.eventos.filter(e => !e.error);
+    const errores = r.eventos.filter(e => e.error);
+    let html = `<div class="card-eyebrow" style="margin-top:18px;">Eventos de hoy · ${buenos.length}</div>`;
+    html += buenos.map(e => {
+      const hora = e.inicio ? new Date(e.inicio).toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}) : '';
+      return `<div class="event-card" style="border-left-color:${e.color||'#4A4D7A'}">
+        <strong>${e.titulo}</strong>
+        <div class="event-meta">
+          <span>◷ ${hora}</span>
+          <span>· ${e.calendario}</span>
+          ${e.ubicacion ? `<span>· ${e.ubicacion}</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    if (errores.length) {
+      html += '<div class="card-eyebrow" style="color:var(--crimson);margin-top:14px;">Errores</div>';
+      html += errores.map(e => `<div style="color:var(--crimson); font-size:12px; padding:4px 0;">${e.calendario}: ${e.error}</div>`).join('');
+    }
+    div.innerHTML = html;
+  } catch(e) {
+    div.innerHTML = '<div style="color:var(--crimson)">Error: ' + e.message + '</div>';
+  }
+}
+
+/* ───── CONFIG ───── */
+function guardarToken() {
+  TOKEN = document.getElementById('cfg-token').value;
+  localStorage.setItem('organizador_token', TOKEN);
+  toast('Token guardado');
+  document.getElementById('token-warn').style.display = 'none';
+  comprobarApi();
+}
+
+async function comprobarApi() {
+  try {
+    const r = await fetch(API + '/health');
+    const d = await r.json();
+    document.getElementById('estado-api').innerHTML =
+      `<div class="status-line"><span class="status-dot on"></span><strong>API funcionando</strong> <span style="color:var(--stone);margin-left:6px">· fecha del servidor ${d.fecha}</span></div>`;
+  } catch (e) {
+    document.getElementById('estado-api').innerHTML =
+      `<div class="status-line"><span class="status-dot off"></span><strong style="color:var(--crimson)">API no responde</strong></div><div style="color:var(--stone);font-size:12.5px;margin-top:8px">Ejecuta en terminal: <code style="font-family:var(--font-mono);background:var(--surface-2);padding:2px 6px;border-radius:4px">python3 scripts/api.py</code></div>`;
+  }
+}
+
+/* ───── PROGRESO ───── */
+let _metricasH = null;
+let _metricasP = null;
+let _viewH = 'diario';
+let _viewP = 'progreso';
+
+const LOGRO_ICONOS_H = {
+  primera_marca: '✦',
+  racha_semana: '7',
+  racha_quincena: '14',
+  racha_mes: '30',
+  racha_trimestre: '90',
+  racha_anual: '365'
+};
+const LOGRO_ICONOS_P = {
+  primer_completado: '✓',
+  cinco_completados: '5',
+  diez_completados: '10',
+  a_tiempo: '◷'
+};
+
+function fmtFechaCorta(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString('es-CO', {day:'numeric', month:'short'});
+}
+
+async function cargarProgreso() {
+  const [mh, mp] = await Promise.all([
+    api('/metricas/habitos'),
+    api('/metricas/proyectos')
+  ]);
+  _metricasH = mh;
+  _metricasP = mp;
+
+  /* banner hábitos */
+  document.getElementById('m-h-activos').textContent = mh.totales.habitos_activos;
+  document.getElementById('m-h-hoy').textContent = mh.totales.cumplidos_hoy;
+  document.getElementById('m-h-racha-n').textContent = mh.totales.mejor_racha_global;
+  document.getElementById('m-h-logros').textContent = mh.totales.logros_desbloqueados;
+
+  /* banner proyectos */
+  document.getElementById('m-p-activos').textContent = mp.totales.proyectos_activos;
+  document.getElementById('m-p-completados').textContent = mp.totales.proyectos_completados;
+  document.getElementById('m-p-tareas30').textContent = mp.totales.tareas_completadas_30d;
+  document.getElementById('m-p-pendientes').textContent = mp.totales.tareas_pendientes;
+
+  renderHabitos();
+  renderProyectos();
+}
+
+/* hábitos – renderiza según la view activa */
+function renderHabitos() {
+  const cont = document.getElementById('habitos-detalle');
+  if (!_metricasH || !_metricasH.habitos.length) {
+    cont.innerHTML = '<div class="empty" style="padding:32px;text-align:center;color:var(--stone);font-style:italic;font-family:var(--font-display);">Aún no tienes hábitos. Agrega uno en la pestaña Hábitos.</div>';
+    return;
+  }
+  if (_viewH === 'logros') {
+    cont.innerHTML = renderLogrosHabitos(_metricasH);
+    return;
+  }
+  cont.innerHTML = _metricasH.habitos.map(h => `
+    <div class="habit-progress-row">
+      <div class="habit-progress-head">
+        <div class="habit-progress-name">
+          <span class="icon">${h.icono}</span>
+          <span class="nombre">${h.nombre}</span>
+          <span class="cat">${h.categoria}</span>
+        </div>
+        ${h.racha_actual > 0
+          ? `<span class="streak-now">🔥 ${h.racha_actual} días</span>`
+          : `<span class="streak-now streak-now-off">Sin racha activa</span>`}
+      </div>
+      ${_viewH === 'diario' ? renderHeatmap(h)
+        : _viewH === 'semanal' ? renderSemanal(h)
+        : renderMensual(h)}
+    </div>
+  `).join('');
+}
+
+function renderHeatmap(h) {
+  const hoy = new Date().toISOString().slice(0,10);
+  const cells = h.ultimos_30_dias.map(d => {
+    const isFuture = d.fecha > hoy;
+    const cls = isFuture ? 'heat-cell future' : (d.cumplido ? 'heat-cell on' : 'heat-cell');
+    const tip = `${fmtFechaCorta(d.fecha)} · ${d.cumplido ? '✓' : '—'}`;
+    return `<div class="${cls}" data-tip="${tip}"></div>`;
+  }).join('');
+  const primera = fmtFechaCorta(h.ultimos_30_dias[0].fecha);
+  const ultima = fmtFechaCorta(h.ultimos_30_dias[29].fecha);
+  return `
+    <div class="heatmap">${cells}</div>
+    <div class="heatmap-legend">
+      <span>${primera}</span>
+      <div class="heatmap-legend-scale">
+        <span style="color:var(--mist)">No</span>
+        <div class="heat-cell"></div>
+        <div class="heat-cell on"></div>
+        <span style="color:var(--burnt)">Sí</span>
+      </div>
+      <span>${ultima}</span>
+    </div>
+  `;
+}
+
+function renderSemanal(h) {
+  const max = Math.max(...h.semanas.map(s => s.pct), 1);
+  const bars = h.semanas.map(s => {
+    const altura = Math.max(4, s.pct);
+    const tip = `${fmtFechaCorta(s.semana_inicio)} · ${s.cumplidos}/${s.total} (${s.pct}%)`;
+    return `<div class="week-bar" data-tip="${tip}" style="height:100%"><div class="week-bar-fill" style="height:${altura}%"></div></div>`;
+  }).join('');
+  const labels = h.semanas.map((s, i) => i % 3 === 0 ? fmtFechaCorta(s.semana_inicio) : '').join('|');
+  return `
+    <div class="weekly-bars">${bars}</div>
+    <div class="weekly-labels">${labels.split('|').map(l => `<span>${l}</span>`).join('')}</div>
+  `;
+}
+
+function renderMensual(h) {
+  const pct = h.este_mes.pct;
+  const circumference = 2 * Math.PI * 22;
+  const dash = circumference * pct / 100;
+  return `
+    <div class="month-summary">
+      <div class="month-ring">
+        <svg width="56" height="56" viewBox="0 0 56 56">
+          <circle cx="28" cy="28" r="22" fill="none" stroke="var(--line)" stroke-width="4"/>
+          <circle cx="28" cy="28" r="22" fill="none" stroke="var(--burnt)" stroke-width="4"
+            stroke-dasharray="${dash} ${circumference}" stroke-linecap="round"
+            transform="rotate(-90 28 28)"/>
+        </svg>
+        <div class="pct">${pct}%</div>
+      </div>
+      <div class="month-info">
+        <div class="big">${h.este_mes.cumplidos} de ${h.este_mes.total} días</div>
+        <div class="small">Esta semana: ${h.esta_semana.cumplidos}/${h.esta_semana.total} (${h.esta_semana.pct}%) · Total histórico: ${h.total_marcas} marcas</div>
+      </div>
+      <div>
+        <div style="text-align:right; font-family:var(--font-display); font-size:24px; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1;">${h.mejor_racha}</div>
+        <div style="font-size:10px;color:var(--stone);text-transform:uppercase;letter-spacing:.12em;text-align:right;margin-top:4px;font-weight:600;">mejor racha</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderLogrosHabitos(m) {
+  const todosLogros = {};
+  m.habitos.forEach(h => {
+    h.logros.forEach(l => {
+      if (!todosLogros[l.id]) todosLogros[l.id] = {...l, hits: 0, habitos: []};
+      if (l.desbloqueado) {
+        todosLogros[l.id].hits++;
+        todosLogros[l.id].habitos.push(h.nombre);
+      }
+    });
+  });
+
+  const cards = Object.values(todosLogros).map(l => {
+    const desbloqueado = l.hits > 0;
+    const icono = LOGRO_ICONOS_H[l.id] || '★';
+    return `
+      <div class="logro ${desbloqueado ? 'unlocked' : 'locked'}">
+        <div class="logro-badge">${icono}</div>
+        <div class="logro-title">${l.titulo}</div>
+        <div class="logro-desc">${l.descripcion}</div>
+        <div class="logro-status">${desbloqueado ? `✓ ${l.hits} hábito${l.hits !== 1 ? 's' : ''}` : 'Bloqueado'}</div>
+      </div>
+    `;
+  }).join('');
+  return `<div class="logros-grid">${cards}</div>`;
+}
+
+/* proyectos */
+function renderProyectos() {
+  const cont = document.getElementById('proyectos-detalle');
+  if (!_metricasP) return;
+  if (_viewP === 'progreso') cont.innerHTML = renderProyectosProgreso(_metricasP);
+  else if (_viewP === 'tareas') cont.innerHTML = renderProyectosTareas(_metricasP);
+  else if (_viewP === 'estado') cont.innerHTML = renderProyectosEstado(_metricasP);
+  else cont.innerHTML = renderLogrosProyectos(_metricasP);
+}
+
+function renderProyectosProgreso(m) {
+  if (!m.proyectos.length) return '<div class="empty" style="padding:32px;text-align:center;color:var(--stone);font-style:italic;font-family:var(--font-display);">Sin proyectos aún. Agrega el primero en la pestaña Proyectos.</div>';
+  return m.proyectos.map(p => {
+    const dur = p.deadline ? (p.dias_restantes >= 0 ? `<span>· ${p.dias_restantes} días restantes</span>` : `<span style="color:var(--crimson)">· vencido hace ${-p.dias_restantes}d</span>`) : '';
+    const done = p.estado === 'completado';
+    return `
+      <div class="proj-row">
+        <div class="proj-row-head">
+          <div class="proj-row-name">
+            <span class="dot" style="background:${p.color}"></span>
+            <strong>${p.nombre}</strong>
+            <span class="tag" style="background:${p.color}1A;color:${p.color};border-color:${p.color}33">${p.cliente}</span>
+          </div>
+          <div class="proj-row-meta">
+            <span class="pill ${p.prioridad}">${p.prioridad}</span>
+            ${p.deadline ? `<span>${fmtFechaCorta(p.deadline)}</span>` : '<span>sin deadline</span>'}
+            ${dur}
+          </div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill ${done ? 'done' : ''}" style="width:${p.pct_progreso}%"></div>
+        </div>
+        <div class="progress-numbers">
+          <span>${p.tareas_completadas} de ${p.tareas_totales} tareas</span>
+          <span class="progress-pct">${p.pct_progreso}%</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderProyectosTareas(m) {
+  const datos = m.completadas_por_dia;
+  const max = Math.max(...datos.map(d => d.n), 1);
+  const ancho = 580;
+  const alto = 110;
+  const stepX = ancho / (datos.length - 1);
+  const points = datos.map((d, i) => {
+    const x = i * stepX;
+    const y = alto - (d.n / max) * (alto - 8) - 4;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const area = `M ${points.split(' ').join(' L ')} L ${ancho},${alto} L 0,${alto} Z`;
+  const total = datos.reduce((s,d)=>s+d.n,0);
+
+  let html = `
+    <div class="sparkline-wrap">
+      <svg viewBox="0 0 ${ancho} ${alto + 8}" width="100%" preserveAspectRatio="none" style="display:block;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface-2);max-width:${ancho + 24}px;">
+        <defs>
+          <linearGradient id="g-tareas" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="var(--burnt)" stop-opacity=".35"/>
+            <stop offset="100%" stop-color="var(--burnt)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${area}" fill="url(#g-tareas)"/>
+        <polyline points="${points}" fill="none" stroke="var(--burnt)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        ${datos.map((d, i) => {
+          if (d.n === 0) return '';
+          const x = i * stepX;
+          const y = alto - (d.n / max) * (alto - 8) - 4;
+          return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="var(--paper)" stroke="var(--burnt)" stroke-width="1.5"><title>${fmtFechaCorta(d.fecha)}: ${d.n} tareas</title></circle>`;
+        }).join('')}
+      </svg>
+      <div class="sparkline-axis" style="max-width:${ancho + 24}px;padding:0 12px;">
+        <span>${fmtFechaCorta(datos[0].fecha)}</span>
+        <span>Total · ${total} tareas en 30 días</span>
+        <span>${fmtFechaCorta(datos[datos.length-1].fecha)}</span>
+      </div>
+    </div>
+  `;
+
+  /* tareas por cliente */
+  if (m.completadas_por_cliente.length) {
+    const maxCli = Math.max(...m.completadas_por_cliente.map(c => c.tareas), 1);
+    html += `<div class="card-eyebrow" style="margin-top:18px;">Por cliente</div>`;
+    html += m.completadas_por_cliente.map(c => `
+      <div style="display:grid;grid-template-columns:140px 1fr auto;gap:12px;align-items:center;padding:8px 0;font-size:13px;">
+        <span style="display:flex;align-items:center;gap:8px;color:var(--charcoal);">
+          <span class="dot" style="background:${c.color}"></span>${c.nombre}
+        </span>
+        <div class="progress-bar"><div class="progress-fill" style="width:${(c.tareas/maxCli*100).toFixed(0)}%;background:${c.color}"></div></div>
+        <span class="progress-pct">${c.tareas}</span>
+      </div>
+    `).join('');
+  }
+  return html;
+}
+
+function renderProyectosEstado(m) {
+  const estados = [
+    {key:'activo', nombre:'Activo', color:'var(--burnt)'},
+    {key:'pausado', nombre:'Pausado', color:'var(--amber)'},
+    {key:'completado', nombre:'Completado', color:'var(--sage)'},
+    {key:'archivado', nombre:'Archivado', color:'var(--mist)'}
+  ];
+  const total = Object.values(m.por_estado).reduce((a,b)=>a+b,0);
+  if (total === 0) return '<div class="empty" style="padding:32px;text-align:center;color:var(--stone);font-style:italic;font-family:var(--font-display);">Sin proyectos.</div>';
+
+  /* donut */
+  let acc = 0;
+  const radio = 50;
+  const circ = 2 * Math.PI * radio;
+  const segs = estados.map(e => {
+    const n = m.por_estado[e.key] || 0;
+    const frac = n / total;
+    const seg = frac * circ;
+    const offset = -acc;
+    acc += seg;
+    return n > 0 ? `<circle cx="70" cy="70" r="${radio}" fill="none" stroke="${e.color}" stroke-width="20" stroke-dasharray="${seg} ${circ}" stroke-dashoffset="${offset}" transform="rotate(-90 70 70)"/>` : '';
+  }).join('');
+
+  const legendas = estados.map(e => {
+    const n = m.por_estado[e.key] || 0;
+    if (n === 0) return '';
+    return `
+      <div class="donut-legend-row">
+        <span class="donut-legend-dot" style="background:${e.color}"></span>
+        <span>${e.nombre}</span>
+        <span class="donut-legend-num">${n}</span>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="donut-wrap">
+      <svg width="140" height="140" viewBox="0 0 140 140">
+        ${segs}
+        <text x="70" y="68" text-anchor="middle" font-family="Fraunces" font-size="22" fill="var(--ink)" font-weight="400">${total}</text>
+        <text x="70" y="85" text-anchor="middle" font-family="Geist" font-size="10" fill="var(--stone)" letter-spacing="1.5">PROYECTOS</text>
+      </svg>
+      <div class="donut-legend">${legendas}</div>
+    </div>
+  `;
+}
+
+function renderLogrosProyectos(m) {
+  const cards = m.logros.map(l => {
+    const icono = LOGRO_ICONOS_P[l.id] || '★';
+    return `
+      <div class="logro ${l.desbloqueado ? 'unlocked' : 'locked'}">
+        <div class="logro-badge">${icono}</div>
+        <div class="logro-title">${l.titulo}</div>
+        <div class="logro-desc">${l.descripcion}</div>
+        <div class="logro-status">${l.desbloqueado ? '✓ Desbloqueado' : 'Bloqueado'}</div>
+      </div>
+    `;
+  }).join('');
+  return `<div class="logros-grid">${cards}</div>`;
+}
+
+/* segmented control listeners */
+document.addEventListener('click', (ev) => {
+  const btn = ev.target.closest('.seg-btn');
+  if (!btn) return;
+  const target = btn.parentElement.dataset.target;
+  btn.parentElement.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (target === 'habitos') { _viewH = btn.dataset.view; renderHabitos(); }
+  if (target === 'proyectos') { _viewP = btn.dataset.view; renderProyectos(); }
+});
+
+async function cargarVista(v) {
+  const fns = { empresas: cargarEmpresas, proyectos: cargarProyectos,
+                habitos: cargarHabitos, tareas: cargarTareas,
+                calendarios: cargarCalendarios, progreso: cargarProgreso,
+                config: comprobarApi };
+  if (fns[v]) {
+    try { await fns[v](); } catch(e) { console.error(e); }
+  }
+}
+
+/* sync color picker con hex */
+document.querySelectorAll('input[type=color]').forEach(c => {
+  const hex = c.parentElement.querySelector('input[name=color_hex]');
+  if (hex) {
+    c.oninput = () => hex.value = c.value;
+    hex.oninput = () => { if (/^#[0-9a-f]{6}$/i.test(hex.value)) c.value = hex.value; };
+  }
+});
+
+/* init */
+(async () => {
+  await cargarTokenAuto();
+  document.getElementById('cfg-token').value = TOKEN;
+  // Pre-cargar contadores en sidebar
+  cargarEmpresas().catch(() => document.getElementById('token-warn').style.display = 'flex');
+  Promise.all([
+    api('/proyectos').then(d => document.getElementById('cnt-proyectos').textContent = (d.proyectos || []).length || ''),
+    api('/habitos').then(d => document.getElementById('cnt-habitos').textContent = (d.habitos || []).length || ''),
+    api('/tareas?estado=pendiente').then(d => document.getElementById('cnt-tareas').textContent = (d.actividades || []).length || ''),
+    api('/calendarios').then(d => document.getElementById('cnt-calendarios').textContent = (d.calendarios_gmail || []).length || '')
+  ]).catch(() => {});
+})();
+</script>
+</body>
+</html>

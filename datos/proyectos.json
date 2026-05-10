@@ -1,0 +1,31 @@
+{
+  "proyectos": [
+    {
+      "id": "dropi_busqueda_productos",
+      "cliente_id": "dropi",
+      "nombre": "Búsqueda de productos ganadores",
+      "estado": "activo",
+      "prioridad": "alta",
+      "deadline": null,
+      "descripcion": "Cruzar Mercado Libre, Facebook Marketplace y Ad Library"
+    },
+    {
+      "id": "dropi_ads_campana_actual",
+      "cliente_id": "dropi",
+      "nombre": "Campaña de ads en curso",
+      "estado": "activo",
+      "prioridad": "alta",
+      "deadline": null,
+      "descripcion": "Gestión diaria de creativos, presupuesto y conversiones"
+    },
+    {
+      "id": "personal_salud",
+      "cliente_id": "personal",
+      "nombre": "Salud y bienestar",
+      "estado": "activo",
+      "prioridad": "media",
+      "deadline": null,
+      "descripcion": "Ejercicio, alimentación, médico"
+    }
+  ]
+}

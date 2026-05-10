@@ -1,0 +1,32 @@
+{
+  "empresas": [
+    {
+      "id": "dropi",
+      "nombre": "Dropshipping Dropi",
+      "color": "#FF6B35",
+      "descripcion": "Negocio principal: productos ganadores, ads y operación con Dropi",
+      "activo": true
+    },
+    {
+      "id": "estudios",
+      "nombre": "Estudios / Aprendizaje",
+      "color": "#A78BFA",
+      "descripcion": "Cursos, lecturas, formación continua",
+      "activo": true
+    },
+    {
+      "id": "otros_negocios",
+      "nombre": "Otros negocios / Clientes",
+      "color": "#FBBF24",
+      "descripcion": "Proyectos paralelos o clientes",
+      "activo": true
+    },
+    {
+      "id": "personal",
+      "nombre": "Personal / Familia",
+      "color": "#4ECDC4",
+      "descripcion": "Vida privada, familia, salud, citas",
+      "activo": true
+    }
+  ]
+}

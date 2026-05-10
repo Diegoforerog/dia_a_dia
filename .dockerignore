@@ -1,0 +1,16 @@
+.env
+.env.local
+*.pyc
+__pycache__/
+.DS_Store
+datos/registros/
+integraciones/credentials.json
+integraciones/token.json
+integraciones/.oauth_state
+.git
+.gitignore
+*.zip
+*.local.json
+README.md
+integraciones/n8n_workflows/
+integraciones/*.md

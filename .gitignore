@@ -1,0 +1,12 @@
+.env
+.env.local
+*.pyc
+__pycache__/
+.DS_Store
+datos/registros/
+integraciones/credentials.json
+integraciones/token.json
+integraciones/.oauth_state
+*.zip
+*.local.json
+node_modules/

@@ -1,0 +1,175 @@
+{
+  "name": "Organizador - Router Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message", "callback_query"],
+        "additionalFields": {}
+      },
+      "id": "trigger-tg",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300],
+      "webhookId": "telegram-organizador",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENCIAL_TELEGRAM",
+          "name": "Telegram Organizador"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {"conditions": {"options": {"caseSensitive": false}, "conditions": [{"leftValue": "={{ $json.message.text }}", "rightValue": "/plan", "operator": {"type": "string", "operation": "startsWith"}}]}, "renameOutput": true, "outputKey": "plan"},
+            {"conditions": {"options": {"caseSensitive": false}, "conditions": [{"leftValue": "={{ $json.message.text }}", "rightValue": "/tarea", "operator": {"type": "string", "operation": "startsWith"}}]}, "renameOutput": true, "outputKey": "tarea"},
+            {"conditions": {"options": {"caseSensitive": false}, "conditions": [{"leftValue": "={{ $json.message.text }}", "rightValue": "/habito", "operator": {"type": "string", "operation": "startsWith"}}]}, "renameOutput": true, "outputKey": "habito"},
+            {"conditions": {"options": {"caseSensitive": false}, "conditions": [{"leftValue": "={{ $json.message.text }}", "rightValue": "/cumpli", "operator": {"type": "string", "operation": "startsWith"}}]}, "renameOutput": true, "outputKey": "cumpli"},
+            {"conditions": {"options": {"caseSensitive": false}, "conditions": [{"leftValue": "={{ $json.message.text }}", "rightValue": "/empresa", "operator": {"type": "string", "operation": "startsWith"}}]}, "renameOutput": true, "outputKey": "empresa"},
+            {"conditions": {"options": {"caseSensitive": false}, "conditions": [{"leftValue": "={{ $json.message.text }}", "rightValue": "/menu", "operator": {"type": "string", "operation": "startsWith"}}]}, "renameOutput": true, "outputKey": "menu"},
+            {"conditions": {"options": {"caseSensitive": false}, "conditions": [{"leftValue": "={{ $json.message.text }}", "rightValue": "/start", "operator": {"type": "string", "operation": "startsWith"}}]}, "renameOutput": true, "outputKey": "start"}
+          ]
+        },
+        "options": {"fallbackOutput": "extra"}
+      },
+      "id": "switch-comando",
+      "name": "Switch por comando",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.ORGANIZADOR_API_URL }}/api/plan/hoy",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "X-API-Token", "value": "={{ $env.ORGANIZADOR_API_TOKEN }}"}]},
+        "options": {}
+      },
+      "id": "http-plan",
+      "name": "Obtener plan hoy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [700, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const reg = $input.first().json;\nconst plan = reg.plan_generado;\nif (!plan) {\n  return [{json: {chat_id: $('Telegram Trigger').first().json.message.chat.id, text: '⚠️ No hay plan generado para hoy.\\n\\nUsa /plan después de las 7am o pide al asistente generar uno.'}}];\n}\nlet msg = `*☀️ Plan de hoy — ${reg.fecha}*\\n\\n_${plan.saludo || ''}_\\n\\n`;\n(plan.bloques||[]).forEach(b => {\n  const icono = b.tipo === 'habito' ? '🎯' : b.tipo === 'descanso' ? '☕' : '📌';\n  msg += `\\`${b.hora||''}\\` ${icono} *${b.titulo}*\\n`;\n  if (b.empresa) msg += `   _${b.empresa} · ${b.duracion_min||0} min_\\n`;\n  if (b.razon) msg += `   💡 ${b.razon}\\n`;\n  msg += '\\n';\n});\nif (plan.advertencia) msg += `⚠️ ${plan.advertencia}\\n\\n`;\nif (plan.frase_cierre) msg += `🏁 _${plan.frase_cierre}_`;\nreturn [{json: {chat_id: $('Telegram Trigger').first().json.message.chat.id, text: msg}}];"
+      },
+      "id": "format-plan",
+      "name": "Formatear plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.message.text;\nconst chatId = $input.first().json.message.chat.id;\nconst contenido = text.replace(/^\\/tarea\\s*/i, '').trim();\nif (!contenido) {\n  return [{json: {modo: 'pedir', chat_id: chatId, text: '📌 *Agregar tarea*\\n\\nFormato:\\n`/tarea {empresa} | {titulo}`\\n\\nEjemplo:\\n`/tarea dropi | Buscar 3 productos ganadores`'}}];\n}\nconst partes = contenido.split('|').map(s => s.trim());\nconst empresa_hint = partes.length > 1 ? partes[0] : null;\nconst titulo = partes.length > 1 ? partes.slice(1).join(' | ') : partes[0];\nreturn [{json: {modo: 'crear', chat_id: chatId, empresa_hint, titulo}}];"
+      },
+      "id": "parse-tarea",
+      "name": "Parsear /tarea",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 280]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.ORGANIZADOR_API_URL }}/api/empresas",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "X-API-Token", "value": "={{ $env.ORGANIZADOR_API_TOKEN }}"}]}
+      },
+      "id": "get-empresas-tarea",
+      "name": "Listar empresas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "const empresas = $input.first().json.empresas || [];\nconst parseado = $('Parsear /tarea').first().json;\nif (parseado.modo === 'pedir') {\n  return [{json: parseado}];\n}\nconst hint = (parseado.empresa_hint || '').toLowerCase();\nlet empresa = empresas.find(e => e.id.toLowerCase() === hint || e.nombre.toLowerCase().includes(hint));\nif (!empresa) empresa = empresas[0];\nreturn [{json: {chat_id: parseado.chat_id, empresa_id: empresa.id, empresa_nombre: empresa.nombre, titulo: parseado.titulo}}];"
+      },
+      "id": "elegir-empresa",
+      "name": "Elegir empresa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 280]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ORGANIZADOR_API_URL }}/api/tareas",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "X-API-Token", "value": "={{ $env.ORGANIZADOR_API_TOKEN }}"}]},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"empresa_id\": \"{{ $json.empresa_id }}\", \"titulo\": \"{{ $json.titulo }}\", \"prioridad\": \"media\" }"
+      },
+      "id": "post-tarea",
+      "name": "Crear tarea API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1360, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "const tarea = $input.first().json;\nconst ctx = $('Elegir empresa').first().json;\nreturn [{json: {chat_id: ctx.chat_id, text: `✅ Tarea agregada\\n\\n📌 *${tarea.titulo}*\\n🏢 ${ctx.empresa_nombre}`}}];"
+      },
+      "id": "format-tarea-ok",
+      "name": "Formatear OK tarea",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1580, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatId = $input.first().json.message.chat.id;\nreturn [{json: {chat_id: chatId, text: '📋 *Menú del Organizador*\\n\\n☀️ /plan — Ver plan del día\\n📌 /tarea — Agregar tarea\\n🎯 /habito — Marcar hábito\\n✅ /cumpli — Marcar tarea cumplida\\n🏢 /empresa — Gestionar empresas\\n\\n👉 Para configurar a fondo, abre el tablero en tu Mac.'}}];"
+      },
+      "id": "code-menu",
+      "name": "Construir menú",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 460]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {"parse_mode": "Markdown"}
+      },
+      "id": "tg-send",
+      "name": "Enviar a Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1800, 300],
+      "credentials": {"telegramApi": {"id": "TU_CREDENCIAL_TELEGRAM", "name": "Telegram Organizador"}}
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {"main": [[{"node": "Switch por comando", "type": "main", "index": 0}]]},
+    "Switch por comando": {
+      "main": [
+        [{"node": "Obtener plan hoy", "type": "main", "index": 0}],
+        [{"node": "Parsear /tarea", "type": "main", "index": 0}],
+        [{"node": "Construir menú", "type": "main", "index": 0}],
+        [{"node": "Construir menú", "type": "main", "index": 0}],
+        [{"node": "Construir menú", "type": "main", "index": 0}],
+        [{"node": "Construir menú", "type": "main", "index": 0}],
+        [{"node": "Construir menú", "type": "main", "index": 0}]
+      ]
+    },
+    "Obtener plan hoy": {"main": [[{"node": "Formatear plan", "type": "main", "index": 0}]]},
+    "Formatear plan": {"main": [[{"node": "Enviar a Telegram", "type": "main", "index": 0}]]},
+    "Parsear /tarea": {"main": [[{"node": "Listar empresas", "type": "main", "index": 0}]]},
+    "Listar empresas": {"main": [[{"node": "Elegir empresa", "type": "main", "index": 0}]]},
+    "Elegir empresa": {"main": [[{"node": "Crear tarea API", "type": "main", "index": 0}]]},
+    "Crear tarea API": {"main": [[{"node": "Formatear OK tarea", "type": "main", "index": 0}]]},
+    "Formatear OK tarea": {"main": [[{"node": "Enviar a Telegram", "type": "main", "index": 0}]]},
+    "Construir menú": {"main": [[{"node": "Enviar a Telegram", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"},
+  "active": false,
+  "tags": []
+}

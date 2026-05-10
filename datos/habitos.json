@@ -1,0 +1,77 @@
+{
+  "categorias": [
+    {"id": "negocio", "nombre": "Rutina de Negocio", "icono": "💼", "color": "#FF6B35"},
+    {"id": "salud", "nombre": "Salud", "icono": "💪", "color": "#10B981"},
+    {"id": "aprendizaje", "nombre": "Aprendizaje", "icono": "📚", "color": "#A78BFA"},
+    {"id": "finanzas", "nombre": "Finanzas", "icono": "💰", "color": "#FBBF24"},
+    {"id": "personal", "nombre": "Personal", "icono": "🧘", "color": "#4ECDC4"}
+  ],
+  "habitos": [
+    {
+      "id": "revisar_dropi",
+      "categoria_id": "negocio",
+      "nombre": "Revisar panel de Dropi",
+      "frecuencia": "diaria",
+      "horario_sugerido": "mañana",
+      "duracion_min": 15,
+      "activo": true,
+      "racha_actual": 0,
+      "mejor_racha": 0
+    },
+    {
+      "id": "buscar_productos",
+      "categoria_id": "negocio",
+      "nombre": "Buscar 3 productos ganadores",
+      "frecuencia": "diaria",
+      "horario_sugerido": "mañana",
+      "duracion_min": 45,
+      "activo": true,
+      "racha_actual": 0,
+      "mejor_racha": 0
+    },
+    {
+      "id": "ejercicio",
+      "categoria_id": "salud",
+      "nombre": "Ejercicio (mín 30 min)",
+      "frecuencia": "diaria",
+      "horario_sugerido": "mañana",
+      "duracion_min": 30,
+      "activo": true,
+      "racha_actual": 0,
+      "mejor_racha": 0
+    },
+    {
+      "id": "agua",
+      "categoria_id": "salud",
+      "nombre": "Beber 2L de agua",
+      "frecuencia": "diaria",
+      "horario_sugerido": "todo el día",
+      "duracion_min": 0,
+      "activo": true,
+      "racha_actual": 0,
+      "mejor_racha": 0
+    },
+    {
+      "id": "lectura",
+      "categoria_id": "aprendizaje",
+      "nombre": "Leer / estudiar 30 min",
+      "frecuencia": "diaria",
+      "horario_sugerido": "noche",
+      "duracion_min": 30,
+      "activo": true,
+      "racha_actual": 0,
+      "mejor_racha": 0
+    },
+    {
+      "id": "registrar_gastos",
+      "categoria_id": "finanzas",
+      "nombre": "Registrar gastos del día",
+      "frecuencia": "diaria",
+      "horario_sugerido": "noche",
+      "duracion_min": 5,
+      "activo": true,
+      "racha_actual": 0,
+      "mejor_racha": 0
+    }
+  ]
+}

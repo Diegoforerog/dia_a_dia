@@ -1,0 +1,63 @@
+{
+  "name": "Organizador - Plan matutino 7AM",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {"interval": [{"field": "cronExpression", "expression": "0 7 * * *"}]}
+      },
+      "id": "cron-7am",
+      "name": "Todos los días 7AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ORGANIZADOR_API_URL }}/api/plan/generar",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "X-API-Token", "value": "={{ $env.ORGANIZADOR_API_TOKEN }}"}]},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"auto_aprobar\": false }",
+        "options": {"timeout": 60000}
+      },
+      "id": "http-generar",
+      "name": "Generar plan IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nconst plan = r.plan;\nlet msg = `*☀️ Buenos días — ${r.fecha}*\\n\\n_${plan.saludo || ''}_\\n\\n`;\n(plan.bloques||[]).forEach(b => {\n  const icono = b.tipo === 'habito' ? '🎯' : b.tipo === 'descanso' ? '☕' : '📌';\n  msg += `\\`${b.hora||''}\\` ${icono} *${b.titulo}*\\n`;\n  if (b.empresa) msg += `   _${b.empresa} · ${b.duracion_min||0} min_\\n`;\n  if (b.razon) msg += `   💡 ${b.razon}\\n`;\n  msg += '\\n';\n});\nif (plan.advertencia) msg += `⚠️ ${plan.advertencia}\\n\\n`;\nif (plan.frase_cierre) msg += `🏁 _${plan.frase_cierre}_\\n\\n`;\nmsg += '👉 Responde /aprobar para confirmar, o /plan para verlo de nuevo.';\nreturn [{json: {text: msg}}];"
+      },
+      "id": "format",
+      "name": "Formatear mensaje",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {"parse_mode": "Markdown"}
+      },
+      "id": "tg-send",
+      "name": "Enviar a Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [900, 300],
+      "credentials": {"telegramApi": {"id": "TU_CREDENCIAL_TELEGRAM", "name": "Telegram Organizador"}}
+    }
+  ],
+  "connections": {
+    "Todos los días 7AM": {"main": [[{"node": "Generar plan IA", "type": "main", "index": 0}]]},
+    "Generar plan IA": {"main": [[{"node": "Formatear mensaje", "type": "main", "index": 0}]]},
+    "Formatear mensaje": {"main": [[{"node": "Enviar a Telegram", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"},
+  "active": false,
+  "tags": []
+}

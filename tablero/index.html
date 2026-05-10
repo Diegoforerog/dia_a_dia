@@ -1,0 +1,1275 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Día a día — Hoy</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,0..100&family=Geist:wght@300..700&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
+<style>
+  /* ─────────────────────────────────────────────
+     DÍA A DÍA — Hoy
+     Same design language as Configuración.
+     ───────────────────────────────────────────── */
+  :root {
+    --paper:        #FBFAF6;
+    --paper-deep:   #F5F2EA;
+    --surface:      #FFFFFF;
+    --surface-2:    #F8F6F0;
+
+    --ink:          #0E0D0B;
+    --charcoal:     #3A3733;
+    --stone:        #7A746B;
+    --mist:         #A8A29A;
+
+    --line:         #E8E4DA;
+    --line-soft:    #F0ECE2;
+    --line-strong:  #D5CFC2;
+
+    --burnt:        #C25B2C;
+    --burnt-hover:  #A84A22;
+    --burnt-soft:   #FAEEDD;
+    --burnt-line:   #E8C5A4;
+
+    --sage:         #5C8A6F;
+    --sage-soft:    #E8F0EA;
+
+    --crimson:      #A8392F;
+    --crimson-soft: #F4E5E3;
+
+    --amber:        #B47B1E;
+    --amber-soft:   #F8EFDB;
+
+    --indigo:       #4A4D7A;
+    --indigo-soft:  #ECEDF4;
+
+    --font-display: "Fraunces", "Times New Roman", serif;
+    --font-body:    "Geist", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+    --ease:         cubic-bezier(.4, 0, .2, 1);
+    --ease-out:     cubic-bezier(0, 0, .2, 1);
+  }
+
+  * { box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink);
+    background: var(--paper);
+    font-feature-settings: "ss01", "ss02", "cv11";
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(194, 91, 44, .025) 0%, transparent 45%),
+      radial-gradient(circle at 85% 90%, rgba(74, 77, 122, .02) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' /%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .03 0' /%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' /%3E%3C/svg%3E");
+  }
+
+  .app { display: grid; grid-template-columns: 264px 1fr; min-height: 100vh; }
+
+  /* ───── SIDEBAR (mismo del admin) ───── */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 28px 20px;
+    border-right: 1px solid var(--line);
+    background: var(--surface-2);
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .brand { display: flex; flex-direction: column; gap: 2px; }
+  .brand-mark {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: italic;
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: -.02em;
+    color: var(--ink);
+    font-variation-settings: "SOFT" 100, "opsz" 144;
+  }
+  .brand-tag {
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--stone);
+    font-weight: 500;
+  }
+
+  .date-card {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    background: var(--surface);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .date-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--burnt);
+  }
+  .date-day-num {
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: 44px;
+    line-height: 1;
+    color: var(--ink);
+    font-variation-settings: "opsz" 144;
+  }
+  .date-meta { display: flex; flex-direction: column; gap: 2px; }
+  .date-weekday {
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--burnt);
+    font-weight: 600;
+  }
+  .date-month {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 16px;
+    color: var(--charcoal);
+    text-transform: lowercase;
+  }
+  .date-year { font-size: 11px; color: var(--mist); font-variant-numeric: tabular-nums; }
+
+  .nav-section { display: flex; flex-direction: column; gap: 2px; }
+  .nav-label {
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--mist);
+    padding: 0 10px 8px;
+    font-weight: 600;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    color: var(--charcoal);
+    font-size: 14px;
+    text-decoration: none;
+    transition: background .15s var(--ease), color .15s var(--ease);
+    position: relative;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    width: 100%;
+  }
+  .nav-item:hover { background: rgba(14, 13, 11, .04); color: var(--ink); }
+  .nav-item.active {
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 500;
+    box-shadow: inset 0 0 0 1px var(--line), 0 1px 0 rgba(14, 13, 11, .02);
+  }
+  .nav-item.active::before {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 16px;
+    background: var(--burnt);
+    border-radius: 0 2px 2px 0;
+  }
+  .nav-icon {
+    width: 16px; height: 16px;
+    stroke: currentColor; fill: none;
+    stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+    flex-shrink: 0;
+  }
+
+  .sidebar-summary {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    color: var(--stone);
+  }
+  .summary-row strong {
+    font-family: var(--font-display);
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 18px;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary-title {
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--mist);
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  .sidebar-foot {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .foot-link {
+    color: var(--stone);
+    text-decoration: none;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color .15s;
+  }
+  .foot-link:hover { color: var(--ink); }
+  .foot-link svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+
+  /* ───── MAIN ───── */
+  main { padding: 44px 56px 80px; max-width: 1200px; width: 100%; }
+
+  .hero {
+    margin-bottom: 36px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: flex-end;
+  }
+  .greeting {
+    font-size: 12px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--burnt);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: 56px;
+    line-height: .98;
+    letter-spacing: -.025em;
+    color: var(--ink);
+    margin: 0 0 10px;
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+  }
+  .hero h1 em {
+    font-style: italic;
+    font-weight: 350;
+    color: var(--burnt);
+    font-variation-settings: "SOFT" 100;
+  }
+  .hero p {
+    color: var(--stone);
+    font-size: 15px;
+    max-width: 60ch;
+    margin: 0;
+    line-height: 1.5;
+  }
+  .hero-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--charcoal);
+    white-space: nowrap;
+  }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--mist);
+  }
+  .status-dot.on { background: var(--sage); box-shadow: 0 0 0 3px var(--sage-soft); }
+  .status-dot.warn { background: var(--amber); box-shadow: 0 0 0 3px var(--amber-soft); }
+
+  /* ───── LAYOUT 2 COL ───── */
+  .grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+
+  /* ───── CARDS ───── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px 26px;
+    margin-bottom: 18px;
+    position: relative;
+  }
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    gap: 16px;
+  }
+  .card-head h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1.1;
+    letter-spacing: -.01em;
+    margin: 0 0 4px;
+    color: var(--ink);
+    font-variation-settings: "opsz" 144, "SOFT" 50;
+  }
+  .card-head p { margin: 0; color: var(--stone); font-size: 13px; }
+  .card-eyebrow {
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--burnt);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  /* ───── SALUDO IA ───── */
+  .ai-greeting {
+    background: var(--burnt-soft);
+    border: 1px solid var(--burnt-line);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .ai-greeting::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--burnt);
+    border-radius: 12px 0 0 12px;
+  }
+  .ai-greeting p {
+    margin: 0;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 17px;
+    color: var(--ink);
+    line-height: 1.45;
+    font-variation-settings: "SOFT" 80;
+  }
+  .ai-meta {
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--burnt);
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-family: var(--font-body);
+    font-style: normal;
+  }
+
+  /* ───── TIMELINE BLOCKS ───── */
+  .timeline {
+    position: relative;
+  }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 60px;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+    background: var(--line);
+  }
+  .block {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: 16px;
+    padding: 12px 0;
+    align-items: start;
+    position: relative;
+  }
+  .block-time {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--stone);
+    font-weight: 500;
+    padding-top: 4px;
+    text-align: right;
+  }
+  .block-card {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    position: relative;
+    transition: border-color .15s, transform .15s;
+  }
+  .block-card::before {
+    content: "";
+    position: absolute;
+    left: -23px;
+    top: 18px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--burnt);
+    z-index: 1;
+  }
+  .block-card:hover {
+    border-color: var(--line-strong);
+  }
+  .block-card.tipo-habito::before { border-color: var(--sage); }
+  .block-card.tipo-descanso::before { border-color: var(--mist); }
+  .block-title {
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 14.5px;
+    line-height: 1.4;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .block-icon {
+    font-size: 14px;
+    opacity: .9;
+  }
+  .block-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--stone);
+  }
+  .block-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .block-duration {
+    font-variant-numeric: tabular-nums;
+    color: var(--charcoal);
+    font-weight: 500;
+  }
+  .block-razon {
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: var(--stone);
+    font-style: italic;
+    font-family: var(--font-display);
+    line-height: 1.4;
+  }
+  .block-razon::before {
+    content: "› ";
+    color: var(--burnt);
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  /* ───── HABITS LIST ───── */
+  .habit-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line-soft);
+    gap: 12px;
+  }
+  .habit-row:last-child { border-bottom: none; }
+  .habit-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  .habit-name {
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 450;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .habit-meta {
+    color: var(--stone);
+    font-size: 11.5px;
+  }
+  .habit-side {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .streak-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--burnt);
+    font-weight: 600;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .check-box {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1.5px solid var(--line-strong);
+    background: var(--surface);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s var(--ease);
+  }
+  .check-box.done {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+  .check-box svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ───── STATS ───── */
+  .stat-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+  }
+  .stat {
+    text-align: left;
+  }
+  .stat-num {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 32px;
+    line-height: 1;
+    color: var(--ink);
+    font-variation-settings: "opsz" 144;
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--stone);
+    font-weight: 600;
+  }
+
+  /* ───── CLIENT SUMMARY ───── */
+  .client-block { margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); }
+  .client-block:last-child { border-bottom: none; padding-bottom: 0; }
+  .client-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13.5px;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .client-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .client-projects {
+    margin-left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .client-project {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12.5px;
+    color: var(--stone);
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 500;
+    border: 1px solid;
+    line-height: 1.5;
+  }
+  .pill.alta    { background: var(--crimson-soft); color: var(--crimson); border-color: color-mix(in srgb, var(--crimson) 20%, transparent); }
+  .pill.media   { background: var(--amber-soft);   color: var(--amber);   border-color: color-mix(in srgb, var(--amber) 20%, transparent); }
+  .pill.baja    { background: var(--surface-2);    color: var(--stone);   border-color: var(--line); }
+
+  /* ───── EMPTY STATE for plan ───── */
+  .empty-plan {
+    text-align: center;
+    padding: 56px 32px;
+    background: var(--surface-2);
+    border: 1px dashed var(--line-strong);
+    border-radius: 14px;
+  }
+  .empty-plan-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .empty-plan-icon svg {
+    width: 24px; height: 24px;
+    stroke: var(--burnt); fill: none;
+    stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .empty-plan h3 {
+    font-family: var(--font-display);
+    font-weight: 350;
+    font-size: 22px;
+    margin: 0 0 8px;
+    color: var(--ink);
+    font-variation-settings: "opsz" 144, "SOFT" 40;
+  }
+  .empty-plan p {
+    color: var(--stone);
+    margin: 0 0 20px;
+    font-size: 13.5px;
+  }
+  .empty-plan code {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: var(--surface);
+    color: var(--ink);
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    display: inline-block;
+  }
+
+  .empty {
+    color: var(--stone);
+    font-style: italic;
+    font-family: var(--font-display);
+    padding: 18px 0;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .warning-banner {
+    background: var(--amber-soft);
+    border: 1px solid color-mix(in srgb, var(--amber) 22%, transparent);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: color-mix(in srgb, var(--amber) 60%, var(--ink));
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .warning-banner svg { width: 16px; height: 16px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+  .closing {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-style: italic;
+    font-family: var(--font-display);
+    color: var(--charcoal);
+    font-size: 14px;
+    font-variation-settings: "SOFT" 80;
+  }
+  .closing::before {
+    content: "✦ ";
+    color: var(--burnt);
+    font-style: normal;
+    margin-right: 4px;
+  }
+
+  /* ───── EVENTOS DE HOY ───── */
+  .evento-row {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line-soft);
+    align-items: flex-start;
+  }
+  .evento-row:last-child { border-bottom: none; }
+  .evento-hora {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--stone);
+    font-weight: 500;
+    padding-top: 2px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .evento-detalle {
+    border-left: 3px solid var(--indigo);
+    padding-left: 10px;
+    min-width: 0;
+  }
+  .evento-titulo {
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 13.5px;
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .evento-meta {
+    font-size: 11.5px;
+    color: var(--stone);
+    margin-top: 3px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .evento-meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .evento-allday {
+    background: var(--burnt-soft);
+    color: var(--burnt);
+    font-size: 9.5px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  /* ───── HÁBITOS AGRUPADOS POR CATEGORÍA ───── */
+  .cat-group { margin-bottom: 14px; }
+  .cat-group:last-child { margin-bottom: 0; }
+  .cat-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .cat-icono {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .cat-nombre {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--ink);
+    font-variation-settings: "SOFT" 60;
+    text-transform: lowercase;
+    letter-spacing: -.005em;
+  }
+  .cat-nombre::first-letter { text-transform: uppercase; }
+  .cat-count {
+    margin-left: auto;
+    font-size: 10.5px;
+    color: var(--stone);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  /* responsive */
+  @media (max-width: 920px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      position: relative;
+      height: auto;
+      flex-direction: row;
+      flex-wrap: wrap;
+      padding: 18px 20px;
+    }
+    .date-card { flex: 0 0 auto; }
+    .nav-section { flex-direction: row; flex-wrap: wrap; flex: 1 1 100%; }
+    .nav-item { flex: 0 0 auto; padding: 8px 12px; }
+    .nav-item.active::before { display: none; }
+    .nav-label, .sidebar-foot, .sidebar-summary { display: none; }
+    main { padding: 24px 20px 60px; }
+    .hero { grid-template-columns: 1fr; gap: 16px; }
+    .hero h1 { font-size: 40px; }
+    .timeline::before { left: 50px; }
+    .block { grid-template-columns: 50px 1fr; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">Día <em>a</em> día</div>
+      <div class="brand-tag">tu ritual diario</div>
+    </div>
+
+    <div class="date-card">
+      <div class="date-day-num" id="date-num">—</div>
+      <div class="date-meta">
+        <div class="date-weekday" id="date-weekday">cargando</div>
+        <div class="date-month" id="date-month">—</div>
+        <div class="date-year" id="date-year">—</div>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Tablero</div>
+      <a href="/" class="nav-item active">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2v4M4.9 4.9l2.8 2.8M2 12h4M19.1 4.9l-2.8 2.8M22 12h-4M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/></svg>
+        <span>Hoy</span>
+      </a>
+      <a href="/tablero/agenda.html" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span>Agenda</span>
+      </a>
+      <div class="nav-label" style="margin-top:8px;">Configurar</div>
+      <a href="/tablero/admin.html" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M3 21c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 11a4 4 0 0 0 0-8"/><path d="M22 21c0-2.5-1.9-4.6-4.3-4.9"/></svg>
+        <span>Clientes</span>
+      </a>
+      <a href="/tablero/admin.html" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+        <span>Proyectos</span>
+      </a>
+      <a href="/tablero/admin.html" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 4-7.5"/><path d="M3 4v5h5"/></svg>
+        <span>Hábitos</span>
+      </a>
+      <a href="/tablero/admin.html" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>Tareas</span>
+      </a>
+      <a href="/tablero/admin.html" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span>Calendarios</span>
+      </a>
+    </div>
+
+    <div class="sidebar-summary">
+      <div>
+        <div class="summary-title">Resumen del día</div>
+        <div class="summary-row"><span>Plan generado</span><strong id="sum-plan">—</strong></div>
+        <div class="summary-row"><span>Hábitos cumplidos</span><strong id="sum-habitos">0/0</strong></div>
+        <div class="summary-row"><span>Mejor racha</span><strong id="sum-racha">0</strong></div>
+      </div>
+    </div>
+
+    <div class="sidebar-foot">
+      <a class="foot-link" href="https://t.me/dia_dia_diego_bot" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/></svg>
+        Bot de Telegram
+      </a>
+      <a class="foot-link" href="/tablero/admin.html">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9"/></svg>
+        Configuración
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+    <div class="hero">
+      <div>
+        <div class="greeting" id="greeting">Buenos días</div>
+        <h1>Tu día <em id="today-day">hoy</em></h1>
+        <p id="hero-sub">Aquí está lo que la IA preparó para tu jornada. Puedes revisarlo, aprobarlo y dejarte llevar por el ritmo del día.</p>
+      </div>
+      <div class="hero-status" id="status">
+        <span class="status-dot"></span>
+        <span id="status-text">Cargando…</span>
+      </div>
+    </div>
+
+    <div class="grid">
+
+      <!-- COLUMNA IZQUIERDA: PLAN -->
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-eyebrow">Plan del día</div>
+              <h2>Agenda priorizada</h2>
+            </div>
+          </div>
+          <div id="saludo-ai"></div>
+          <div id="bloques"></div>
+          <div id="advertencia"></div>
+          <div id="cierre"></div>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: EVENTOS + HÁBITOS + CLIENTES -->
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-eyebrow">Calendario</div>
+              <h2>Eventos de hoy</h2>
+            </div>
+            <a href="/tablero/agenda.html" style="font-size:12px;color:var(--burnt);text-decoration:none;border-bottom:1px solid var(--burnt-line);">ver agenda →</a>
+          </div>
+          <div id="eventos-hoy">
+            <div class="empty">Cargando eventos…</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-eyebrow">Rutina</div>
+              <h2>Hábitos por categoría</h2>
+            </div>
+          </div>
+          <div id="habitos"></div>
+          <div class="stat-row">
+            <div class="stat">
+              <div class="stat-num" id="pct-habitos">0%</div>
+              <div class="stat-label">Cumplidos</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num" id="mejor-racha">0</div>
+              <div class="stat-label">Mejor racha</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-eyebrow">Estructura</div>
+              <h2>Clientes y proyectos</h2>
+            </div>
+          </div>
+          <div id="empresas-proyectos"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+const hoy = new Date().toISOString().slice(0,10);
+
+/* fecha sidebar */
+(function pintarFecha(){
+  const h = new Date();
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('date-num').textContent = h.getDate();
+  document.getElementById('date-weekday').textContent = dias[h.getDay()];
+  document.getElementById('date-month').textContent = meses[h.getMonth()];
+  document.getElementById('date-year').textContent = h.getFullYear();
+  document.getElementById('today-day').textContent = dias[h.getDay()].toLowerCase();
+
+  /* saludo según hora */
+  const hr = h.getHours();
+  const greeting = hr < 12 ? 'Buenos días' : hr < 19 ? 'Buenas tardes' : 'Buenas noches';
+  document.getElementById('greeting').textContent = greeting;
+})();
+
+async function leer(ruta) {
+  try {
+    const r = await fetch(ruta + (ruta.includes('?') ? '&' : '?') + 't=' + Date.now());
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (e) { return null; }
+}
+
+/* token para llamar al api desde el navegador */
+async function getToken() {
+  try {
+    const r = await fetch('http://localhost:5050/api/local-token');
+    if (r.ok) {
+      const d = await r.json();
+      return d.token;
+    }
+  } catch(e) {}
+  return localStorage.getItem('organizador_token') || '';
+}
+
+async function apiGet(ruta) {
+  const token = await getToken();
+  try {
+    const r = await fetch('http://localhost:5050/api' + ruta, {
+      headers: { 'X-API-Token': token }
+    });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+function pintarSaludo(plan) {
+  if (!plan || !plan.saludo) return;
+  document.getElementById('saludo-ai').innerHTML = `
+    <div class="ai-greeting">
+      <div class="ai-meta">Mensaje del día</div>
+      <p>${plan.saludo}</p>
+    </div>`;
+}
+
+function pintarPlan(plan, clientes) {
+  if (!plan) {
+    document.getElementById('bloques').innerHTML = `
+      <div class="empty-plan">
+        <div class="empty-plan-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3>El plan aún no está listo</h3>
+        <p>La IA arma tu agenda cada mañana. Genéralo a mano si quieres empezar ya.</p>
+        <code>python3 scripts/plan_manana.py</code>
+      </div>`;
+    return;
+  }
+
+  const colorCliente = {};
+  (clientes || []).forEach(e => colorCliente[e.nombre] = e.color);
+
+  const html = (plan.bloques || []).map(b => {
+    const color = colorCliente[b.cliente || b.empresa] || '#7A746B';
+    const tipo = b.tipo || 'tarea';
+    const icono = tipo === 'habito' ? '◉' : tipo === 'descanso' ? '◌' : '●';
+    const cliente = b.cliente || b.empresa;
+    return `
+      <div class="block">
+        <div class="block-time">${b.hora || ''}</div>
+        <div class="block-card tipo-${tipo}">
+          <div class="block-title">
+            <span class="block-icon" style="color:${color}">${icono}</span>
+            ${b.titulo}
+          </div>
+          <div class="block-meta">
+            ${cliente ? `<span class="block-tag" style="background:${color}1A;color:${color};">${cliente}</span>` : ''}
+            ${b.duracion_min ? `<span class="block-duration">${b.duracion_min} min</span>` : ''}
+          </div>
+          ${b.razon ? `<div class="block-razon">${b.razon}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('bloques').innerHTML = `<div class="timeline">${html || '<div class="empty">Plan vacío</div>'}</div>`;
+
+  if (plan.advertencia) {
+    document.getElementById('advertencia').innerHTML = `
+      <div class="warning-banner">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        ${plan.advertencia}
+      </div>`;
+  }
+  if (plan.frase_cierre) {
+    document.getElementById('cierre').innerHTML = `<div class="closing">${plan.frase_cierre}</div>`;
+  }
+}
+
+function pintarHabitos(habitosData, registro) {
+  const cumplidos = new Set((registro && registro.habitos_cumplidos) || []);
+  const activos = (habitosData.habitos || []).filter(h => h.activo);
+  const cats = habitosData.categorias || [];
+  const catMap = {};
+  cats.forEach(c => catMap[c.id] = c);
+
+  /* agrupar por categoría preservando orden de cats */
+  const grupos = {};
+  activos.forEach(h => {
+    const cid = h.categoria_id || '_sin';
+    if (!grupos[cid]) grupos[cid] = [];
+    grupos[cid].push(h);
+  });
+
+  let html = '';
+  const ordenCats = [...cats.map(c => c.id), '_sin'];
+  ordenCats.forEach(cid => {
+    const lista = grupos[cid];
+    if (!lista || !lista.length) return;
+    const cat = catMap[cid] || {icono:'•', nombre:'Sin categoría', color:'#7A746B'};
+    const cumplidosCat = lista.filter(h => cumplidos.has(h.id)).length;
+    html += `
+      <div class="cat-group">
+        <div class="cat-header">
+          <div class="cat-icono" style="background:${cat.color}1A;color:${cat.color}">${cat.icono}</div>
+          <span class="cat-nombre">${cat.nombre}</span>
+          <span class="cat-count">${cumplidosCat}/${lista.length}</span>
+        </div>
+        ${lista.map(h => {
+          const hecho = cumplidos.has(h.id);
+          return `
+          <div class="habit-row">
+            <div class="habit-info">
+              <div class="habit-name">${h.nombre}</div>
+              <div class="habit-meta">${h.horario_sugerido} · ${h.duracion_min} min</div>
+            </div>
+            <div class="habit-side">
+              ${h.racha_actual > 0 ? `<span class="streak-pill">🔥 ${h.racha_actual}</span>` : ''}
+              <span class="check-box ${hecho ? 'done' : ''}">
+                ${hecho ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+              </span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  });
+  document.getElementById('habitos').innerHTML = html || '<div class="empty">Aún no tienes hábitos activos.</div>';
+
+  const pct = activos.length ? Math.round(cumplidos.size / activos.length * 100) : 0;
+  document.getElementById('pct-habitos').textContent = pct + '%';
+  const mejor = Math.max(0, ...activos.map(h => h.mejor_racha || 0));
+  document.getElementById('mejor-racha').textContent = mejor;
+
+  /* sidebar summary */
+  document.getElementById('sum-habitos').textContent = `${cumplidos.size}/${activos.length}`;
+  document.getElementById('sum-racha').textContent = mejor;
+}
+
+async function pintarEventosHoy() {
+  const hoyStr = new Date().toISOString().slice(0,10);
+  const div = document.getElementById('eventos-hoy');
+  try {
+    const ev = await apiGet(`/calendarios/eventos_rango?desde=${hoyStr}&hasta=${hoyStr}`);
+    if (!ev || !Array.isArray(ev) || ev.length === 0) {
+      div.innerHTML = '<div class="empty">Día libre. Sin eventos en tus calendarios.</div>';
+      return;
+    }
+    /* ordenar por hora */
+    ev.sort((a,b) => (a.start || '').localeCompare(b.start || ''));
+    div.innerHTML = ev.map(e => {
+      const ep = e.extendedProps || {};
+      const isAllDay = e.allDay;
+      let hora = '—';
+      if (!isAllDay && e.start) {
+        const d = new Date(e.start);
+        hora = d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', hour12:false});
+      }
+      const cliente = ep.cliente || ep.calendario || '';
+      return `
+        <div class="evento-row">
+          <div class="evento-hora">${isAllDay ? '◷' : hora}</div>
+          <div class="evento-detalle" style="border-left-color:${e.backgroundColor}">
+            <div class="evento-titulo">${isAllDay ? '<span class="evento-allday">Día</span>' : ''}${e.title}</div>
+            <div class="evento-meta">
+              <span>${cliente}</span>
+              ${ep.ubicacion ? `<span>· ${ep.ubicacion}</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch(err) {
+    div.innerHTML = '<div class="empty">No se pudieron cargar los eventos.</div>';
+  }
+}
+
+function pintarClientes(clientes, proyectos) {
+  const html = (clientes || []).filter(e => e.activo).map(e => {
+    const ps = (proyectos || []).filter(p => p.cliente_id === e.id);
+    const projHtml = ps.length
+      ? ps.map(p => `
+        <div class="client-project">
+          <span>${p.nombre}</span>
+          <span class="pill ${p.prioridad}">${p.prioridad}</span>
+        </div>`).join('')
+      : '<div style="color:var(--mist);font-size:11.5px;font-style:italic;">sin proyectos</div>';
+    return `
+      <div class="client-block">
+        <div class="client-name">
+          <span class="client-dot" style="background:${e.color}"></span>
+          ${e.nombre}
+        </div>
+        <div class="client-projects">${projHtml}</div>
+      </div>`;
+  }).join('') || '<div class="empty">Aún no tienes clientes.</div>';
+  document.getElementById('empresas-proyectos').innerHTML = html;
+}
+
+function pintarStatus(registro) {
+  const dot = document.querySelector('#status .status-dot');
+  const txt = document.getElementById('status-text');
+  const sumPlan = document.getElementById('sum-plan');
+  if (registro && registro.aprobado) {
+    dot.className = 'status-dot on';
+    txt.textContent = 'Plan aprobado';
+    sumPlan.textContent = 'Aprobado';
+  } else if (registro && registro.plan_generado) {
+    dot.className = 'status-dot warn';
+    txt.textContent = 'Plan pendiente de aprobar';
+    sumPlan.textContent = 'Pendiente';
+  } else {
+    dot.className = 'status-dot';
+    txt.textContent = 'Aún sin plan';
+    sumPlan.textContent = 'Sin generar';
+  }
+}
+
+(async () => {
+  /* leer via API; si falla, intentar JSON locales */
+  let clientesData = await apiGet('/clientes');
+  if (!clientesData) clientesData = await leer('../datos/clientes.json');
+
+  let proyectosData = await apiGet('/proyectos');
+  if (!proyectosData) proyectosData = await leer('../datos/proyectos.json');
+
+  let habitosData = await apiGet('/habitos');
+  if (!habitosData) habitosData = await leer('../datos/habitos.json');
+
+  let registro = await apiGet('/plan/hoy');
+  if (!registro || (!registro.plan_generado && !registro.fecha)) {
+    registro = await leer(`../datos/registros/${hoy}.json`);
+  }
+
+  if (!clientesData) {
+    document.getElementById('status-text').textContent = 'Inicia la API: python3 scripts/api.py';
+    return;
+  }
+
+  const listaClientes = clientesData.clientes || clientesData.empresas || [];
+
+  pintarSaludo(registro && registro.plan_generado);
+  pintarPlan(registro && registro.plan_generado, listaClientes);
+  pintarHabitos(habitosData || {habitos:[], categorias:[]}, registro);
+  pintarClientes(listaClientes, (proyectosData || {}).proyectos || []);
+  pintarStatus(registro);
+  pintarEventosHoy();
+})();
+</script>
+</body>
+</html>
