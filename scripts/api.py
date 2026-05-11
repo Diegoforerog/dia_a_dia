@@ -21,6 +21,15 @@ from comun import (
 )
 import db as _db
 
+# Scheduler interno (reemplaza polling crons de n8n)
+try:
+    import scheduler as _sched
+    _SCHED_OK = True
+except Exception as _e:
+    print(f"⚠️  Scheduler no disponible: {_e}")
+    _sched = None
+    _SCHED_OK = False
+
 INTEGRACIONES = RAIZ / "integraciones"
 INTEGRACIONES.mkdir(exist_ok=True)
 GOOGLE_CRED = INTEGRACIONES / "credentials.json"
@@ -33,6 +42,13 @@ os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", "1")
 
 app = Flask(__name__, static_folder=str(RAIZ / "tablero"), static_url_path="/tablero")
 CORS(app)
+
+# Arrancar scheduler en el boot del app (no en cada worker — solo el 1ro)
+if _SCHED_OK and os.environ.get("WERKZEUG_RUN_MAIN") != "false":
+    try:
+        _sched.iniciar()
+    except Exception as _e:
+        print(f"⚠️  No se pudo iniciar scheduler: {_e}")
 
 # Token simple de seguridad para que n8n se autentique
 API_TOKEN = os.getenv("ORGANIZADOR_TOKEN", "cambia-este-token-en-config")
@@ -599,6 +615,12 @@ def post_recordatorio():
     }
     data["recordatorios"].append(nuevo)
     guardar("recordatorios.json", data)
+    # Programar en el scheduler — dispara EXACTO a su hora
+    if _SCHED_OK:
+        try:
+            _sched.programar_recordatorio(nuevo["id"], nuevo["fecha_hora"])
+        except Exception as e:
+            print(f"⚠️  No se pudo programar recordatorio: {e}")
     return jsonify(nuevo), 201
 
 
@@ -611,6 +633,12 @@ def put_recordatorio(rid):
         if r["id"] == rid:
             r.update({k: v for k, v in body.items() if k != "id"})
             guardar("recordatorios.json", data)
+            # Re-programar si cambió la fecha
+            if _SCHED_OK and "fecha_hora" in body:
+                try:
+                    _sched.programar_recordatorio(rid, r["fecha_hora"])
+                except Exception as e:
+                    print(f"⚠️  No se pudo re-programar: {e}")
             return jsonify(r)
     return jsonify({"error": "Recordatorio no encontrado"}), 404
 
@@ -621,6 +649,11 @@ def delete_recordatorio(rid):
     data = cargar("recordatorios.json")
     data["recordatorios"] = [r for r in data["recordatorios"] if r["id"] != rid]
     guardar("recordatorios.json", data)
+    if _SCHED_OK:
+        try:
+            _sched.cancelar_recordatorio(rid)
+        except Exception:
+            pass
     return jsonify({"ok": True})
 
 

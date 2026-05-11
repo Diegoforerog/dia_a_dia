@@ -28,5 +28,6 @@ EXPOSE 5050
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:${PORT}/api/health || exit 1
 
-# Gunicorn como WSGI server de producción
-CMD ["sh", "-c", "cd scripts && gunicorn --bind 0.0.0.0:${PORT:-5050} --workers 2 --threads 4 --timeout 60 --access-logfile - --error-logfile - api:app"]
+# Gunicorn — 1 worker porque el scheduler interno NO es multi-process safe
+# (jobstore en DB previene duplicados pero igual queremos un solo punto de orquestación)
+CMD ["sh", "-c", "cd scripts && gunicorn --bind 0.0.0.0:${PORT:-5050} --workers 1 --threads 8 --timeout 60 --access-logfile - --error-logfile - api:app"]

@@ -1,0 +1,301 @@
+"""Scheduler interno — dispara recordatorios y avisos de eventos al momento EXACTO.
+Reemplaza los cron de n8n que polleaban cada 5 minutos.
+
+Diseño:
+  • APScheduler con persistencia en PostgreSQL (sobrevive reinicios)
+  • 1 job por recordatorio, programado a su fecha_hora exacta
+  • 1 job por evento iCal próximo (10 min antes del inicio)
+  • Sync iCal cada hora para descubrir eventos nuevos
+  • Envía Telegram directo (sin pasar por n8n)
+"""
+import os
+import json
+import urllib.request
+import urllib.error
+from datetime import datetime, timedelta, date
+from pathlib import Path
+
+import psycopg2
+from psycopg2.extras import RealDictCursor, Json
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.executors.pool import ThreadPoolExecutor
+import pytz
+
+import db as _db  # módulo local
+
+TZ = pytz.timezone("America/Bogota")
+BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+
+# ─────────────────────────────────────────────────────────
+# Inicialización del scheduler
+# ─────────────────────────────────────────────────────────
+def _build_db_url() -> str:
+    h = os.environ["DB_HOST"]
+    p = os.environ.get("DB_PORT", "5432")
+    u = os.environ["DB_USER"]
+    pw = urllib.parse.quote(os.environ["DB_PASSWORD"], safe="")
+    n = os.environ["DB_NAME"]
+    return f"postgresql+psycopg2://{u}:{pw}@{h}:{p}/{n}"
+
+import urllib.parse
+_scheduler = None
+
+
+def get_scheduler():
+    global _scheduler
+    if _scheduler is None:
+        _scheduler = BackgroundScheduler(
+            jobstores={"default": SQLAlchemyJobStore(
+                url=_build_db_url(),
+                tablename="apscheduler_jobs"
+            )},
+            executors={"default": ThreadPoolExecutor(4)},
+            job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 300},
+            timezone=TZ
+        )
+    return _scheduler
+
+
+def iniciar():
+    """Llamar UNA VEZ al boot de la API."""
+    s = get_scheduler()
+    if s.running:
+        return
+    s.start()
+    # Job recurrente: sincroniza iCal cada hora
+    s.add_job(
+        sincronizar_eventos_calendario,
+        "interval", hours=1,
+        id="_sync_ical_horario",
+        replace_existing=True,
+        next_run_time=datetime.now(TZ) + timedelta(seconds=30)  # corre en 30 seg al boot
+    )
+    # Re-programar recordatorios pendientes (por si hubo restart)
+    reprogramar_recordatorios_pendientes()
+    print("⚙️  Scheduler iniciado · jobs:", len(s.get_jobs()))
+
+
+# ─────────────────────────────────────────────────────────
+# Telegram envío directo
+# ─────────────────────────────────────────────────────────
+def telegram_send(texto: str, parse_mode: str = "Markdown") -> bool:
+    if not BOT_TOKEN or not CHAT_ID:
+        print("⚠️  Falta TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID")
+        return False
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    data = json.dumps({
+        "chat_id": int(CHAT_ID),
+        "text": texto,
+        "parse_mode": parse_mode,
+        "disable_web_page_preview": True
+    }).encode()
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read()).get("ok", False)
+    except Exception as e:
+        print(f"❌ Telegram error: {e}")
+        return False
+
+
+# ─────────────────────────────────────────────────────────
+# RECORDATORIOS
+# ─────────────────────────────────────────────────────────
+def programar_recordatorio(rec_id: str, fecha_hora):
+    """Programa un job único para un recordatorio."""
+    s = get_scheduler()
+    if isinstance(fecha_hora, str):
+        fecha_hora = datetime.fromisoformat(fecha_hora.replace("Z", "+00:00"))
+    s.add_job(
+        disparar_recordatorio,
+        "date",
+        run_date=fecha_hora,
+        args=[rec_id],
+        id=f"rec_{rec_id}",
+        replace_existing=True
+    )
+    print(f"🔔 Programado recordatorio {rec_id} para {fecha_hora}")
+
+
+def cancelar_recordatorio(rec_id: str):
+    s = get_scheduler()
+    try:
+        s.remove_job(f"rec_{rec_id}")
+    except Exception:
+        pass
+
+
+def disparar_recordatorio(rec_id: str):
+    """Dispara cuando llega la hora. Envía Telegram y maneja repetición."""
+    rows = _db.query(
+        "SELECT * FROM recordatorios WHERE id=%s AND NOT enviado AND activo",
+        (rec_id,)
+    )
+    if not rows:
+        return
+    r = rows[0]
+    fh = r["fecha_hora"]
+    hora = fh.astimezone(TZ).strftime("%H:%M") if fh else ""
+    texto = f"🔔 *{r['titulo']}*"
+    if r.get("mensaje"):
+        texto += f"\n\n{r['mensaje']}"
+    if hora:
+        texto += f"\n\n_⏰ {hora}_"
+    if r.get("repetir") and r["repetir"] != "no":
+        texto += f"\n_🔁 se repite {r['repetir']}_"
+
+    telegram_send(texto)
+    _db.execute(
+        "UPDATE recordatorios SET enviado=TRUE, enviado_at=NOW() WHERE id=%s",
+        (rec_id,)
+    )
+
+    # Repetición
+    if r.get("repetir") and r["repetir"] != "no":
+        delta = {
+            "diario":   timedelta(days=1),
+            "semanal":  timedelta(weeks=1),
+            "mensual":  timedelta(days=30),
+            "anual":    timedelta(days=365)
+        }.get(r["repetir"])
+        if delta:
+            from secrets import token_hex
+            nuevo_id = f"rec_{datetime.now().strftime('%Y%m%d%H%M%S')}_{token_hex(3)}"
+            siguiente = fh + delta
+            _db.execute("""
+                INSERT INTO recordatorios (id, titulo, mensaje, fecha_hora, repetir, cliente_id, enviado, activo)
+                VALUES (%s,%s,%s,%s,%s,%s,FALSE,TRUE)
+            """, (nuevo_id, r["titulo"], r.get("mensaje",""), siguiente, r["repetir"], r.get("cliente_id")))
+            programar_recordatorio(nuevo_id, siguiente)
+
+
+def reprogramar_recordatorios_pendientes():
+    """Al boot, re-engancha todos los recordatorios futuros pendientes."""
+    try:
+        rows = _db.query(
+            "SELECT id, fecha_hora FROM recordatorios "
+            "WHERE NOT enviado AND activo AND fecha_hora > NOW()"
+        )
+        for r in rows:
+            programar_recordatorio(r["id"], r["fecha_hora"])
+        print(f"🔁 Re-programados {len(rows)} recordatorios pendientes")
+    except Exception as e:
+        print(f"⚠️  No se pudo reprogramar recordatorios: {e}")
+
+
+# ─────────────────────────────────────────────────────────
+# AVISO 10 MIN ANTES DE EVENTOS DE CALENDARIO
+# ─────────────────────────────────────────────────────────
+def sincronizar_eventos_calendario():
+    """Lee iCal de todos los calendarios activos. Para cada evento que arranca
+    en las próximas 24h, programa un job a -10 min de su inicio."""
+    try:
+        from icalendar import Calendar
+        import recurring_ical_events
+    except ImportError:
+        print("⚠️  Falta librería icalendar / recurring_ical_events")
+        return
+
+    from comun import cargar
+    cals = [c for c in cargar("calendarios.json").get("calendarios_gmail", [])
+            if c.get("activo") and c.get("ical_url")]
+    if not cals:
+        return
+
+    ahora = datetime.now(TZ)
+    hasta = ahora + timedelta(hours=24)
+    clientes = {c["id"]: c for c in cargar("clientes.json").get("clientes", [])}
+    nuevos = 0
+
+    for cal in cals:
+        try:
+            req = urllib.request.Request(cal["ical_url"], headers={"User-Agent": "Organizador/1.0"})
+            with urllib.request.urlopen(req, timeout=20) as r:
+                ics = r.read()
+            ical = Calendar.from_ical(ics)
+            ocs = recurring_ical_events.of(ical).between(ahora, hasta)
+            for ev in ocs:
+                start = ev.get("DTSTART").dt if ev.get("DTSTART") else None
+                end = ev.get("DTEND").dt if ev.get("DTEND") else start
+                uid = str(ev.get("UID", ""))
+                if not start or not hasattr(start, "hour"):
+                    continue
+                if start.tzinfo is None:
+                    start = start.replace(tzinfo=TZ)
+                if end and end.tzinfo is None:
+                    end = end.replace(tzinfo=TZ)
+
+                aviso_at = start - timedelta(minutes=10)
+                if aviso_at <= ahora:
+                    continue  # ya pasó la ventana de aviso
+
+                # ID único por evento+inicio para no duplicar
+                job_id = f"ev_{uid}_{int(start.timestamp())}"
+                # ¿ya está programado o ya avisado?
+                if _db.query("SELECT 1 FROM eventos_avisados WHERE evento_uid=%s AND inicio=%s AND tipo_aviso='pre_10min'",
+                              (uid, start)):
+                    continue
+
+                cli = clientes.get(cal.get("cliente_asociado"), {})
+                payload = {
+                    "uid": uid,
+                    "titulo": str(ev.get("SUMMARY", "(sin título)")),
+                    "inicio_iso": start.isoformat(),
+                    "fin_iso": end.isoformat() if end else None,
+                    "ubicacion": str(ev.get("LOCATION", "")),
+                    "calendario": cal.get("nombre_para_mostrar"),
+                    "cliente": cli.get("nombre", "")
+                }
+                s = get_scheduler()
+                s.add_job(
+                    avisar_evento,
+                    "date",
+                    run_date=aviso_at,
+                    args=[payload],
+                    id=job_id,
+                    replace_existing=True
+                )
+                nuevos += 1
+        except Exception as e:
+            print(f"⚠️  Sync iCal error {cal.get('email','?')}: {e}")
+    if nuevos:
+        print(f"📅 Sync iCal: programados {nuevos} avisos")
+
+
+def avisar_evento(payload: dict):
+    """Dispara 10 min antes de un evento. Envía Telegram y marca como avisado."""
+    inicio = datetime.fromisoformat(payload["inicio_iso"])
+    ahora = datetime.now(TZ)
+    min_restantes = max(0, int((inicio - ahora).total_seconds() / 60))
+
+    hora_ini = inicio.astimezone(TZ).strftime("%H:%M")
+    hora_fin = ""
+    if payload.get("fin_iso"):
+        try:
+            fin = datetime.fromisoformat(payload["fin_iso"])
+            hora_fin = fin.astimezone(TZ).strftime("%H:%M")
+        except Exception:
+            pass
+
+    texto = f"⏰ *En {min_restantes} min: {payload['titulo']}*"
+    texto += f"\n\n🕐 {hora_ini}"
+    if hora_fin:
+        texto += f" – {hora_fin}"
+    if payload.get("cliente"):
+        texto += f"\n🏢 {payload['cliente']}"
+    elif payload.get("calendario"):
+        texto += f"\n📅 {payload['calendario']}"
+    if payload.get("ubicacion"):
+        texto += f"\n📍 {payload['ubicacion']}"
+
+    telegram_send(texto)
+    try:
+        _db.execute(
+            "INSERT INTO eventos_avisados (evento_uid, inicio, tipo_aviso) VALUES (%s,%s,%s) "
+            "ON CONFLICT DO NOTHING",
+            (payload["uid"], inicio, "pre_10min")
+        )
+    except Exception as e:
+        print(f"⚠️  No se pudo marcar avisado: {e}")
