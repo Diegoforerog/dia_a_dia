@@ -1321,6 +1321,61 @@
     gap: 8px;
   }
   .evento-meta span { display: inline-flex; align-items: center; gap: 4px; }
+
+  .leyenda-calendarios {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--burnt-line);
+    font-size: 11.5px;
+    color: var(--stone);
+  }
+  .leyenda-calendarios:empty { display: none; }
+  .leyenda-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .leyenda-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .leyenda-titulo {
+    width: 100%;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--stone);
+    margin-bottom: 2px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .leyenda-sync-btn {
+    background: transparent;
+    border: 1px solid var(--burnt-line);
+    color: var(--burnt);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .leyenda-sync-btn:hover {
+    background: var(--burnt-soft);
+    border-color: var(--burnt);
+  }
   .evento-allday {
     background: var(--burnt-soft);
     color: var(--burnt);
@@ -1607,6 +1662,7 @@
           <div id="eventos-hoy">
             <div class="empty">Cargando eventos…</div>
           </div>
+          <div id="leyenda-calendarios" class="leyenda-calendarios"></div>
         </div>
 
         <div class="card">
@@ -1897,6 +1953,58 @@ function pintarHabitos(habitosData, registro) {
   if (kpiRacha) kpiRacha.textContent = `mejor racha ${mejor}`;
 }
 
+async function sincronizarCalendariosGoogle(silencioso = true) {
+  try {
+    const token = await getToken();
+    const r = await fetch(API_BASE + '/calendarios/sync_google', {
+      method: 'POST',
+      headers: { 'X-API-Token': token, 'Content-Type': 'application/json' }
+    });
+    if (!r.ok) return { agregados: [] };
+    const data = await r.json();
+    if (!silencioso && data.total_agregados > 0) {
+      alert(`✨ ${data.total_agregados} calendario(s) nuevo(s) detectado(s):\n` +
+            data.agregados.map(c => '• ' + c.nombre_para_mostrar).join('\n'));
+    } else if (!silencioso) {
+      alert('Todo al día — no hay calendarios nuevos para sincronizar.');
+    }
+    return data;
+  } catch(e) {
+    if (!silencioso) alert('Error al sincronizar: ' + e.message);
+    return { agregados: [] };
+  }
+}
+
+async function pintarLeyendaCalendarios() {
+  const cont = document.getElementById('leyenda-calendarios');
+  if (!cont) return;
+  try {
+    const r = await apiGet('/calendarios');
+    const cals = (r.calendarios_gmail || []).filter(c => c.activo);
+    if (!cals.length) { cont.innerHTML = ''; return; }
+    cont.innerHTML =
+      '<div class="leyenda-titulo">' +
+        'Calendarios conectados' +
+        '<button class="leyenda-sync-btn" onclick="sincronizarYRecargar()" title="Buscar calendarios nuevos en Google">⟳ Sincronizar</button>' +
+      '</div>' +
+      cals.map(c => `
+        <span class="leyenda-item" title="${c.email || ''}">
+          <span class="leyenda-dot" style="background:${c.color || '#888'}"></span>
+          ${c.nombre_para_mostrar || c.email || 'Calendario'}
+        </span>`).join('');
+  } catch(e) {
+    cont.innerHTML = '';
+  }
+}
+
+async function sincronizarYRecargar() {
+  const r = await sincronizarCalendariosGoogle(false);
+  if (r.total_agregados > 0) {
+    pintarLeyendaCalendarios();
+    pintarEventosHoy();
+  }
+}
+
 async function pintarEventosHoy() {
   const hoyStr = new Date().toISOString().slice(0,10);
   const div = document.getElementById('eventos-hoy');
@@ -2018,6 +2126,15 @@ function pintarStatus(registro) {
   pintarClientes(listaClientes, (proyectosData || {}).proyectos || []);
   pintarStatus(registro);
   pintarEventosHoy();
+  /* auto-sync silencioso: detecta calendarios nuevos compartidos en Google */
+  sincronizarCalendariosGoogle(true).then(r => {
+    if (r && r.total_agregados > 0) {
+      pintarLeyendaCalendarios();
+      pintarEventosHoy();
+    } else {
+      pintarLeyendaCalendarios();
+    }
+  });
   pintarKPIs(registro, (proyectosData||{}).proyectos || []);
 
   /* exponer datos globalmente para vistas semana y mes */

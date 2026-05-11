@@ -39,6 +39,8 @@ GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:5050/ap
 
 # Permite OAuth sobre HTTP en local (sin TLS)
 os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", "1")
+# Google a veces devuelve scopes extra (openid, email) — esto evita que oauthlib lance error
+os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
 
 app = Flask(__name__, static_folder=str(RAIZ / "tablero"), static_url_path="/tablero")
 CORS(app)
@@ -1307,6 +1309,8 @@ def oauth_start():
         include_granted_scopes="true"
     )
     (INTEGRACIONES / ".oauth_state").write_text(state)
+    if getattr(flow, "code_verifier", None):
+        (INTEGRACIONES / ".oauth_code_verifier").write_text(flow.code_verifier)
     return jsonify({"auth_url": auth_url, "state": state})
 
 
@@ -1334,11 +1338,16 @@ def oauth_callback():
             scopes=GOOGLE_SCOPES,
             redirect_uri=GOOGLE_REDIRECT_URI
         )
+        verifier_path = INTEGRACIONES / ".oauth_code_verifier"
+        if verifier_path.exists():
+            flow.code_verifier = verifier_path.read_text().strip()
         flow.fetch_token(code=code)
         creds = flow.credentials
         GOOGLE_TOKEN.write_text(creds.to_json())
         return _pagina_resultado(True, "Conexión exitosa con Google Calendar")
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return _pagina_resultado(False, f"Error al obtener token: {e}")
 
 
@@ -1370,6 +1379,122 @@ def oauth_disconnect():
     if GOOGLE_TOKEN.exists():
         GOOGLE_TOKEN.unlink()
     return jsonify({"ok": True})
+
+
+_PALETA_GOOGLE_CACHE = {"paleta": None, "ts": 0}
+
+
+def _google_creds():
+    """Devuelve credenciales Google refrescadas, o None si no hay OAuth."""
+    if not GOOGLE_TOKEN.exists():
+        return None
+    try:
+        from google.oauth2.credentials import Credentials
+        from google.auth.transport.requests import Request as GRequest
+    except ImportError:
+        return None
+    creds = Credentials.from_authorized_user_file(str(GOOGLE_TOKEN), GOOGLE_SCOPES)
+    if creds.expired and creds.refresh_token:
+        creds.refresh(GRequest())
+        GOOGLE_TOKEN.write_text(creds.to_json())
+    return creds
+
+
+def _obtener_paleta_google(creds):
+    """Devuelve dict {'event': {id: hex}, 'calendar': {id: hex}}. Cachea 1h."""
+    import time as _time
+    if _PALETA_GOOGLE_CACHE["paleta"] and (_time.time() - _PALETA_GOOGLE_CACHE["ts"] < 3600):
+        return _PALETA_GOOGLE_CACHE["paleta"]
+    try:
+        from googleapiclient.discovery import build
+        servicio = build("calendar", "v3", credentials=creds)
+        colors = servicio.colors().get().execute()
+        paleta = {
+            "event":    {k: v.get("background", "#888888") for k, v in colors.get("event", {}).items()},
+            "calendar": {k: v.get("background", "#888888") for k, v in colors.get("calendar", {}).items()}
+        }
+        _PALETA_GOOGLE_CACHE["paleta"] = paleta
+        _PALETA_GOOGLE_CACHE["ts"] = _time.time()
+        return paleta
+    except Exception:
+        return {"event": {}, "calendar": {}}
+
+
+@app.route("/api/calendarios/sync_google", methods=["POST"])
+@requiere_auth
+def sync_google():
+    """Sincroniza la lista local con los calendarios visibles en Google.
+    Agrega los que faltan (match por email/id de Google). No borra ni desactiva."""
+    creds = _google_creds()
+    if not creds:
+        return jsonify({"error": "No conectado con Google. Conecta OAuth primero."}), 400
+    try:
+        from googleapiclient.discovery import build
+    except ImportError:
+        return jsonify({"error": "Falta librería google-api-python-client"}), 500
+
+    try:
+        servicio = build("calendar", "v3", credentials=creds)
+        cals_google = servicio.calendarList().list().execute().get("items", [])
+    except Exception as e:
+        return jsonify({"error": f"Error consultando Google: {e}"}), 500
+
+    data = cargar("calendarios.json")
+    if "calendarios_gmail" not in data:
+        data["calendarios_gmail"] = []
+    emails_existentes = {(c.get("email") or "").lower() for c in data["calendarios_gmail"] if c.get("email")}
+
+    # Cliente "personal" como default; si no existe, el primero activo
+    try:
+        clientes = cargar("clientes.json").get("clientes", [])
+        cliente_default = next(
+            (c["id"] for c in clientes if c["id"] == "personal" and c.get("activo")),
+            next((c["id"] for c in clientes if c.get("activo")), None)
+        )
+    except Exception:
+        cliente_default = None
+
+    agregados = []
+    for cg in cals_google:
+        gid = cg["id"]
+        if gid.lower() in emails_existentes:
+            continue
+        # Saltar calendarios "festivos" de Google (ruido) — el usuario los puede activar manual si quiere
+        if gid.endswith("@group.v.calendar.google.com") and "holiday" in gid.lower():
+            continue
+        nuevo = {
+            "id": nuevo_id("cal"),
+            "email": gid,
+            "ical_url": "",
+            "nombre_para_mostrar": cg.get("summary", gid)[:80],
+            "cliente_asociado": cliente_default,
+            "color": cg.get("backgroundColor", "#888888"),
+            "activo": True
+        }
+        data["calendarios_gmail"].append(nuevo)
+        emails_existentes.add(gid.lower())
+        agregados.append(nuevo)
+
+    if agregados:
+        guardar("calendarios.json", data)
+
+    return jsonify({
+        "ok": True,
+        "agregados": agregados,
+        "total_agregados": len(agregados),
+        "total_google": len(cals_google),
+        "total_local": len(data["calendarios_gmail"])
+    })
+
+
+@app.route("/api/calendarios/paleta_google", methods=["GET"])
+@requiere_auth
+def paleta_google():
+    """Devuelve la paleta oficial de colores de Google Calendar."""
+    creds = _google_creds()
+    if not creds:
+        return jsonify({"event": {}, "calendar": {}})
+    return jsonify(_obtener_paleta_google(creds))
 
 
 @app.route("/api/calendarios/google_list", methods=["GET"])
@@ -1486,8 +1611,9 @@ def eventos_rango():
         return jsonify({"error": "Formato de fecha inválido (usa YYYY-MM-DD)"}), 400
 
     clientes = {c["id"]: c for c in cargar("clientes.json").get("clientes", [])}
-    cals = [c for c in cargar("calendarios.json")["calendarios_gmail"]
-            if c.get("activo") and c.get("ical_url")]
+    todos_cals = [c for c in cargar("calendarios.json")["calendarios_gmail"] if c.get("activo")]
+    cals = [c for c in todos_cals if c.get("ical_url")]
+    cals_oauth = [c for c in todos_cals if not c.get("ical_url")]
 
     eventos = []
     for cal in cals:
@@ -1533,6 +1659,80 @@ def eventos_rango():
                 "borderColor": "#A8392F",
                 "extendedProps": {"error": str(e)}
             })
+
+    if cals_oauth:
+        creds = _google_creds()
+        if creds:
+            try:
+                from googleapiclient.discovery import build
+                paleta = _obtener_paleta_google(creds)
+                servicio = build("calendar", "v3", credentials=creds)
+                t_min = desde.isoformat() if desde.tzinfo else desde.astimezone().isoformat()
+                t_max = hasta.isoformat() if hasta.tzinfo else hasta.astimezone().isoformat()
+                for cal in cals_oauth:
+                    try:
+                        r = servicio.events().list(
+                            calendarId=cal["email"],
+                            timeMin=t_min,
+                            timeMax=t_max,
+                            singleEvents=True,
+                            orderBy="startTime",
+                            maxResults=500
+                        ).execute()
+                        cli = clientes.get(cal.get("cliente_asociado"), {"nombre": cal.get("nombre_para_mostrar")})
+                        color_cal = cal.get("color", "#4A4D7A")
+                        for ev in r.get("items", []):
+                            start_obj = ev.get("start", {})
+                            end_obj = ev.get("end", {})
+                            start_v = start_obj.get("dateTime") or start_obj.get("date")
+                            end_v   = end_obj.get("dateTime")   or end_obj.get("date")
+                            if not start_v:
+                                continue
+                            all_day = "date" in start_obj and "dateTime" not in start_obj
+                            color_id = ev.get("colorId")
+                            color_evt = paleta["event"].get(color_id) if color_id else None
+                            color_final = color_evt or color_cal
+                            eventos.append({
+                                "id": ev.get("id"),
+                                "title": ev.get("summary", "(sin título)"),
+                                "start": start_v,
+                                "end": end_v,
+                                "allDay": all_day,
+                                "backgroundColor": color_final,
+                                "borderColor": color_final,
+                                "textColor": "#FFFFFF",
+                                "extendedProps": {
+                                    "calendario": cal.get("nombre_para_mostrar"),
+                                    "calendario_id": cal["id"],
+                                    "calendario_email": cal["email"],
+                                    "cliente": cli.get("nombre"),
+                                    "color_cliente": cli.get("color"),
+                                    "color_calendario": color_cal,
+                                    "color_evento_propio": color_evt,
+                                    "ubicacion": ev.get("location", ""),
+                                    "descripcion": (ev.get("description") or "")[:300]
+                                }
+                            })
+                    except Exception as e:
+                        eventos.append({
+                            "id": f"error_{cal['id']}",
+                            "title": f"⚠️ Error leyendo {cal.get('nombre_para_mostrar')}",
+                            "start": desde.isoformat(),
+                            "allDay": True,
+                            "backgroundColor": "#A8392F",
+                            "borderColor": "#A8392F",
+                            "extendedProps": {"error": str(e)}
+                        })
+            except Exception as e:
+                eventos.append({
+                    "id": "error_oauth",
+                    "title": f"⚠️ Error OAuth: {e}",
+                    "start": desde.isoformat(),
+                    "allDay": True,
+                    "backgroundColor": "#A8392F",
+                    "borderColor": "#A8392F",
+                    "extendedProps": {"error": str(e)}
+                })
 
     return jsonify(eventos)
 
