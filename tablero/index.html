@@ -554,6 +554,23 @@
     border-color: var(--ink);
     color: var(--paper);
   }
+  /* hábito malo: marca = caí (rojo) */
+  .habit-row.malo .check-box.done {
+    background: var(--crimson);
+    border-color: var(--crimson);
+  }
+  .habit-row.malo .habit-name::before {
+    content: "🚫 ";
+    opacity: .7;
+    margin-right: 2px;
+  }
+  .habit-row.malo .streak-pill {
+    color: var(--sage);
+    background: var(--sage-soft);
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--sage) 25%, transparent);
+  }
   .check-box svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 
   /* ───── STATS ───── */
@@ -1399,15 +1416,18 @@ function pintarHabitos(habitosData, registro) {
         </div>
         ${lista.map(h => {
           const hecho = cumplidos.has(h.id);
+          const tipo = h.tipo || 'bueno';
+          const rachaIcon = tipo === 'malo' ? '✨' : '🔥';
+          const rachaLabel = tipo === 'malo' ? ' sin caer' : '';
           return `
-          <div class="habit-row">
+          <div class="habit-row ${tipo === 'malo' ? 'malo' : ''}">
             <div class="habit-info">
               <div class="habit-name">${h.nombre}</div>
               <div class="habit-meta">${h.horario_sugerido} · ${h.duracion_min} min</div>
             </div>
             <div class="habit-side">
-              ${h.racha_actual > 0 ? `<span class="streak-pill">🔥 ${h.racha_actual}</span>` : ''}
-              <span class="check-box ${hecho ? 'done' : ''}">
+              ${h.racha_actual > 0 ? `<span class="streak-pill">${rachaIcon} ${h.racha_actual}${rachaLabel}</span>` : ''}
+              <span class="check-box ${hecho ? 'done' : ''}" title="${tipo==='malo'?'Marcar = caí hoy':'Marcar = lo hice'}">
                 ${hecho ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
               </span>
             </div>

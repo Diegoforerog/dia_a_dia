@@ -767,6 +767,54 @@
   .skip { position: absolute; left: -9999px; }
   .skip:focus { left: 16px; top: 16px; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 6px; z-index: 999; }
 
+  /* ───── HÁBITO TIPO TOGGLE ───── */
+  .tipo-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 600px) { .tipo-toggle { grid-template-columns: 1fr; } }
+  .tipo-opt {
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all .15s var(--ease);
+    background: var(--surface);
+  }
+  .tipo-opt input { display: none; }
+  .tipo-opt div { display: flex; flex-direction: column; gap: 2px; }
+  .tipo-opt strong { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .tipo-opt span { font-size: 12px; color: var(--stone); line-height: 1.4; }
+  .tipo-opt:hover { background: var(--surface-2); }
+  .tipo-bueno:has(input:checked) {
+    background: var(--sage-soft);
+    border-color: var(--sage);
+  }
+  .tipo-bueno:has(input:checked) strong { color: var(--sage); }
+  .tipo-malo:has(input:checked) {
+    background: var(--crimson-soft);
+    border-color: var(--crimson);
+  }
+  .tipo-malo:has(input:checked) strong { color: var(--crimson); }
+
+  /* badge indicador tipo */
+  .tipo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .03em;
+  }
+  .tipo-badge.bueno { background: var(--sage-soft); color: var(--sage); }
+  .tipo-badge.malo  { background: var(--crimson-soft); color: var(--crimson); }
+
   /* ───── HORARIO LABORAL EDITOR ───── */
   .hl-row {
     display: grid;
@@ -1841,9 +1889,26 @@
           <div>
             <div class="card-eyebrow">Nuevo</div>
             <h2>Agregar hábito</h2>
+            <p>Construye uno bueno o elimina uno malo.</p>
           </div>
         </div>
         <form id="form-habito" onsubmit="return crearHabito(event)">
+          <div class="tipo-toggle full" role="radiogroup" aria-label="Tipo de hábito">
+            <label class="tipo-opt tipo-bueno">
+              <input type="radio" name="tipo" value="bueno" checked>
+              <div>
+                <strong>🟢 Hábito bueno</strong>
+                <span>Algo que quieres hacer cada día</span>
+              </div>
+            </label>
+            <label class="tipo-opt tipo-malo">
+              <input type="radio" name="tipo" value="malo">
+              <div>
+                <strong>🔴 Hábito malo</strong>
+                <span>Algo que quieres evitar — racha cuenta días sin caer</span>
+              </div>
+            </label>
+          </div>
           <div class="form-grid">
             <div>
               <label>Categoría <span class="req">*</span></label>
@@ -2509,12 +2574,21 @@ async function cargarHabitos() {
   const tbody = document.querySelector('#tabla-habitos tbody');
   tbody.innerHTML = (data.habitos && data.habitos.length) ? data.habitos.map(h => {
     const c = catMap[h.categoria_id] || {icono:'•', nombre:'—'};
+    const tipo = h.tipo || 'bueno';
+    const tipoBadge = tipo === 'malo'
+      ? `<span class="tipo-badge malo">🔴 EVITAR</span>`
+      : `<span class="tipo-badge bueno">🟢 HACER</span>`;
+    const rachaTxt = h.racha_actual > 0
+      ? (tipo === 'malo'
+          ? `<span class="badge-streak" style="color:var(--sage)">✨ ${h.racha_actual} días sin caer</span>`
+          : `<span class="badge-streak">🔥 ${h.racha_actual} días</span>`)
+      : '<span style="color:var(--mist)">—</span>';
     return `
     <tr>
       <td><span class="tag">${c.icono} ${c.nombre}</span></td>
-      <td><strong>${h.nombre}</strong></td>
+      <td><strong>${h.nombre}</strong> ${tipoBadge}</td>
       <td style="color:var(--stone)">${h.horario_sugerido} · ${h.duracion_min} min · <span class="dias-resumen">${fmtDiasHabito(h)}</span></td>
-      <td>${h.racha_actual > 0 ? `<span class="badge-streak">🔥 ${h.racha_actual} días</span>` : '<span style="color:var(--mist)">—</span>'}</td>
+      <td>${rachaTxt}</td>
       <td>
         <button class="btn-edit" onclick='abrirEditHabito(${JSON.stringify(h).replace(/'/g,"&apos;")})'>Editar</button>
         <button class="danger" onclick="eliminarHabito('${h.id}')">Eliminar</button>
@@ -2543,15 +2617,17 @@ async function crearHabito(e) {
       return false;
     }
   }
+  const tipo = f.querySelector('input[name="tipo"]:checked')?.value || 'bueno';
   await api('/habitos', { method: 'POST', body: JSON.stringify({
     categoria_id: f.categoria_id.value,
     nombre: f.nombre.value,
     frecuencia: freq,
     horario_sugerido: f.horario_sugerido.value,
     duracion_min: parseInt(f.duracion_min.value),
-    dias: dias
+    dias: dias,
+    tipo: tipo
   })});
-  toast('Hábito creado');
+  toast(tipo === 'malo' ? '🔴 Hábito a eliminar creado' : '🟢 Hábito a construir creado');
   f.reset();
   toggleDiasPicker();
   cargarHabitos();
@@ -3365,7 +3441,14 @@ async function abrirEditHabito(h) {
   const dias = h.dias || [];
   const chipsHTML = [['1','Lun'],['2','Mar'],['3','Mié'],['4','Jue'],['5','Vie'],['6','Sáb'],['7','Dom']]
     .map(([v,l]) => `<label class="dia-chip"><input type="checkbox" name="dia" value="${v}" ${dias.includes(parseInt(v))?'checked':''}><span>${l}</span></label>`).join('');
+  const tipo = h.tipo || 'bueno';
   document.getElementById('modal-fields').innerHTML = `
+    <div class="full"><label>Tipo de hábito</label>
+      <select name="tipo">
+        <option value="bueno" ${tipo==='bueno'?'selected':''}>🟢 Bueno — construir</option>
+        <option value="malo" ${tipo==='malo'?'selected':''}>🔴 Malo — evitar</option>
+      </select>
+    </div>
     <div><label>Categoría</label><select name="categoria_id">${optsCat}</select></div>
     <div><label>Nombre</label><input name="nombre" value="${escapeHtml(h.nombre)}" required></div>
     <div><label>Frecuencia</label><select name="frecuencia" id="edit-freq" onchange="document.getElementById('edit-dias').style.display=this.value==='dias_especificos'?'block':'none'">

@@ -267,7 +267,8 @@ def post_habito():
         "activo": True,
         "racha_actual": 0,
         "mejor_racha": 0,
-        "dias": body.get("dias")  # int[] 1-7 (ISO) o None
+        "dias": body.get("dias"),  # int[] 1-7 (ISO) o None
+        "tipo": body.get("tipo", "bueno")  # 'bueno' (cumplir) o 'malo' (evitar)
     }
     data["habitos"].append(nuevo)
     guardar("habitos.json", data)
@@ -988,12 +989,23 @@ def metricas_habitos():
         cumplidos_mes = sum(1 for d in completados if d >= inicio_mes.isoformat() and d <= hoy.isoformat())
         cumplidos_semana = sum(1 for d in completados if d >= inicio_semana.isoformat() and d <= hoy.isoformat())
 
-        # racha calculada desde "cumplidos" (más confiable que el campo guardado)
+        # Racha — depende del tipo de hábito
+        tipo = h.get("tipo", "bueno")
         racha = 0
-        d = hoy
-        while d.isoformat() in completados:
-            racha += 1
-            d -= timedelta(days=1)
+        if tipo == "bueno":
+            # Días consecutivos cumplidos hasta hoy
+            d = hoy
+            while d.isoformat() in completados:
+                racha += 1
+                d -= timedelta(days=1)
+        else:  # malo
+            # Días consecutivos SIN caer (hoy hacia atrás)
+            d = hoy
+            limite = 365  # safety
+            while d.isoformat() not in completados and limite > 0:
+                racha += 1
+                d -= timedelta(days=1)
+                limite -= 1
         mejor_racha = max(h.get("mejor_racha", 0), racha)
         mejor_racha_global = max(mejor_racha_global, mejor_racha)
 
@@ -1017,6 +1029,7 @@ def metricas_habitos():
             "categoria": cat["nombre"],
             "icono": cat.get("icono", "•"),
             "color": cat.get("color", "#888"),
+            "tipo": tipo,
             "racha_actual": racha,
             "mejor_racha": mejor_racha,
             "total_marcas": total_marcas,
