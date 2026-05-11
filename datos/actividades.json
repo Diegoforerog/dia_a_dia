@@ -1,3 +1,16 @@
 {
-  "actividades": []
+  "actividades": [
+    {
+      "id": "tarea_20260510190850",
+      "cliente_id": "agentico",
+      "proyecto_id": "proy_20260510190623",
+      "titulo": "Corregir información",
+      "prioridad": "media",
+      "duracion_min": 60,
+      "deadline": "2026-05-11",
+      "notas": "",
+      "estado": "pendiente",
+      "creada": "2026-05-10T19:08:50.733733"
+    }
+  ]
 }

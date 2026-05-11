@@ -760,6 +760,136 @@
   .skip { position: absolute; left: -9999px; }
   .skip:focus { left: 16px; top: 16px; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 6px; z-index: 999; }
 
+  /* ───── RECORDATORIOS ───── */
+  .rec-row {
+    display: grid;
+    grid-template-columns: 80px 1fr auto auto;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line-soft);
+    align-items: center;
+  }
+  .rec-row:last-child { border-bottom: none; }
+  .rec-fecha {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--charcoal);
+    line-height: 1.4;
+    text-align: right;
+  }
+  .rec-fecha strong {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--ink);
+    line-height: 1;
+    font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-variant-numeric: tabular-nums;
+  }
+  .rec-fecha .h {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--burnt);
+    font-weight: 600;
+    margin-top: 2px;
+    display: block;
+  }
+  .rec-info { min-width: 0; }
+  .rec-titulo {
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 14.5px;
+    line-height: 1.4;
+  }
+  .rec-meta {
+    font-size: 11.5px;
+    color: var(--stone);
+    margin-top: 3px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .rec-rep {
+    background: var(--burnt-soft);
+    color: var(--burnt);
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .04em;
+  }
+  .rec-enviado { color: var(--sage); }
+  .rec-vencido { color: var(--crimson); }
+
+  /* MODAL EDITAR */
+  .modal-back {
+    position: fixed; inset: 0;
+    background: rgba(14, 13, 11, .4);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+  }
+  .modal-back.show { display: flex; }
+  .modal-edit {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 28px 32px;
+    max-width: 560px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 48px -12px rgba(14, 13, 11, .25);
+    border: 1px solid var(--line);
+    position: relative;
+  }
+  .modal-edit h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 26px;
+    line-height: 1.1;
+    margin: 4px 0 16px;
+    color: var(--ink);
+    font-variation-settings: "opsz" 144, "SOFT" 40;
+  }
+  .modal-eyebrow {
+    font-size: 10.5px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--burnt);
+    font-weight: 600;
+  }
+  .modal-x {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: transparent; border: none;
+    color: var(--stone); cursor: pointer;
+    width: 28px; height: 28px; border-radius: 50%;
+    font-size: 14px;
+    transition: all .15s;
+  }
+  .modal-x:hover { background: var(--surface-2); color: var(--ink); }
+
+  /* botón editar pequeño */
+  .btn-edit {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--charcoal);
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11.5px;
+    font-family: inherit;
+    transition: all .15s;
+  }
+  .btn-edit:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+
   /* ───── TAREAS AGRUPADAS (cliente → proyecto → tareas) ───── */
   .cli-group {
     margin-bottom: 28px;
@@ -1419,6 +1549,11 @@
         <span>Calendarios</span>
         <span class="nav-count" id="cnt-calendarios"></span>
       </button>
+      <button class="nav-item" data-vista="recordatorios" role="tab">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span>Recordatorios</span>
+        <span class="nav-count" id="cnt-recordatorios"></span>
+      </button>
       <button class="nav-item" data-vista="progreso" role="tab">
         <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-7"/></svg>
         <span>Progreso</span>
@@ -1841,6 +1976,91 @@
 
     </section>
 
+    <!-- ───── VISTA RECORDATORIOS ───── -->
+    <section class="vista" id="vista-recordatorios" role="tabpanel">
+      <div class="page-head">
+        <div>
+          <div class="page-crumbs">Configurar <span>· Recordatorios</span></div>
+          <h1 class="page-title">Tus <em>recordatorios</em></h1>
+          <p class="page-sub">Avisos que se disparan a la hora exacta y te llegan al bot de Telegram.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Nuevo</div>
+            <h2>Agregar recordatorio</h2>
+            <p>Único o repetido. Se chequea cada 5 minutos.</p>
+          </div>
+        </div>
+        <form id="form-recordatorio" onsubmit="return crearRecordatorio(event)">
+          <div class="form-grid">
+            <div class="full">
+              <label>Título <span class="req">*</span></label>
+              <input name="titulo" required placeholder="Ej: Llamar al cliente · Tomar agua · Reunión semanal">
+            </div>
+            <div>
+              <label>Fecha y hora <span class="req">*</span></label>
+              <input type="datetime-local" name="fecha_hora" required>
+            </div>
+            <div>
+              <label>Repetir</label>
+              <select name="repetir">
+                <option value="no" selected>Una sola vez</option>
+                <option value="diario">Diario</option>
+                <option value="semanal">Semanal (mismo día)</option>
+                <option value="mensual">Mensual</option>
+                <option value="anual">Anual</option>
+              </select>
+            </div>
+            <div>
+              <label>Cliente (opcional)</label>
+              <select name="cliente_id" id="sel-cliente-rec">
+                <option value="">(Sin cliente)</option>
+              </select>
+            </div>
+            <div class="full">
+              <label>Mensaje extra (opcional)</label>
+              <input name="mensaje" placeholder="Detalle que verás cuando te llegue el aviso">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="primary">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Agregar recordatorio
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Próximos y pasados</div>
+            <h2>Tus recordatorios</h2>
+          </div>
+        </div>
+        <div id="lista-recordatorios"></div>
+      </div>
+    </section>
+
+    <!-- ───── MODAL EDITAR (compartido tarea / proyecto / recordatorio) ───── -->
+    <div class="modal-back" id="modal-edit" onclick="if(event.target===this)cerrarModal()">
+      <div class="modal-edit">
+        <button class="modal-x" onclick="cerrarModal()">✕</button>
+        <div class="modal-eyebrow" id="modal-eyebrow">Editar</div>
+        <h3 id="modal-title">—</h3>
+        <form id="form-edit" onsubmit="return guardarEdit(event)">
+          <div id="modal-fields" class="form-grid"></div>
+          <div class="form-actions" style="margin-top:16px;">
+            <button type="button" class="ghost" onclick="cerrarModal()">Cancelar</button>
+            <button class="primary">Guardar cambios</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- ───── VISTA PROGRESO ───── -->
     <section class="vista" id="vista-progreso" role="tabpanel">
       <div class="page-head">
@@ -2110,7 +2330,10 @@ async function cargarProyectos() {
       <td><strong>${p.nombre}</strong>${p.descripcion ? `<div class="row-sub">${p.descripcion}</div>` : ''}</td>
       <td><span class="pill ${p.prioridad}">${p.prioridad}</span></td>
       <td style="color:var(--stone)">${p.deadline || '—'}</td>
-      <td><button class="danger" onclick="eliminarProyecto('${p.id}')">Eliminar</button></td>
+      <td>
+        <button class="btn-edit" onclick='abrirEditProyecto(${JSON.stringify(p).replace(/'/g,"&apos;")})'>Editar</button>
+        <button class="danger" onclick="eliminarProyecto('${p.id}')">Eliminar</button>
+      </td>
     </tr>`;
   }).join('') : emptyRow(5, 'Aún sin proyectos. Crea uno para empezar.');
 }
@@ -2267,7 +2490,10 @@ async function cargarTareas() {
               ${t.notas ? `<div class="tarea-notas">${t.notas}</div>` : ''}
               ${(deadline || duracion) ? `<div class="tarea-meta">${deadline}${duracion}</div>` : ''}
             </div>
-            <button class="ghost tarea-btn" onclick="cumplirTarea('${t.id}')">✓</button>
+            <div style="display:flex; flex-direction:column; gap:4px; align-self:center;">
+              <button class="ghost tarea-btn" onclick="cumplirTarea('${t.id}')" title="Cumplir">✓</button>
+              <button class="btn-edit" style="padding:3px 8px;font-size:10.5px;" onclick='abrirEditTarea(${JSON.stringify(t).replace(/'/g,"&apos;")})'>Editar</button>
+            </div>
           </div>
         `;
       });
@@ -2787,10 +3013,191 @@ document.addEventListener('click', (ev) => {
   if (target === 'proyectos') { _viewP = btn.dataset.view; renderProyectos(); }
 });
 
+/* ───── RECORDATORIOS ───── */
+async function cargarRecordatorios() {
+  const clientes = (await api('/clientes')).clientes || [];
+  const empMap = {}; clientes.forEach(c => empMap[c.id] = c);
+  document.getElementById('sel-cliente-rec').innerHTML =
+    '<option value="">(Sin cliente)</option>' +
+    clientes.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+
+  const data = await api('/recordatorios');
+  const lista = (data.recordatorios || []).sort((a,b) =>
+    (a.fecha_hora || '').localeCompare(b.fecha_hora || ''));
+  document.getElementById('cnt-recordatorios').textContent = lista.length || '';
+
+  const cont = document.getElementById('lista-recordatorios');
+  if (!lista.length) {
+    cont.innerHTML = '<div class="empty" style="padding:32px;color:var(--stone);font-family:var(--font-display);font-style:italic;text-align:center;">Aún sin recordatorios. Crea el primero arriba.</div>';
+    return;
+  }
+
+  const ahora = new Date();
+  cont.innerHTML = lista.map(r => {
+    const fh = r.fecha_hora ? new Date(r.fecha_hora) : null;
+    if (!fh) return '';
+    const dia = fh.getDate();
+    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const mes = meses[fh.getMonth()];
+    const hora = fh.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', hour12:false});
+    const cli = r.cliente_id ? (empMap[r.cliente_id]?.nombre || '') : '';
+    const repEtq = {diario:'🔁 diario', semanal:'🔁 semanal', mensual:'🔁 mensual', anual:'🔁 anual'}[r.repetir] || '';
+    const estado = r.enviado
+      ? `<span class="rec-enviado">✓ enviado</span>`
+      : (fh < ahora ? `<span class="rec-vencido">⏰ vencido sin enviar</span>` : `<span style="color:var(--stone)">⏳ pendiente</span>`);
+    return `
+      <div class="rec-row">
+        <div class="rec-fecha">
+          <strong>${dia}</strong> ${mes}
+          <span class="h">${hora}</span>
+        </div>
+        <div class="rec-info">
+          <div class="rec-titulo">${r.titulo}</div>
+          ${r.mensaje ? `<div style="color:var(--stone);font-size:12.5px;margin-top:3px;">${r.mensaje}</div>` : ''}
+          <div class="rec-meta">
+            ${repEtq ? `<span class="rec-rep">${repEtq}</span>` : ''}
+            ${cli ? `<span>🏢 ${cli}</span>` : ''}
+            ${estado}
+          </div>
+        </div>
+        <button class="btn-edit" onclick='abrirEditRecordatorio(${JSON.stringify(r).replace(/'/g,"&apos;")})'>Editar</button>
+        <button class="danger" onclick="eliminarRecordatorio('${r.id}')">Eliminar</button>
+      </div>
+    `;
+  }).join('');
+}
+
+async function crearRecordatorio(e) {
+  e.preventDefault();
+  const f = e.target;
+  // datetime-local da "2026-05-11T07:30" → convertir a ISO con TZ Colombia
+  const dt = f.fecha_hora.value;
+  if (!dt) { toast('Falta fecha y hora', 'err'); return false; }
+  // tratamos como hora Colombia, agregamos -05:00
+  const iso = dt + ':00-05:00';
+  await api('/recordatorios', { method: 'POST', body: JSON.stringify({
+    titulo: f.titulo.value,
+    mensaje: f.mensaje.value,
+    fecha_hora: iso,
+    repetir: f.repetir.value,
+    cliente_id: f.cliente_id.value || null
+  })});
+  toast('🔔 Recordatorio creado');
+  f.reset();
+  cargarRecordatorios();
+  return false;
+}
+
+async function eliminarRecordatorio(id) {
+  if (!confirm('¿Eliminar este recordatorio?')) return;
+  await api('/recordatorios/' + id, { method: 'DELETE' });
+  toast('🗑️ Eliminado');
+  cargarRecordatorios();
+}
+
+/* ───── MODAL EDITAR (compartido) ───── */
+let _editTipo = null;
+let _editId = null;
+
+function abrirModal() { document.getElementById('modal-edit').classList.add('show'); }
+function cerrarModal() { document.getElementById('modal-edit').classList.remove('show'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
+
+async function abrirEditProyecto(p) {
+  _editTipo = 'proyecto'; _editId = p.id;
+  document.getElementById('modal-eyebrow').textContent = 'Editar proyecto';
+  document.getElementById('modal-title').textContent = p.nombre;
+  const clientes = (await api('/clientes')).clientes || [];
+  const opts = clientes.map(c => `<option value="${c.id}" ${c.id===p.cliente_id?'selected':''}>${c.nombre}</option>`).join('');
+  document.getElementById('modal-fields').innerHTML = `
+    <div><label>Cliente</label><select name="cliente_id">${opts}</select></div>
+    <div><label>Nombre</label><input name="nombre" value="${escapeHtml(p.nombre)}" required></div>
+    <div><label>Estado</label><select name="estado">
+      ${['activo','pausado','completado','archivado'].map(s => `<option value="${s}" ${s===p.estado?'selected':''}>${s}</option>`).join('')}
+    </select></div>
+    <div><label>Prioridad</label><select name="prioridad">
+      ${['alta','media','baja'].map(s => `<option value="${s}" ${s===p.prioridad?'selected':''}>${s}</option>`).join('')}
+    </select></div>
+    <div><label>Deadline</label><input type="date" name="deadline" value="${p.deadline || ''}"></div>
+    <div class="full"><label>Descripción</label><input name="descripcion" value="${escapeHtml(p.descripcion || '')}"></div>
+  `;
+  abrirModal();
+}
+
+async function abrirEditTarea(t) {
+  _editTipo = 'tarea'; _editId = t.id;
+  document.getElementById('modal-eyebrow').textContent = 'Editar tarea';
+  document.getElementById('modal-title').textContent = t.titulo;
+  const clientes = (await api('/clientes')).clientes || [];
+  const proyectos = (await api('/proyectos')).proyectos || [];
+  const optsCli = clientes.map(c => `<option value="${c.id}" ${c.id===t.cliente_id?'selected':''}>${c.nombre}</option>`).join('');
+  const proyectosCli = proyectos.filter(p => p.cliente_id === t.cliente_id);
+  const optsProy = '<option value="">(Sin proyecto)</option>' +
+    proyectosCli.map(p => `<option value="${p.id}" ${p.id===t.proyecto_id?'selected':''}>${p.nombre}</option>`).join('');
+  document.getElementById('modal-fields').innerHTML = `
+    <div><label>Cliente</label><select name="cliente_id">${optsCli}</select></div>
+    <div><label>Proyecto</label><select name="proyecto_id">${optsProy}</select></div>
+    <div class="full"><label>Título</label><input name="titulo" value="${escapeHtml(t.titulo)}" required></div>
+    <div><label>Estado</label><select name="estado">
+      ${['pendiente','en_progreso','completada','descartada'].map(s => `<option value="${s}" ${s===t.estado?'selected':''}>${s}</option>`).join('')}
+    </select></div>
+    <div><label>Prioridad</label><select name="prioridad">
+      ${['alta','media','baja'].map(s => `<option value="${s}" ${s===t.prioridad?'selected':''}>${s}</option>`).join('')}
+    </select></div>
+    <div><label>Duración (min)</label><input type="number" name="duracion_min" value="${t.duracion_min || 30}"></div>
+    <div><label>Deadline</label><input type="date" name="deadline" value="${t.deadline || ''}"></div>
+    <div class="full"><label>Notas</label><input name="notas" value="${escapeHtml(t.notas || '')}"></div>
+  `;
+  abrirModal();
+}
+
+async function abrirEditRecordatorio(r) {
+  _editTipo = 'recordatorio'; _editId = r.id;
+  document.getElementById('modal-eyebrow').textContent = 'Editar recordatorio';
+  document.getElementById('modal-title').textContent = r.titulo;
+  const clientes = (await api('/clientes')).clientes || [];
+  const optsCli = '<option value="">(Sin cliente)</option>' +
+    clientes.map(c => `<option value="${c.id}" ${c.id===r.cliente_id?'selected':''}>${c.nombre}</option>`).join('');
+  const fhLocal = r.fecha_hora ? r.fecha_hora.slice(0,16) : '';
+  document.getElementById('modal-fields').innerHTML = `
+    <div class="full"><label>Título</label><input name="titulo" value="${escapeHtml(r.titulo)}" required></div>
+    <div><label>Fecha y hora</label><input type="datetime-local" name="fecha_hora" value="${fhLocal}" required></div>
+    <div><label>Repetir</label><select name="repetir">
+      ${[['no','Una sola vez'],['diario','Diario'],['semanal','Semanal'],['mensual','Mensual'],['anual','Anual']].map(([v,l]) => `<option value="${v}" ${v===r.repetir?'selected':''}>${l}</option>`).join('')}
+    </select></div>
+    <div class="full"><label>Mensaje extra</label><input name="mensaje" value="${escapeHtml(r.mensaje || '')}"></div>
+    <div class="full"><label>Cliente</label><select name="cliente_id">${optsCli}</select></div>
+  `;
+  abrirModal();
+}
+
+async function guardarEdit(e) {
+  e.preventDefault();
+  const f = e.target;
+  const body = {};
+  new FormData(f).forEach((v, k) => { body[k] = v === '' ? null : v; });
+  if (_editTipo === 'recordatorio' && body.fecha_hora) {
+    body.fecha_hora = body.fecha_hora + ':00-05:00';
+  }
+  if (_editTipo === 'tarea' && body.duracion_min) body.duracion_min = parseInt(body.duracion_min);
+  const ruta = {tarea:'/tareas', proyecto:'/proyectos', recordatorio:'/recordatorios'}[_editTipo];
+  await api(`${ruta}/${_editId}`, { method: 'PUT', body: JSON.stringify(body) });
+  toast('✓ Guardado');
+  cerrarModal();
+  const recargar = {tarea: cargarTareas, proyecto: cargarProyectos, recordatorio: cargarRecordatorios}[_editTipo];
+  recargar();
+  return false;
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
 async function cargarVista(v) {
   const fns = { empresas: cargarEmpresas, proyectos: cargarProyectos,
                 habitos: cargarHabitos, tareas: cargarTareas,
                 calendarios: cargarCalendarios, progreso: cargarProgreso,
+                recordatorios: cargarRecordatorios,
                 config: comprobarApi };
   if (fns[v]) {
     try { await fns[v](); } catch(e) { console.error(e); }

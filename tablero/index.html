@@ -717,6 +717,198 @@
     margin-right: 4px;
   }
 
+  /* ───── TOGGLE HOY/SEMANA/MES ───── */
+  .view-toggle {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 24px;
+    gap: 2px;
+  }
+  .vt-btn {
+    background: transparent;
+    border: none;
+    color: var(--charcoal);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 7px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: all .15s var(--ease);
+  }
+  .vt-btn:hover { background: var(--surface-2); color: var(--ink); }
+  .vt-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 600;
+  }
+  .vt-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .vt-btn-mini {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--charcoal);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+  .vt-btn-mini:hover { background: var(--surface-2); }
+
+  .vista-modo { display: none; animation: fadeUp .35s var(--ease-out); }
+  .vista-modo.activa { display: block; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ───── VISTA SEMANA ───── */
+  .semana-dia {
+    border-top: 1px solid var(--line);
+    padding: 14px 0;
+  }
+  .semana-dia:first-child { border-top: none; padding-top: 0; }
+  .semana-dia-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .semana-dia-num {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 350;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    min-width: 32px;
+  }
+  .semana-dia-num.es-hoy { color: var(--burnt); font-weight: 500; }
+  .semana-dia-nombre {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--charcoal);
+    font-size: 15px;
+    text-transform: lowercase;
+  }
+  .semana-dia-nombre::first-letter { text-transform: uppercase; }
+  .semana-dia-pasado .semana-dia-num,
+  .semana-dia-pasado .semana-dia-nombre { color: var(--mist); }
+  .semana-evento {
+    display: flex; gap: 10px;
+    padding: 4px 0;
+    font-size: 13px;
+    color: var(--charcoal);
+    align-items: baseline;
+  }
+  .semana-evento .h {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--stone);
+    min-width: 44px;
+    flex-shrink: 0;
+  }
+  .semana-evento .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+  .semana-libre {
+    color: var(--mist);
+    font-size: 12.5px;
+    font-style: italic;
+    font-family: var(--font-display);
+    margin-left: 42px;
+  }
+
+  /* ───── VISTA MES ───── */
+  .mes-grid-head {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .mes-grid-head span {
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--stone);
+    font-weight: 600;
+    padding: 6px 0;
+  }
+  .mes-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .mes-cell {
+    aspect-ratio: 1;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    transition: all .15s var(--ease);
+    min-height: 80px;
+  }
+  .mes-cell:hover {
+    background: var(--paper-deep);
+    border-color: var(--line-strong);
+    transform: translateY(-1px);
+  }
+  .mes-cell.otro-mes {
+    background: transparent;
+    opacity: .35;
+  }
+  .mes-cell.es-hoy {
+    background: var(--burnt-soft);
+    border-color: var(--burnt-line);
+  }
+  .mes-cell-num {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 14px;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .mes-cell.es-hoy .mes-cell-num { color: var(--burnt); font-weight: 600; }
+  .mes-cell-eventos {
+    font-size: 10.5px;
+    color: var(--stone);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+  }
+  .mes-cell-evento {
+    background: var(--surface);
+    border-left: 2px solid var(--indigo);
+    padding: 2px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 10px;
+  }
+  .mes-cell-mas {
+    color: var(--stone);
+    font-size: 10px;
+    font-style: italic;
+  }
+
   /* ───── EVENTOS DE HOY ───── */
   .evento-row {
     display: grid;
@@ -914,7 +1106,7 @@
       <div>
         <div class="greeting" id="greeting">Buenos días</div>
         <h1>Tu día <em id="today-day">hoy</em></h1>
-        <p id="hero-sub">Aquí está lo que la IA preparó para tu jornada. Puedes revisarlo, aprobarlo y dejarte llevar por el ritmo del día.</p>
+        <p id="hero-sub" data-mode="hoy">Aquí está lo que la IA preparó para tu jornada. Puedes revisarlo, aprobarlo y dejarte llevar por el ritmo del día.</p>
       </div>
       <div class="hero-status" id="status">
         <span class="status-dot"></span>
@@ -922,6 +1114,24 @@
       </div>
     </div>
 
+    <!-- TOGGLE Hoy / Semana / Mes -->
+    <div class="view-toggle" role="tablist">
+      <button class="vt-btn active" data-mode="hoy" onclick="cambiarVista('hoy')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>
+        Hoy
+      </button>
+      <button class="vt-btn" data-mode="semana" onclick="cambiarVista('semana')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Semana
+      </button>
+      <button class="vt-btn" data-mode="mes" onclick="cambiarVista('mes')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Mes
+      </button>
+    </div>
+
+    <!-- VISTA HOY (default) -->
+    <div id="vista-hoy" class="vista-modo activa">
     <div class="grid">
 
       <!-- COLUMNA IZQUIERDA: PLAN -->
@@ -987,6 +1197,45 @@
       </div>
 
     </div>
+    </div><!-- fin vista-hoy -->
+
+    <!-- VISTA SEMANA -->
+    <div id="vista-semana" class="vista-modo">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow">Semana actual</div>
+            <h2 id="semana-rango">—</h2>
+            <p id="semana-stats" style="color:var(--stone);font-size:13px;">cargando…</p>
+          </div>
+        </div>
+        <div id="semana-dias"></div>
+      </div>
+    </div>
+
+    <!-- VISTA MES -->
+    <div id="vista-mes" class="vista-modo">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow" id="mes-titulo-eyebrow">Mes</div>
+            <h2 id="mes-titulo">—</h2>
+            <p style="color:var(--stone);font-size:13px;">Click en cualquier día para ver el detalle.</p>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="vt-btn-mini" onclick="cambiarMes(-1)">‹</button>
+            <button class="vt-btn-mini" onclick="cambiarMes(0)">Hoy</button>
+            <button class="vt-btn-mini" onclick="cambiarMes(1)">›</button>
+          </div>
+        </div>
+        <div class="mes-grid-head">
+          <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span>
+          <span>Vie</span><span>Sáb</span><span>Dom</span>
+        </div>
+        <div id="mes-grid" class="mes-grid"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1269,7 +1518,166 @@ function pintarStatus(registro) {
   pintarClientes(listaClientes, (proyectosData || {}).proyectos || []);
   pintarStatus(registro);
   pintarEventosHoy();
+
+  /* exponer datos globalmente para vistas semana y mes */
+  window.__DATA__ = {
+    clientes: listaClientes,
+    proyectos: (proyectosData||{}).proyectos || []
+  };
 })();
+
+/* ───── TOGGLE Hoy/Semana/Mes ───── */
+const DIAS_LARGOS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES_LARGOS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+function cambiarVista(modo) {
+  document.querySelectorAll('.vt-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === modo));
+  document.querySelectorAll('.vista-modo').forEach(v => v.classList.remove('activa'));
+  document.getElementById('vista-' + modo).classList.add('activa');
+  if (modo === 'semana') pintarSemana();
+  if (modo === 'mes') pintarMes();
+}
+
+function isoLocal(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+async function pintarSemana() {
+  const hoyD = new Date();
+  const dow = hoyD.getDay();
+  const diff = dow === 0 ? -6 : 1 - dow;
+  const lunes = new Date(hoyD); lunes.setDate(hoyD.getDate() + diff);
+  const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+  const lunesIso = isoLocal(lunes);
+  const domingoIso = isoLocal(domingo);
+  const hoyIso = isoLocal(hoyD);
+
+  const eventos = await apiGet(`/calendarios/eventos_rango?desde=${lunesIso}&hasta=${domingoIso}`).catch(() => []);
+  const tdata = await apiGet('/tareas?estado=pendiente').catch(() => ({actividades:[]}));
+  const tareas = (tdata.actividades||[]).filter(t => t.deadline >= lunesIso && t.deadline <= domingoIso);
+
+  const rango = lunes.getMonth() === domingo.getMonth()
+    ? `${lunes.getDate()}–${domingo.getDate()} de ${MESES_LARGOS[lunes.getMonth()]}`
+    : `${lunes.getDate()} de ${MESES_LARGOS[lunes.getMonth()]} – ${domingo.getDate()} de ${MESES_LARGOS[domingo.getMonth()]}`;
+  document.getElementById('semana-rango').textContent = rango;
+  document.getElementById('semana-stats').textContent =
+    `${(eventos||[]).length} eventos · ${tareas.length} tareas con deadline esta semana`;
+
+  const porDia = {};
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(lunes); d.setDate(lunes.getDate() + i);
+    porDia[isoLocal(d)] = { eventos: [], tareas: [] };
+  }
+  (eventos||[]).forEach(e => {
+    if (e.title?.startsWith('⚠️')) return;
+    const dIso = e.start?.slice(0,10);
+    if (porDia[dIso]) porDia[dIso].eventos.push(e);
+  });
+  tareas.forEach(t => { if (porDia[t.deadline]) porDia[t.deadline].tareas.push(t); });
+
+  const clientesMap = {};
+  (window.__DATA__?.clientes || []).forEach(c => clientesMap[c.id] = c);
+
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(lunes); d.setDate(lunes.getDate() + i);
+    const dIso = isoLocal(d);
+    const info = porDia[dIso];
+    const esHoy = dIso === hoyIso;
+    const esPasado = dIso < hoyIso;
+
+    info.eventos.sort((a,b) => (a.start||'').localeCompare(b.start||''));
+
+    let cuerpo = '';
+    if (!info.eventos.length && !info.tareas.length) {
+      cuerpo = '<div class="semana-libre">Día libre</div>';
+    } else {
+      cuerpo = info.eventos.map(e => {
+        const hora = e.allDay ? 'todo' : (e.start ? e.start.slice(11,16) : '—');
+        return `<div class="semana-evento">
+          <span class="h">${hora}</span>
+          <span class="dot" style="background:${e.backgroundColor||'#4A4D7A'}"></span>
+          <span>${e.title}</span>
+        </div>`;
+      }).join('');
+      cuerpo += info.tareas.map(t => {
+        const emoji = {alta:'🔴',media:'🟡',baja:'⚪'}[t.prioridad] || '•';
+        const cliNom = clientesMap[t.cliente_id]?.nombre || '';
+        return `<div class="semana-evento">
+          <span class="h">${emoji}</span>
+          <span>${t.titulo}${cliNom ? ` <em style="color:var(--stone);font-style:italic;">· ${cliNom}</em>` : ''}</span>
+        </div>`;
+      }).join('');
+    }
+
+    html += `<div class="semana-dia ${esPasado ? 'semana-dia-pasado' : ''}">
+      <div class="semana-dia-head">
+        <span class="semana-dia-num ${esHoy ? 'es-hoy' : ''}">${d.getDate()}</span>
+        <span class="semana-dia-nombre">${DIAS_LARGOS[d.getDay()].toLowerCase()}${esHoy ? ' — hoy' : ''}</span>
+      </div>
+      ${cuerpo}
+    </div>`;
+  }
+  document.getElementById('semana-dias').innerHTML = html;
+}
+
+let _mesOffset = 0;
+function cambiarMes(delta) {
+  if (delta === 0) _mesOffset = 0;
+  else _mesOffset += delta;
+  pintarMes();
+}
+
+async function pintarMes() {
+  const hoyD = new Date();
+  const base = new Date(hoyD.getFullYear(), hoyD.getMonth() + _mesOffset, 1);
+  const año = base.getFullYear();
+  const mes = base.getMonth();
+  document.getElementById('mes-titulo').textContent = MESES_LARGOS[mes].charAt(0).toUpperCase() + MESES_LARGOS[mes].slice(1) + ' ' + año;
+
+  // primer día del grid: lunes que contiene el día 1 (o anterior)
+  const primero = new Date(año, mes, 1);
+  const dow = primero.getDay(); // 0=dom, 1=lun
+  const diasAntes = dow === 0 ? 6 : dow - 1;
+  const inicioGrid = new Date(año, mes, 1 - diasAntes);
+  // último día: hasta completar 6 semanas (42 días)
+  const finGrid = new Date(inicioGrid); finGrid.setDate(inicioGrid.getDate() + 41);
+
+  const desde = isoLocal(inicioGrid);
+  const hasta = isoLocal(finGrid);
+  const eventos = await apiGet(`/calendarios/eventos_rango?desde=${desde}&hasta=${hasta}`).catch(() => []);
+
+  const porDia = {};
+  (eventos||[]).forEach(e => {
+    if (e.title?.startsWith('⚠️')) return;
+    const dIso = e.start?.slice(0,10);
+    if (!porDia[dIso]) porDia[dIso] = [];
+    porDia[dIso].push(e);
+  });
+
+  const hoyIso = isoLocal(hoyD);
+  let html = '';
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(inicioGrid); d.setDate(inicioGrid.getDate() + i);
+    const dIso = isoLocal(d);
+    const esOtroMes = d.getMonth() !== mes;
+    const esHoy = dIso === hoyIso;
+    const evs = porDia[dIso] || [];
+    evs.sort((a,b) => (a.start||'').localeCompare(b.start||''));
+
+    let listaEvs = evs.slice(0, 3).map(e =>
+      `<div class="mes-cell-evento" style="border-left-color:${e.backgroundColor||'#4A4D7A'}" title="${e.title}">${e.title}</div>`
+    ).join('');
+    if (evs.length > 3) listaEvs += `<div class="mes-cell-mas">+${evs.length - 3}</div>`;
+
+    html += `<div class="mes-cell ${esOtroMes?'otro-mes':''} ${esHoy?'es-hoy':''}"
+                 onclick="window.location.href='/tablero/agenda.html'">
+      <div class="mes-cell-num">${d.getDate()}</div>
+      <div class="mes-cell-eventos">${listaEvs}</div>
+    </div>`;
+  }
+  document.getElementById('mes-grid').innerHTML = html;
+}
 </script>
 </body>
 </html>

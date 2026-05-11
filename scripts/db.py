@@ -121,6 +121,12 @@ def cargar(nombre_archivo: str) -> Dict:
         rows = query("SELECT clave, valor FROM configuracion")
         return {r["clave"]: r["valor"] for r in rows}
 
+    if nombre_archivo == "recordatorios.json":
+        rows = query("""SELECT id, titulo, mensaje, fecha_hora, repetir, cliente_id,
+                               enviado, enviado_at, activo, creado_at
+                        FROM recordatorios ORDER BY fecha_hora DESC""")
+        return {"recordatorios": [_row_to_dict(r) for r in rows]}
+
     return {}
 
 
@@ -184,6 +190,12 @@ def guardar(nombre_archivo: str, datos: Dict) -> None:
         for clave, valor in datos.items():
             execute("INSERT INTO configuracion (clave, valor) VALUES (%s,%s)",
                     (clave, Json(valor)))
+        return
+
+    if nombre_archivo == "recordatorios.json":
+        _sync_lista("recordatorios", datos.get("recordatorios", []),
+                    ["id","titulo","mensaje","fecha_hora","repetir","cliente_id",
+                     "enviado","enviado_at","activo"])
         return
 
 

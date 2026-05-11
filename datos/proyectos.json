@@ -1,24 +1,6 @@
 {
   "proyectos": [
     {
-      "id": "dropi_busqueda_productos",
-      "cliente_id": "dropi",
-      "nombre": "Búsqueda de productos ganadores",
-      "estado": "activo",
-      "prioridad": "alta",
-      "deadline": null,
-      "descripcion": "Cruzar Mercado Libre, Facebook Marketplace y Ad Library"
-    },
-    {
-      "id": "dropi_ads_campana_actual",
-      "cliente_id": "dropi",
-      "nombre": "Campaña de ads en curso",
-      "estado": "activo",
-      "prioridad": "alta",
-      "deadline": null,
-      "descripcion": "Gestión diaria de creativos, presupuesto y conversiones"
-    },
-    {
       "id": "personal_salud",
       "cliente_id": "personal",
       "nombre": "Salud y bienestar",
@@ -26,6 +8,15 @@
       "prioridad": "media",
       "deadline": null,
       "descripcion": "Ejercicio, alimentación, médico"
+    },
+    {
+      "id": "proy_20260510190623",
+      "cliente_id": "agentico",
+      "nombre": "Pagina Web",
+      "estado": "activo",
+      "prioridad": "alta",
+      "deadline": "2026-05-11",
+      "descripcion": "Se debe crear la página web, corregir y publicar."
     }
   ]
 }

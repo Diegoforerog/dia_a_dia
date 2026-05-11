@@ -1,10 +1,10 @@
 {
-  "empresas": [
+  "clientes": [
     {
-      "id": "dropi",
-      "nombre": "Dropshipping Dropi",
-      "color": "#FF6B35",
-      "descripcion": "Negocio principal: productos ganadores, ads y operación con Dropi",
+      "id": "agentico",
+      "nombre": "Agentico",
+      "color": "#2b00ff",
+      "descripcion": "Empresa de España",
       "activo": true
     },
     {

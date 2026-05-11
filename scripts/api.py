@@ -19,6 +19,7 @@ from comun import (
     cargar, guardar, cargar_registro_dia, guardar_registro_dia,
     nuevo_id, RAIZ, DATOS
 )
+import db as _db
 
 INTEGRACIONES = RAIZ / "integraciones"
 INTEGRACIONES.mkdir(exist_ok=True)
@@ -287,6 +288,107 @@ def delete_habito(hid):
     data["habitos"] = [h for h in data["habitos"] if h["id"] != hid]
     guardar("habitos.json", data)
     return jsonify({"ok": True})
+
+
+# ============ RECORDATORIOS ============
+
+@app.route("/api/recordatorios", methods=["GET"])
+@requiere_auth
+def get_recordatorios():
+    return jsonify(cargar("recordatorios.json"))
+
+
+@app.route("/api/recordatorios", methods=["POST"])
+@requiere_auth
+def post_recordatorio():
+    body = request.get_json()
+    data = cargar("recordatorios.json")
+    nuevo = {
+        "id": body.get("id") or nuevo_id("rec"),
+        "titulo": body["titulo"],
+        "mensaje": body.get("mensaje", ""),
+        "fecha_hora": body["fecha_hora"],
+        "repetir": body.get("repetir", "no"),
+        "cliente_id": body.get("cliente_id"),
+        "enviado": False,
+        "enviado_at": None,
+        "activo": True
+    }
+    data["recordatorios"].append(nuevo)
+    guardar("recordatorios.json", data)
+    return jsonify(nuevo), 201
+
+
+@app.route("/api/recordatorios/<rid>", methods=["PUT"])
+@requiere_auth
+def put_recordatorio(rid):
+    body = request.get_json()
+    data = cargar("recordatorios.json")
+    for r in data["recordatorios"]:
+        if r["id"] == rid:
+            r.update({k: v for k, v in body.items() if k != "id"})
+            guardar("recordatorios.json", data)
+            return jsonify(r)
+    return jsonify({"error": "Recordatorio no encontrado"}), 404
+
+
+@app.route("/api/recordatorios/<rid>", methods=["DELETE"])
+@requiere_auth
+def delete_recordatorio(rid):
+    data = cargar("recordatorios.json")
+    data["recordatorios"] = [r for r in data["recordatorios"] if r["id"] != rid]
+    guardar("recordatorios.json", data)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/recordatorios/disparar", methods=["POST", "GET"])
+@requiere_auth
+def disparar_recordatorios():
+    """Devuelve recordatorios que YA pasaron pero no se han enviado.
+    Marca los devueltos como enviados. Genera próxima ocurrencia si repite."""
+    from datetime import timedelta
+    if not _db.db_disponible():
+        return jsonify({"recordatorios": [], "error": "DB no disponible"}), 500
+
+    ahora = datetime.now()
+    pendientes = _db.query("""
+        SELECT id, titulo, mensaje, fecha_hora, repetir, cliente_id
+        FROM recordatorios
+        WHERE NOT enviado AND activo AND fecha_hora <= %s
+        ORDER BY fecha_hora ASC
+        LIMIT 20
+    """, (ahora,))
+
+    salida = []
+    for r in pendientes:
+        salida.append({
+            "id": r["id"], "titulo": r["titulo"], "mensaje": r["mensaje"],
+            "fecha_hora": r["fecha_hora"].isoformat() if hasattr(r["fecha_hora"],'isoformat') else str(r["fecha_hora"]),
+            "repetir": r["repetir"], "cliente_id": r["cliente_id"]
+        })
+        # marcar enviado
+        _db.execute("UPDATE recordatorios SET enviado=TRUE, enviado_at=%s WHERE id=%s",
+                    (ahora, r["id"]))
+        # si repite, crear el siguiente
+        if r["repetir"] != "no":
+            base = r["fecha_hora"]
+            if hasattr(base, "isoformat"):
+                pass
+            else:
+                base = datetime.fromisoformat(str(base))
+            delta = {
+                "diario":   timedelta(days=1),
+                "semanal":  timedelta(weeks=1),
+                "mensual":  timedelta(days=30),  # aproximado
+                "anual":    timedelta(days=365)
+            }.get(r["repetir"])
+            if delta:
+                nuevo_dt = base + delta
+                _db.execute("""
+                    INSERT INTO recordatorios (id, titulo, mensaje, fecha_hora, repetir, cliente_id, enviado, activo)
+                    VALUES (%s,%s,%s,%s,%s,%s,FALSE,TRUE)
+                """, (nuevo_id("rec"), r["titulo"], r["mensaje"], nuevo_dt, r["repetir"], r["cliente_id"]))
+    return jsonify({"recordatorios": salida, "total": len(salida)})
 
 
 # ============ MÉTRICAS / PROGRESO ============
