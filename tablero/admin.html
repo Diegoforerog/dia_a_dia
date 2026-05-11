@@ -767,6 +767,49 @@
   .skip { position: absolute; left: -9999px; }
   .skip:focus { left: 16px; top: 16px; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 6px; z-index: 999; }
 
+  /* ───── HORARIO LABORAL EDITOR ───── */
+  .hl-row {
+    display: grid;
+    grid-template-columns: 110px 80px 1fr 1fr;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .hl-row:last-child { border-bottom: none; }
+  .hl-nombre {
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 14px;
+  }
+  .hl-row.inactivo .hl-nombre { color: var(--mist); }
+  .hl-row.inactivo input[type=time] { opacity: .4; pointer-events: none; }
+  .hl-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--charcoal);
+    user-select: none;
+  }
+  .hl-toggle input { width: 16px; height: 16px; accent-color: var(--burnt); cursor: pointer; }
+  .hl-row input[type=time] {
+    padding: 6px 10px;
+    font-size: 13px;
+    width: 100%;
+  }
+  .hl-sep {
+    text-align: center;
+    color: var(--stone);
+    font-size: 12px;
+    margin: -8px 0;
+  }
+  @media (max-width: 600px) {
+    .hl-row { grid-template-columns: 1fr 70px; row-gap: 6px; }
+    .hl-row input[type=time] { grid-column: 1 / -1; }
+  }
+
   /* ───── DÍAS PICKER ───── */
   .dias-grid {
     display: grid;
@@ -2267,6 +2310,21 @@
       <div class="card">
         <div class="card-head">
           <div>
+            <div class="card-eyebrow">Horario laboral</div>
+            <h2>Tus horas de trabajo por día</h2>
+            <p>El comando <code>/libre</code> y el cálculo de huecos en tu agenda usan estos horarios. Días no marcados se consideran no laborales.</p>
+          </div>
+        </div>
+        <div id="horario-laboral-edit"></div>
+        <div class="form-actions" style="margin-top:16px;">
+          <button class="primary" onclick="guardarHorarioLaboral()">Guardar horario</button>
+          <button class="ghost" onclick="restablecerHorarioDefault()">Restablecer 8–18 Lun-Vie</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
             <div class="card-eyebrow">Sistema</div>
             <h2>Estado actual</h2>
           </div>
@@ -2769,6 +2827,66 @@ function guardarToken() {
   comprobarApi();
 }
 
+async function cargarHorarioLaboral() {
+  const cont = document.getElementById('horario-laboral-edit');
+  if (!cont) return;
+  let hl = {};
+  try { hl = await api('/horario-laboral'); } catch(e) {}
+  const dias = [['1','Lunes'],['2','Martes'],['3','Miércoles'],['4','Jueves'],['5','Viernes'],['6','Sábado'],['7','Domingo']];
+  cont.innerHTML = dias.map(([k, nombre]) => {
+    const d = hl[k] || {activo:false, inicio:'08:00', fin:'18:00'};
+    return `
+      <div class="hl-row ${d.activo?'':'inactivo'}" id="hl-row-${k}">
+        <div class="hl-nombre">${nombre}</div>
+        <label class="hl-toggle">
+          <input type="checkbox" data-dia="${k}" ${d.activo?'checked':''} onchange="toggleHorarioDia('${k}', this.checked)">
+          <span>Laboral</span>
+        </label>
+        <input type="time" data-dia="${k}" data-campo="inicio" value="${d.inicio}">
+        <input type="time" data-dia="${k}" data-campo="fin" value="${d.fin}">
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleHorarioDia(k, activo) {
+  const row = document.getElementById(`hl-row-${k}`);
+  if (row) row.classList.toggle('inactivo', !activo);
+}
+
+async function guardarHorarioLaboral() {
+  const dias = ['1','2','3','4','5','6','7'];
+  const out = {};
+  dias.forEach(k => {
+    const chk = document.querySelector(`input[type=checkbox][data-dia="${k}"]`);
+    const ini = document.querySelector(`input[type=time][data-dia="${k}"][data-campo="inicio"]`);
+    const fin = document.querySelector(`input[type=time][data-dia="${k}"][data-campo="fin"]`);
+    out[k] = {
+      activo: chk ? chk.checked : false,
+      inicio: ini ? ini.value : '08:00',
+      fin:    fin ? fin.value : '18:00'
+    };
+  });
+  await api('/horario-laboral', { method: 'PUT', body: JSON.stringify(out) });
+  toast('✓ Horario laboral guardado');
+}
+
+async function restablecerHorarioDefault() {
+  if (!confirm('¿Restablecer al horario por defecto (Lun-Vie 8-18, Sáb-Dom inactivos)?')) return;
+  const out = {
+    "1": {activo:true,  inicio:"08:00", fin:"18:00"},
+    "2": {activo:true,  inicio:"08:00", fin:"18:00"},
+    "3": {activo:true,  inicio:"08:00", fin:"18:00"},
+    "4": {activo:true,  inicio:"08:00", fin:"18:00"},
+    "5": {activo:true,  inicio:"08:00", fin:"18:00"},
+    "6": {activo:false, inicio:"09:00", fin:"13:00"},
+    "7": {activo:false, inicio:"00:00", fin:"00:00"}
+  };
+  await api('/horario-laboral', { method: 'PUT', body: JSON.stringify(out) });
+  toast('✓ Restablecido');
+  cargarHorarioLaboral();
+}
+
 async function comprobarApi() {
   try {
     const r = await fetch(API + '/health');
@@ -2779,6 +2897,7 @@ async function comprobarApi() {
     document.getElementById('estado-api').innerHTML =
       `<div class="status-line"><span class="status-dot off"></span><strong style="color:var(--crimson)">API no responde</strong></div><div style="color:var(--stone);font-size:12.5px;margin-top:8px">Ejecuta en terminal: <code style="font-family:var(--font-mono);background:var(--surface-2);padding:2px 6px;border-radius:4px">python3 scripts/api.py</code></div>`;
   }
+  cargarHorarioLaboral();
 }
 
 /* ───── PROGRESO ───── */

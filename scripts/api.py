@@ -460,6 +460,55 @@ def del_sesion(chat_id):
     return jsonify({"ok": True})
 
 
+# ============ HORARIO LABORAL POR DÍA ============
+
+HORARIO_DEFAULT = {
+    "1": {"activo": True,  "inicio": "08:00", "fin": "18:00"},  # Lun
+    "2": {"activo": True,  "inicio": "08:00", "fin": "18:00"},  # Mar
+    "3": {"activo": True,  "inicio": "08:00", "fin": "18:00"},  # Mié
+    "4": {"activo": True,  "inicio": "08:00", "fin": "18:00"},  # Jue
+    "5": {"activo": True,  "inicio": "08:00", "fin": "18:00"},  # Vie
+    "6": {"activo": False, "inicio": "09:00", "fin": "13:00"},  # Sáb
+    "7": {"activo": False, "inicio": "00:00", "fin": "00:00"}   # Dom
+}
+
+
+def _cargar_horario_laboral():
+    config = cargar("config.json")
+    hl = config.get("horario_laboral") if isinstance(config, dict) else None
+    if not isinstance(hl, dict) or not hl:
+        return dict(HORARIO_DEFAULT)
+    # Asegurar las 7 claves
+    out = dict(HORARIO_DEFAULT)
+    for k in ["1","2","3","4","5","6","7"]:
+        if k in hl and isinstance(hl[k], dict):
+            out[k] = {
+                "activo": bool(hl[k].get("activo", False)),
+                "inicio": hl[k].get("inicio", out[k]["inicio"]),
+                "fin":    hl[k].get("fin",    out[k]["fin"])
+            }
+    return out
+
+
+@app.route("/api/horario-laboral", methods=["GET"])
+@requiere_auth
+def get_horario_laboral():
+    return jsonify(_cargar_horario_laboral())
+
+
+@app.route("/api/horario-laboral", methods=["PUT"])
+@requiere_auth
+def put_horario_laboral():
+    body = request.get_json() or {}
+    # Validación mínima
+    if not isinstance(body, dict):
+        return jsonify({"error": "body debe ser dict {1..7: {...}}"}), 400
+    config = cargar("config.json")
+    config["horario_laboral"] = body
+    guardar("config.json", config)
+    return jsonify({"ok": True, "horario_laboral": _cargar_horario_laboral()})
+
+
 # ============ ESPACIOS LIBRES EN LA AGENDA ============
 
 @app.route("/api/agenda/libres", methods=["GET"])
@@ -482,17 +531,29 @@ def agenda_libres():
 
     min_gap = int(request.args.get("min_gap_min", 15))
 
-    # Ventana de trabajo desde config
-    config = cargar("config.json")
-    horarios = config.get("horarios", {}) if isinstance(config, dict) else {}
-    inicio_dia = horarios.get("inicio_dia", "07:00")
-    fin_dia = horarios.get("fin_dia", "21:00")
+    # Horario laboral según el día de la semana (ISO: 1=Lun..7=Dom)
+    iso_dow = str(fecha.isoweekday())
+    horario_lab = _cargar_horario_laboral()
+    hoy_lab = horario_lab.get(iso_dow, HORARIO_DEFAULT[iso_dow])
 
+    if not hoy_lab.get("activo"):
+        return jsonify({
+            "fecha": fecha_str,
+            "no_laboral": True,
+            "mensaje": "Día no laboral según tu configuración",
+            "espacios_libres": [],
+            "eventos": [],
+            "total_libre_min": 0,
+            "total_ocupado_min": 0
+        })
+
+    inicio_dia = hoy_lab.get("inicio", "08:00")
+    fin_dia = hoy_lab.get("fin", "18:00")
     try:
         ih, im = map(int, inicio_dia.split(":"))
         fh, fm = map(int, fin_dia.split(":"))
     except Exception:
-        ih, im, fh, fm = 7, 0, 21, 0
+        ih, im, fh, fm = 8, 0, 18, 0
 
     # TZ Colombia
     from datetime import timezone
