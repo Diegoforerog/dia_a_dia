@@ -223,6 +223,24 @@ def sincronizar_eventos_calendario():
         # Quita sufijos @google.com / @resource.calendar.google.com para que matche
         return u.split("@")[0]
 
+    # PROTECCIÓN 1: limpiar TODOS los avisos ev_* antes de reprogramar.
+    # Si un evento fue movido/cancelado, su job viejo se borra acá y NO se reprograma
+    # (porque ya no aparece en events.list para las próximas 24h).
+    try:
+        s = get_scheduler()
+        borrados = 0
+        for j in s.get_jobs():
+            if j.id.startswith("ev_"):
+                try:
+                    s.remove_job(j.id)
+                    borrados += 1
+                except Exception:
+                    pass
+        if borrados:
+            print(f"🧹 Sync: borrados {borrados} avisos viejos antes de reprogramar")
+    except Exception as e:
+        print(f"⚠️  No se pudieron limpiar jobs viejos: {e}")
+
     # ─── Calendarios OAuth (Google API) ───
     if cals_oauth:
         try:
@@ -362,10 +380,74 @@ def sincronizar_eventos_calendario():
         print(f"📅 Sync iCal: programados {nuevos} avisos")
 
 
+def _evento_sigue_vigente(payload: dict, inicio: datetime) -> bool:
+    """Verifica con Google API que el evento aún existe a esa hora.
+    Devuelve True si sigue vigente o si NO se puede verificar (failsafe = avisa).
+    Devuelve False sólo cuando Google confirma que el evento ya no está ahí."""
+    uid = payload.get("uid", "").strip()
+    if not uid:
+        return True  # sin uid, no podemos verificar — mejor avisar
+    try:
+        from pathlib import Path as _Path
+        token_path = _Path(__file__).resolve().parent.parent / "integraciones" / "token.json"
+        if not token_path.exists():
+            return True
+        from google.oauth2.credentials import Credentials
+        from google.auth.transport.requests import Request as GRequest
+        from googleapiclient.discovery import build
+        SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+        creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+        if creds.expired and creds.refresh_token:
+            creds.refresh(GRequest())
+            token_path.write_text(creds.to_json())
+        servicio = build("calendar", "v3", credentials=creds)
+        from comun import cargar
+        cals = [c for c in cargar("calendarios.json").get("calendarios_gmail", [])
+                if c.get("activo") and not c.get("ical_url")]
+        t_min = (inicio - timedelta(minutes=2)).isoformat()
+        t_max = (inicio + timedelta(minutes=2)).isoformat()
+        # Probar las 2 formas del iCalUID porque Google las maneja distinto
+        candidatos = [uid]
+        if "@" not in uid:
+            candidatos.append(uid + "@google.com")
+        for cal in cals:
+            for c_uid in candidatos:
+                try:
+                    r = servicio.events().list(
+                        calendarId=cal["email"],
+                        iCalUID=c_uid,
+                        timeMin=t_min,
+                        timeMax=t_max,
+                        singleEvents=True
+                    ).execute()
+                    for ev in r.get("items", []):
+                        ev_start = ev.get("start", {}).get("dateTime", "")
+                        if not ev_start:
+                            continue
+                        try:
+                            ev_start_dt = datetime.fromisoformat(ev_start.replace("Z", "+00:00"))
+                        except Exception:
+                            continue
+                        # Si el start coincide en menos de 60 seg → es el mismo
+                        if abs((ev_start_dt - inicio).total_seconds()) < 60:
+                            return True
+                except Exception:
+                    continue
+        # No se encontró el evento a esa hora en ningún calendario
+        return False
+    except Exception as e:
+        print(f"⚠️  No se pudo verificar vigencia del evento: {e}")
+        return True  # failsafe: ante duda, enviar
+
+
 def avisar_evento(payload: dict):
     """Dispara 10 min antes de un evento. Envía Telegram y marca como avisado."""
     inicio = datetime.fromisoformat(payload["inicio_iso"])
     ahora = datetime.now(TZ)
+    # PROTECCIÓN 2: verificar que el evento aún existe en Google antes de avisar
+    if not _evento_sigue_vigente(payload, inicio):
+        print(f"⏭️  Evento '{payload.get('titulo')}' movido/cancelado — no envío aviso")
+        return
     min_restantes = max(0, int((inicio - ahora).total_seconds() / 60))
 
     hora_ini = inicio.astimezone(TZ).strftime("%H:%M")
