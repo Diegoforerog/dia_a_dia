@@ -70,8 +70,8 @@
   }
   .sidebar .date-day-num { color: #FFFFFF; }
   .sidebar .date-weekday { color: #60A5FA; }
-  .sidebar .date-month { color: #CBD5E1; }
-  .sidebar .date-year { color: var(--sb-muted); }
+  .sidebar .date-month { color: #E2E8F0; }
+  .sidebar .date-year { color: #94A3B8; font-size: 12px; font-weight: 500; }
   .sidebar .cals-title { color: var(--sb-muted); }
   .sidebar .sidebar-cals {
     background: rgba(255,255,255,.05);
@@ -133,21 +133,20 @@
   .date-card {
     border: 1px solid var(--line);
     border-radius: 14px;
-    padding: 16px;
+    padding: 18px 16px;
     background: var(--surface);
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 14px;
     align-items: center;
     position: relative;
-    overflow: hidden;
   }
-  .date-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--burnt); }
+  .date-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--burnt); border-radius: 14px 14px 0 0; }
   .date-day-num { font-family: var(--font-display); font-weight: 300; font-size: 44px; line-height: 1; color: var(--ink); font-variation-settings: "opsz" 144; }
-  .date-meta { display: flex; flex-direction: column; gap: 2px; }
-  .date-weekday { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--burnt); font-weight: 600; }
-  .date-month { font-family: var(--font-display); font-style: italic; font-size: 16px; color: var(--charcoal); text-transform: lowercase; }
-  .date-year { font-size: 11px; color: var(--mist); font-variant-numeric: tabular-nums; }
+  .date-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .date-weekday { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--burnt); font-weight: 600; line-height: 1.2; }
+  .date-month { font-family: var(--font-display); font-style: italic; font-size: 15px; color: var(--charcoal); text-transform: lowercase; line-height: 1.15; }
+  .date-year { font-size: 11px; color: var(--mist); font-variant-numeric: tabular-nums; line-height: 1.2; }
 
   .nav-section { display: flex; flex-direction: column; gap: 2px; }
   .nav-label { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--mist); padding: 0 10px 8px; font-weight: 600; }

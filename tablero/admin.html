@@ -131,14 +131,13 @@
   .date-card {
     border: 1px solid rgba(255, 255, 255, .12);
     border-radius: 14px;
-    padding: 14px 16px;
+    padding: 18px 16px;
     background: rgba(255, 255, 255, .06);
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 14px;
     align-items: center;
     position: relative;
-    overflow: hidden;
     backdrop-filter: blur(6px);
   }
   .date-card::before {
@@ -147,6 +146,7 @@
     top: 0; left: 0; right: 0;
     height: 3px;
     background: var(--burnt);
+    border-radius: 14px 14px 0 0;
   }
   .date-day-num {
     font-family: var(--font-display);
@@ -160,26 +160,31 @@
   .date-meta {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
+    min-width: 0;
   }
   .date-weekday {
     font-size: 11px;
     letter-spacing: .16em;
     text-transform: uppercase;
-    color: var(--burnt);
+    color: #60A5FA;
     font-weight: 600;
+    line-height: 1.2;
   }
   .date-month {
     font-family: var(--font-display);
     font-weight: 500;
     font-size: 14px;
-    color: var(--charcoal);
+    color: #E2E8F0;
     text-transform: capitalize;
+    line-height: 1.15;
   }
   .date-year {
-    font-size: 11px;
-    color: var(--mist);
+    font-size: 12px;
+    color: #94A3B8;
     font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    line-height: 1.2;
   }
 
   /* nav */
