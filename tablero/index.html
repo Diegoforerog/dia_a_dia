@@ -1002,6 +1002,143 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+  /* ───── RESUMEN IA (semana / mes) ───── */
+  .ai-resumen {
+    background: linear-gradient(135deg, var(--burnt-soft), var(--surface));
+    border: 1px solid var(--burnt-line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+  .ai-tema {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -.01em;
+    line-height: 1.2;
+    margin-bottom: 14px;
+  }
+  .ai-block { margin-top: 16px; }
+  .ai-block-title {
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--burnt);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .ai-block ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .ai-block ul li {
+    padding-left: 18px;
+    position: relative;
+    color: var(--charcoal);
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  .ai-block ul li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--burnt);
+    font-weight: 700;
+  }
+  .ai-dia {
+    padding: 12px 14px;
+    background: rgba(255,255,255,.5);
+    border: 1px solid var(--line-soft);
+    border-radius: 10px;
+    margin-bottom: 8px;
+  }
+  .ai-dia-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 14px;
+  }
+  .ai-dia-fecha { font-family: var(--font-mono); font-size: 11.5px; color: var(--stone); }
+  .ai-dia-foco {
+    font-style: italic;
+    color: var(--ink);
+    font-size: 13px;
+    margin: 6px 0;
+    line-height: 1.4;
+  }
+  .ai-dia-obj {
+    list-style: none;
+    padding: 0;
+    margin: 6px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .ai-dia-obj li {
+    font-size: 12.5px;
+    color: var(--charcoal);
+    padding-left: 14px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .ai-dia-obj li::before {
+    content: "•";
+    position: absolute;
+    left: 4px;
+    color: var(--burnt);
+  }
+  .ai-alerta {
+    margin-top: 6px;
+    padding: 5px 10px;
+    background: var(--amber-soft);
+    border-left: 3px solid var(--amber);
+    border-radius: 0 6px 6px 0;
+    font-size: 12px;
+    color: color-mix(in srgb, var(--amber) 70%, var(--ink));
+  }
+  .ai-frase {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--burnt-line);
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--burnt);
+    text-align: center;
+  }
+  .ai-met-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .ai-met-grid > div {
+    background: rgba(255,255,255,.6);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+  }
+  .ai-met-grid strong {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .ai-met-grid span {
+    font-size: 11px;
+    color: var(--stone);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
   /* ───── VISTA SEMANA ───── */
   .semana-dia {
     border-top: 1px solid var(--line);
@@ -1381,7 +1518,7 @@
         </div>
         <div class="kpi-num"><span id="kpi-plan-num">—</span> <small id="kpi-plan-unit">bloques</small></div>
         <div class="kpi-foot" id="kpi-plan-foot">Sin generar todavía</div>
-        <div class="kpi-action" id="kpi-plan-action" style="display:none;">
+        <div class="kpi-action" id="kpi-plan-action">
           <div class="kpi-fecha-row">
             <input type="date" id="kpi-plan-fecha" class="kpi-fecha-input" onclick="event.stopPropagation()">
             <button class="kpi-btn" onclick="generarPlanAhora(event)">
@@ -1515,7 +1652,12 @@
             <h2 id="semana-rango">—</h2>
             <p id="semana-stats" style="color:var(--stone);font-size:13px;">cargando…</p>
           </div>
+          <button class="kpi-btn" style="background:var(--burnt);border-color:var(--burnt);" onclick="generarPlanSemana(event)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v9h-9"/></svg>
+            <span id="btn-gen-semana">✨ Resumen IA semanal</span>
+          </button>
         </div>
+        <div id="resumen-semana-ia"></div>
         <div id="semana-dias"></div>
       </div>
     </div>
@@ -1527,14 +1669,19 @@
           <div>
             <div class="card-eyebrow" id="mes-titulo-eyebrow">Mes</div>
             <h2 id="mes-titulo">—</h2>
-            <p style="color:var(--stone);font-size:13px;">Click en cualquier día para ver el detalle.</p>
+            <p style="color:var(--stone);font-size:13px;">Click en cualquier día para ver el detalle. IA arriba a la derecha →</p>
           </div>
-          <div style="display:flex;gap:6px;">
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
             <button class="vt-btn-mini" onclick="cambiarMes(-1)">‹</button>
             <button class="vt-btn-mini" onclick="cambiarMes(0)">Hoy</button>
             <button class="vt-btn-mini" onclick="cambiarMes(1)">›</button>
+            <button class="kpi-btn" style="background:var(--burnt);border-color:var(--burnt);" onclick="generarPlanMes(event)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v9h-9"/></svg>
+              <span id="btn-gen-mes">✨ Visión IA del mes</span>
+            </button>
           </div>
         </div>
+        <div id="resumen-mes-ia"></div>
         <div class="mes-grid-head">
           <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span>
           <span>Vie</span><span>Sáb</span><span>Dom</span>
@@ -1895,15 +2042,17 @@ function pintarKPIs(registro, proyectos) {
   if (plan && plan.bloques && plan.bloques.length) {
     kpiNum.textContent = plan.bloques.length;
     kpiUnit.textContent = 'bloques';
-    if (registro.aprobado) kpiFoot.textContent = '✓ Plan aprobado · click para ver';
-    else kpiFoot.textContent = 'Pendiente de aprobar · click para ver';
-    if (kpiAction) kpiAction.style.display = 'none';
+    if (registro.aprobado) kpiFoot.textContent = '✓ Plan aprobado · regenera abajo si quieres';
+    else kpiFoot.textContent = 'Sin aprobar · regenera abajo si quieres';
+    document.getElementById('kpi-plan-btn-text').textContent = '🔄 Regenerar';
   } else {
     kpiNum.textContent = '0';
     kpiUnit.textContent = '';
-    kpiFoot.textContent = 'Aún no se ha generado';
-    if (kpiAction) kpiAction.style.display = 'block';
+    kpiFoot.textContent = 'Elige un día y dale a Generar';
+    document.getElementById('kpi-plan-btn-text').textContent = '✨ Generar';
   }
+  // El picker SIEMPRE visible
+  if (kpiAction) kpiAction.style.display = 'block';
 
   // KPI tareas: pedir por API y actualizar
   (async () => {
@@ -2072,6 +2221,144 @@ async function pintarSemana() {
     </div>`;
   }
   document.getElementById('semana-dias').innerHTML = html;
+}
+
+/* ───── PLAN IA SEMANA ───── */
+async function generarPlanSemana(e) {
+  e.preventDefault();
+  const btn = e.currentTarget;
+  const txt = document.getElementById('btn-gen-semana');
+  const original = txt.textContent;
+  btn.disabled = true;
+  btn.querySelector('svg').classList.add('spinning');
+  txt.textContent = 'Pensando…';
+
+  const hoyD = new Date();
+  const dow = hoyD.getDay();
+  const diff = dow === 0 ? -6 : 1 - dow;
+  const lunes = new Date(hoyD); lunes.setDate(hoyD.getDate() + diff);
+  const inicio = isoLocal(lunes);
+
+  try {
+    const token = await getToken();
+    const r = await fetch(API_BASE + '/plan/semana', {
+      method: 'POST',
+      headers: { 'X-API-Token': token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inicio })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    pintarResumenSemana(d.plan);
+    txt.textContent = '✓ Generado';
+    setTimeout(() => { txt.textContent = '🔄 Regenerar IA'; btn.disabled = false; btn.querySelector('svg').classList.remove('spinning'); }, 2000);
+  } catch (err) {
+    txt.textContent = '❌ ' + (err.message||'?').slice(0,40);
+    btn.disabled = false;
+    btn.querySelector('svg').classList.remove('spinning');
+    setTimeout(() => { txt.textContent = original; }, 4000);
+  }
+}
+
+function pintarResumenSemana(plan) {
+  if (!plan) return;
+  const cont = document.getElementById('resumen-semana-ia');
+  let h = `<div class="ai-resumen">`;
+  if (plan.tema_semana) h += `<div class="ai-tema">🎯 ${plan.tema_semana}</div>`;
+  if (plan.big_rocks && plan.big_rocks.length) {
+    h += `<div class="ai-block"><div class="ai-block-title">🪨 BIG ROCKS — críticos esta semana</div><ul>`;
+    plan.big_rocks.forEach(b => h += `<li>${b}</li>`);
+    h += `</ul></div>`;
+  }
+  if (plan.dias && plan.dias.length) {
+    h += `<div class="ai-block"><div class="ai-block-title">📅 FOCO POR DÍA</div>`;
+    plan.dias.forEach(d => {
+      const nombreDia = (d.dia || '').charAt(0).toUpperCase() + (d.dia || '').slice(1);
+      h += `<div class="ai-dia">
+        <div class="ai-dia-head"><strong>${nombreDia}</strong> <span class="ai-dia-fecha">${d.fecha}</span></div>
+        ${d.foco ? `<div class="ai-dia-foco">→ ${d.foco}</div>` : ''}
+        ${d.objetivos && d.objetivos.length ? `<ul class="ai-dia-obj">${d.objetivos.map(o => `<li>${o}</li>`).join('')}</ul>` : ''}
+        ${d.alerta ? `<div class="ai-alerta">⚠️ ${d.alerta}</div>` : ''}
+      </div>`;
+    });
+    h += `</div>`;
+  }
+  if (plan.recomendaciones && plan.recomendaciones.length) {
+    h += `<div class="ai-block"><div class="ai-block-title">💡 RECOMENDACIONES</div><ul>`;
+    plan.recomendaciones.forEach(r => h += `<li>${r}</li>`);
+    h += `</ul></div>`;
+  }
+  if (plan.frase_motivadora) h += `<div class="ai-frase">✦ ${plan.frase_motivadora}</div>`;
+  h += `</div>`;
+  cont.innerHTML = h;
+}
+
+/* ───── PLAN IA MES ───── */
+async function generarPlanMes(e) {
+  e.preventDefault();
+  const btn = e.currentTarget;
+  const txt = document.getElementById('btn-gen-mes');
+  const original = txt.textContent;
+  btn.disabled = true;
+  btn.querySelector('svg').classList.add('spinning');
+  txt.textContent = 'Pensando…';
+  const ref = new Date();
+  ref.setMonth(ref.getMonth() + _mesOffset);
+  try {
+    const token = await getToken();
+    const r = await fetch(API_BASE + '/plan/mes', {
+      method: 'POST',
+      headers: { 'X-API-Token': token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ año: ref.getFullYear(), mes: ref.getMonth() + 1 })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    pintarResumenMes(d.plan);
+    txt.textContent = '✓ Generado';
+    setTimeout(() => { txt.textContent = '🔄 Regenerar'; btn.disabled = false; btn.querySelector('svg').classList.remove('spinning'); }, 2000);
+  } catch(err) {
+    txt.textContent = '❌ ' + (err.message||'?').slice(0,40);
+    btn.disabled = false;
+    btn.querySelector('svg').classList.remove('spinning');
+    setTimeout(() => { txt.textContent = original; }, 4000);
+  }
+}
+
+function pintarResumenMes(plan) {
+  if (!plan) return;
+  const cont = document.getElementById('resumen-mes-ia');
+  let h = `<div class="ai-resumen">`;
+  if (plan.tema_mes) h += `<div class="ai-tema">🎯 ${plan.tema_mes}</div>`;
+  if (plan.metricas) {
+    h += `<div class="ai-block"><div class="ai-block-title">📊 MÉTRICAS</div><div class="ai-met-grid">`;
+    if (plan.metricas.eventos_totales !== undefined) h += `<div><strong>${plan.metricas.eventos_totales}</strong><span>eventos</span></div>`;
+    if (plan.metricas.tareas_con_deadline_este_mes !== undefined) h += `<div><strong>${plan.metricas.tareas_con_deadline_este_mes}</strong><span>tareas con DL</span></div>`;
+    if (plan.metricas.proyectos_activos !== undefined) h += `<div><strong>${plan.metricas.proyectos_activos}</strong><span>proyectos</span></div>`;
+    h += `</div></div>`;
+  }
+  if (plan.semanas && plan.semanas.length) {
+    h += `<div class="ai-block"><div class="ai-block-title">📅 TEMA POR SEMANA</div>`;
+    plan.semanas.forEach(s => {
+      h += `<div class="ai-dia">
+        <div class="ai-dia-head"><strong>${s.etiqueta || ''}</strong> <span class="ai-dia-fecha">${s.inicio} – ${s.fin}</span></div>
+        ${s.tema ? `<div class="ai-dia-foco">→ ${s.tema}</div>` : ''}
+        ${s.objetivos && s.objetivos.length ? `<ul class="ai-dia-obj">${s.objetivos.map(o => `<li>${o}</li>`).join('')}</ul>` : ''}
+      </div>`;
+    });
+    h += `</div>`;
+  }
+  if (plan.advertencias && plan.advertencias.length) {
+    h += `<div class="ai-block"><div class="ai-block-title" style="color:var(--crimson)">⚠️ ATENCIÓN</div><ul>`;
+    plan.advertencias.forEach(a => h += `<li>${a}</li>`);
+    h += `</ul></div>`;
+  }
+  if (plan.recomendaciones && plan.recomendaciones.length) {
+    h += `<div class="ai-block"><div class="ai-block-title">💡 RECOMENDACIONES</div><ul>`;
+    plan.recomendaciones.forEach(r => h += `<li>${r}</li>`);
+    h += `</ul></div>`;
+  }
+  if (plan.frase_cierre) h += `<div class="ai-frase">✦ ${plan.frase_cierre}</div>`;
+  h += `</div>`;
+  cont.innerHTML = h;
 }
 
 let _mesOffset = 0;

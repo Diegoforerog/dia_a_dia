@@ -1627,6 +1627,187 @@ def get_plan_hoy():
     return jsonify(registro)
 
 
+@app.route("/api/plan/semana", methods=["POST"])
+@requiere_auth
+def generar_plan_semana():
+    """IA organiza la semana del lunes al domingo con tema por día.
+
+    Body: { "inicio": "YYYY-MM-DD" (lunes opcional, default lunes de hoy) }"""
+    from datetime import timedelta
+    try:
+        from plan_manana import _leer_eventos_dia, _horario_laboral, _horario_sueno, _filtrar_habitos_dia, DIAS_ES
+        from openai import OpenAI
+    except ImportError as e:
+        return jsonify({"error": f"Falta módulo: {e}"}), 500
+
+    if not os.getenv("OPENAI_API_KEY"):
+        return jsonify({"error": "Falta OPENAI_API_KEY"}), 500
+
+    body = request.get_json() or {}
+    inicio_str = body.get("inicio")
+    if inicio_str:
+        try:
+            inicio = date.fromisoformat(inicio_str)
+        except ValueError:
+            return jsonify({"error": "fecha inválida"}), 400
+    else:
+        h = date.today()
+        # lunes ISO (1=Lun)
+        inicio = h - timedelta(days=h.isoweekday() - 1)
+
+    fin = inicio + timedelta(days=6)
+    habitos_data = cargar("habitos.json")
+    tareas = [a for a in cargar("actividades.json").get("actividades", []) if a.get("estado") == "pendiente"]
+
+    dias_data = []
+    for i in range(7):
+        d = inicio + timedelta(days=i)
+        habs = _filtrar_habitos_dia(habitos_data.get("habitos", []), d)
+        evs = _leer_eventos_dia(d)
+        lab = _horario_laboral(d)
+        dias_data.append({
+            "fecha": d.isoformat(),
+            "dia": DIAS_ES[d.weekday()],
+            "laboral": lab.get("activo", False),
+            "ventana_laboral": f"{lab.get('inicio','—')}-{lab.get('fin','—')}" if lab.get("activo") else "no laboral",
+            "eventos": evs,
+            "habitos": [{"nombre": h["nombre"], "horario": h.get("horario_sugerido","mañana")} for h in habs],
+            "tareas_con_deadline": [t for t in tareas if t.get("deadline") == d.isoformat()]
+        })
+    sueno = _horario_sueno()
+
+    sistema = f"""Eres el coach de productividad de Diego. Vas a organizar SU SEMANA del {inicio.isoformat()} al {fin.isoformat()} para que sea más productivo.
+
+Despierta {sueno['despertar']} · Duerme {sueno['dormir']}.
+
+Tu trabajo: identificar el TEMA PRINCIPAL de la semana, el foco de cada día, y los big rocks (cosas críticas que NO se pueden mover).
+
+REGLAS:
+1. Respeta días no laborales (descanso o ritual ligero).
+2. Distribuye las tareas con deadline en los días apropiados.
+3. Agrupa esfuerzos similares (ej: 'lunes y martes = ads', 'miércoles = creativos').
+4. Da un foco claro por día — qué hacer si solo pudiera hacer UNA cosa ese día.
+5. Marca los big_rocks: 3-5 cosas críticas de la semana.
+
+Devuelve SOLO JSON:
+{{
+  "tema_semana": "frase corta — el foco principal",
+  "dias": [
+    {{"fecha": "YYYY-MM-DD", "dia": "lunes",
+      "foco": "una frase con el foco del día",
+      "objetivos": ["objetivo 1", "objetivo 2"],
+      "alerta": "evento o tarea crítica del día (o vacío)"}}
+  ],
+  "big_rocks": ["3 a 5 puntos críticos de la semana"],
+  "recomendaciones": ["consejos para ser más productivo esta semana"],
+  "frase_motivadora": "una frase de cierre"
+}}"""
+
+    usuario = f"""DATOS DE LA SEMANA:
+Sueño: despertar {sueno['despertar']} · dormir {sueno['dormir']}
+
+DÍAS:
+{json.dumps(dias_data, ensure_ascii=False, indent=2)}
+
+TAREAS TOTAL PENDIENTES (priorizadas):
+{json.dumps(sorted(tareas, key=lambda t: ({'alta':0,'media':1,'baja':2}.get(t.get('prioridad','media'),3), t.get('deadline') or '9'))[:15], ensure_ascii=False, indent=2)}
+
+Organiza esta semana para máxima productividad."""
+
+    cliente = OpenAI()
+    resp = cliente.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role":"system","content":sistema},{"role":"user","content":usuario}],
+        response_format={"type":"json_object"},
+        temperature=0.4
+    )
+    plan = json.loads(resp.choices[0].message.content)
+    return jsonify({"plan": plan, "inicio": inicio.isoformat(), "fin": fin.isoformat()})
+
+
+@app.route("/api/plan/mes", methods=["POST"])
+@requiere_auth
+def generar_plan_mes():
+    """IA da visión del mes: tema por semana + métricas + recomendaciones."""
+    from datetime import timedelta
+    from calendar import monthrange
+    try:
+        from plan_manana import _leer_eventos_dia, DIAS_ES
+        from openai import OpenAI
+    except ImportError as e:
+        return jsonify({"error": f"Falta módulo: {e}"}), 500
+
+    if not os.getenv("OPENAI_API_KEY"):
+        return jsonify({"error": "Falta OPENAI_API_KEY"}), 500
+
+    body = request.get_json() or {}
+    año = body.get("año") or date.today().year
+    mes = body.get("mes") or date.today().month
+    año = int(año); mes = int(mes)
+    dias_mes = monthrange(año, mes)[1]
+    primer_dia = date(año, mes, 1)
+    ultimo_dia = date(año, mes, dias_mes)
+
+    # Contar eventos por semana del mes
+    eventos_por_semana = {}
+    for d in (primer_dia + timedelta(n) for n in range(dias_mes)):
+        # número de semana ISO dentro del mes (aproximado)
+        semana_inicio = d - timedelta(days=d.isoweekday() - 1)
+        key = semana_inicio.isoformat()
+        evs = _leer_eventos_dia(d)
+        eventos_por_semana.setdefault(key, []).extend(evs)
+
+    tareas_pendientes = [a for a in cargar("actividades.json").get("actividades", []) if a.get("estado") == "pendiente"]
+    tareas_con_dl_mes = [t for t in tareas_pendientes if t.get("deadline") and primer_dia.isoformat() <= str(t["deadline"]) <= ultimo_dia.isoformat()]
+    proyectos = cargar("proyectos.json").get("proyectos", [])
+
+    sistema = """Eres el coach de productividad de Diego. Vas a darle una VISIÓN DE ALTO NIVEL del mes para que sepa hacia dónde apuntar.
+
+Tu trabajo: identificar el tema del mes, organizar las 4-5 semanas con un foco cada una, y dar recomendaciones para que sea productivo.
+
+Devuelve SOLO JSON:
+{
+  "tema_mes": "frase corta — el norte del mes",
+  "semanas": [
+    {"inicio": "YYYY-MM-DD", "fin": "YYYY-MM-DD",
+     "etiqueta": "Semana 1 (1-7 mayo)",
+     "tema": "foco principal de la semana",
+     "objetivos": ["3 cosas concretas para esa semana"]}
+  ],
+  "metricas": {
+    "eventos_totales": N,
+    "tareas_con_deadline_este_mes": N,
+    "proyectos_activos": N
+  },
+  "recomendaciones": ["consejos para ser más productivo este mes"],
+  "advertencias": ["fechas críticas, deadlines fuertes"],
+  "frase_cierre": "frase motivadora"
+}"""
+
+    usuario = f"""MES OBJETIVO: {primer_dia.isoformat()} a {ultimo_dia.isoformat()}
+
+EVENTOS POR SEMANA:
+{json.dumps({k: [{'titulo':e['titulo'],'inicio':e['inicio']} for e in v[:10]] for k,v in eventos_por_semana.items()}, ensure_ascii=False, indent=2)}
+
+TAREAS CON DEADLINE ESTE MES:
+{json.dumps(tareas_con_dl_mes, ensure_ascii=False, indent=2)}
+
+PROYECTOS ACTIVOS:
+{json.dumps([p for p in proyectos if p.get('estado')=='activo'], ensure_ascii=False, indent=2)}
+
+Dame la visión del mes."""
+
+    cliente = OpenAI()
+    resp = cliente.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role":"system","content":sistema},{"role":"user","content":usuario}],
+        response_format={"type":"json_object"},
+        temperature=0.4
+    )
+    plan = json.loads(resp.choices[0].message.content)
+    return jsonify({"plan": plan, "mes": mes, "año": año})
+
+
 @app.route("/api/plan/generar", methods=["POST"])
 @requiere_auth
 def generar_plan_endpoint():
