@@ -2458,6 +2458,29 @@
       <div class="card">
         <div class="card-head">
           <div>
+            <div class="card-eyebrow">Ritmo del día</div>
+            <h2>¿A qué horas despiertas y duermes?</h2>
+            <p>La IA usa estos horarios para programar hábitos de mañana antes del trabajo y los de noche después, dejando el sueño intacto.</p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div>
+            <label>☀️ Despertar</label>
+            <input type="time" id="cfg-despertar" value="06:00">
+          </div>
+          <div>
+            <label>🌙 Dormir</label>
+            <input type="time" id="cfg-dormir" value="23:00">
+          </div>
+        </div>
+        <div class="form-actions" style="margin-top:8px;">
+          <button class="primary" onclick="guardarHorarioSueno()">Guardar ritmo</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
             <div class="card-eyebrow">Horario laboral</div>
             <h2>Tus horas de trabajo por día</h2>
             <p>El comando <code>/libre</code> y el cálculo de huecos en tu agenda usan estos horarios. Días no marcados se consideran no laborales.</p>
@@ -2984,6 +3007,23 @@ function guardarToken() {
   toast('Token guardado');
   document.getElementById('token-warn').style.display = 'none';
   comprobarApi();
+}
+
+async function cargarHorarioSueno() {
+  try {
+    const s = await api('/horario-sueno');
+    const a = document.getElementById('cfg-despertar');
+    const b = document.getElementById('cfg-dormir');
+    if (a) a.value = s.despertar || '06:00';
+    if (b) b.value = s.dormir || '23:00';
+  } catch(e) { console.error(e); }
+}
+
+async function guardarHorarioSueno() {
+  const despertar = document.getElementById('cfg-despertar').value || '06:00';
+  const dormir    = document.getElementById('cfg-dormir').value    || '23:00';
+  await api('/horario-sueno', { method: 'PUT', body: JSON.stringify({ despertar, dormir })});
+  toast('☀️🌙 Ritmo guardado · la IA lo usará al planear');
 }
 
 async function cargarHorarioLaboral() {

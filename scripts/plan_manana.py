@@ -71,6 +71,18 @@ def _leer_eventos_dia(fecha: date) -> list:
     return eventos
 
 
+def _horario_sueno() -> dict:
+    """Devuelve horario despertar/dormir global. Default 06:00-23:00."""
+    config = cargar("config.json")
+    s = config.get("horario_sueno") if isinstance(config, dict) else None
+    if not isinstance(s, dict):
+        return {"despertar": "06:00", "dormir": "23:00"}
+    return {
+        "despertar": s.get("despertar", "06:00"),
+        "dormir":    s.get("dormir",    "23:00")
+    }
+
+
 def _horario_laboral(fecha: date) -> dict:
     """Horario laboral del día (según ISO weekday). Lee de config.horario_laboral o usa default."""
     iso_dow = str(fecha.isoweekday())
@@ -175,6 +187,7 @@ def construir_contexto(fecha=None) -> dict:
     habitos_dia = _filtrar_habitos_dia(habitos_data.get("habitos", []), fecha)
     eventos = _leer_eventos_dia(fecha)
     horario = _horario_laboral(fecha)
+    sueno = _horario_sueno()
     libres = _calcular_libres(fecha, horario, eventos)
 
     return {
@@ -182,10 +195,11 @@ def construir_contexto(fecha=None) -> dict:
         "dia_semana": DIAS_ES[fecha.weekday()],
         "clientes": clientes,
         "proyectos": proyectos,
-        "tareas_pendientes": pendientes[:10],  # top 10
+        "tareas_pendientes": pendientes[:10],
         "habitos_del_dia": habitos_dia,
         "eventos_calendario": eventos,
         "horario_laboral": horario,
+        "horario_sueno": sueno,
         "espacios_libres": libres,
         "config": config
     }
@@ -198,43 +212,57 @@ def generar_plan(ctx: dict) -> dict:
     tono = (cfg.get("ia") or {}).get("tono", "directo, motivador, en español")
 
     horario = ctx["horario_laboral"]
+    sueno = ctx["horario_sueno"]
+    despertar = sueno["despertar"]
+    dormir = sueno["dormir"]
+
     if not horario.get("activo"):
-        ventana_txt = f"Día NO laboral ({horario.get('inicio','-')}-{horario.get('fin','-')})"
+        ventana_lab = f"NO laboral este día"
     else:
-        ventana_txt = f"{horario['inicio']} a {horario['fin']}"
+        ventana_lab = f"{horario['inicio']} a {horario['fin']}"
 
     sistema = f"""Eres el asistente de productividad de Diego, dropshipper colombiano.
 
-Tu trabajo: armar un PLAN DEL DÍA realista para la fecha objetivo, en {tono}.
+Tu trabajo: armar un PLAN DEL DÍA realista en {tono}, respetando el ritmo natural del día.
+
+VENTANAS DEL DÍA:
+☀️ MAÑANA   (de {despertar} al inicio del trabajo): rutina de despertar, ejercicio, hábitos de mañana, desayuno.
+💼 TRABAJO  ({ventana_lab}): solo tareas de trabajo y eventos del calendario.
+🌙 NOCHE    (del fin del trabajo hasta {dormir}): cierre, hábitos de noche, descanso, familia.
+😴 SUEÑO    ({dormir} a {despertar}): NO programar NADA.
 
 REGLAS DURAS:
-1. Los EVENTOS del calendario son INTOCABLES. Programa todo alrededor de ellos.
-2. Respeta el horario laboral: no programes nada fuera de la ventana.
-3. Encaja las tareas en los espacios libres reales (que te paso abajo).
-4. Hábitos de la mañana → al inicio del día. Hábitos de noche → al final.
-5. No sobrecargues: máximo {max_tareas} tareas principales.
-6. Mezcla negocio y personal/salud para no quemarse.
-7. Si hay tareas urgentes (deadline = hoy o prioridad alta), van primero.
-8. Si NO hay tareas pendientes, llena con hábitos + descansos cortos.
-9. Si el día NO es laboral, sugiere ritual ligero (hábitos de salud, descanso).
+1. Los EVENTOS del calendario son INTOCABLES. Programa todo alrededor.
+2. NO programes nada antes de {despertar} ni después de {dormir}.
+3. Hábitos con horario_sugerido="mañana" → ANTES del trabajo (entre despertar y inicio laboral).
+4. Hábitos con horario_sugerido="noche" → DESPUÉS del trabajo.
+5. Tareas del trabajo → SOLO en espacios libres dentro de la ventana laboral.
+6. Si el día NO es laboral, el plan cubre TODO el día (despertar→dormir) con hábitos + descanso.
+7. Máximo {max_tareas} tareas de trabajo. No sobrecargues.
+8. Tareas con deadline hoy o prioridad alta → primero.
+9. Mezcla negocio y personal/salud para no quemarse.
 
-Devuelve SOLO JSON con esta estructura:
+Devuelve SOLO JSON:
 {{
   "saludo": "frase corta motivadora",
   "bloques": [
     {{"hora": "HH:MM", "duracion_min": N, "titulo": "...",
       "tipo": "tarea|habito|evento|descanso",
+      "ventana": "mañana|trabajo|noche",
       "id": "id_original o null",
       "cliente": "nombre del cliente (opcional)",
-      "razon": "por qué este bloque ahora (1 frase corta)"}}
+      "razon": "por qué ahora (1 frase)"}}
   ],
-  "advertencia": "algo importante a no olvidar (o cadena vacía)",
+  "advertencia": "algo importante (o vacío)",
   "frase_cierre": "cómo medir éxito hoy"
 }}"""
 
     usuario = f"""FECHA OBJETIVO: {ctx['fecha']} ({ctx['dia_semana']})
 
-VENTANA DE TRABAJO: {ventana_txt}
+HORARIO DEL USUARIO:
+- Despierta: {despertar}
+- Trabajo: {ventana_lab}
+- Se acuesta: {dormir}
 
 EVENTOS DEL CALENDARIO (intocables, ya bloqueados):
 {json.dumps(ctx['eventos_calendario'], ensure_ascii=False, indent=2)}

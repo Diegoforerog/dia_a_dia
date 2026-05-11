@@ -461,6 +461,41 @@ def del_sesion(chat_id):
     return jsonify({"ok": True})
 
 
+# ============ HORARIO DE SUEÑO (global) ============
+
+SUENO_DEFAULT = {"despertar": "06:00", "dormir": "23:00"}
+
+
+def _cargar_horario_sueno():
+    config = cargar("config.json")
+    s = config.get("horario_sueno") if isinstance(config, dict) else None
+    if not isinstance(s, dict):
+        return dict(SUENO_DEFAULT)
+    return {
+        "despertar": s.get("despertar", SUENO_DEFAULT["despertar"]),
+        "dormir":    s.get("dormir",    SUENO_DEFAULT["dormir"])
+    }
+
+
+@app.route("/api/horario-sueno", methods=["GET"])
+@requiere_auth
+def get_horario_sueno():
+    return jsonify(_cargar_horario_sueno())
+
+
+@app.route("/api/horario-sueno", methods=["PUT"])
+@requiere_auth
+def put_horario_sueno():
+    body = request.get_json() or {}
+    config = cargar("config.json")
+    config["horario_sueno"] = {
+        "despertar": body.get("despertar", SUENO_DEFAULT["despertar"]),
+        "dormir":    body.get("dormir",    SUENO_DEFAULT["dormir"])
+    }
+    guardar("config.json", config)
+    return jsonify({"ok": True, "horario_sueno": _cargar_horario_sueno()})
+
+
 # ============ HORARIO LABORAL POR DÍA ============
 
 HORARIO_DEFAULT = {
