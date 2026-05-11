@@ -1394,6 +1394,32 @@ def _pagina_resultado(ok: bool, mensaje: str) -> str:
 </div></body></html>"""
 
 
+@app.route("/api/oauth/google/export_token", methods=["GET"])
+@requiere_auth
+def export_token():
+    """Devuelve el contenido de token.json. SOLO para que el admin lo guarde
+    como variable de entorno GOOGLE_TOKEN_JSON y sobreviva reinicios."""
+    if not GOOGLE_TOKEN.exists():
+        return jsonify({"error": "No hay token.json. Hacé OAuth primero."}), 404
+    try:
+        return jsonify({"ok": True, "contenido": GOOGLE_TOKEN.read_text()})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/oauth/google/export_credentials", methods=["GET"])
+@requiere_auth
+def export_credentials():
+    """Devuelve el contenido de credentials.json. SOLO para que el admin lo
+    guarde como variable de entorno GOOGLE_CREDENTIALS_JSON."""
+    if not GOOGLE_CRED.exists():
+        return jsonify({"error": "No hay credentials.json"}), 404
+    try:
+        return jsonify({"ok": True, "contenido": GOOGLE_CRED.read_text()})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/oauth/google/disconnect", methods=["POST"])
 @requiere_auth
 def oauth_disconnect():
