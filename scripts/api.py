@@ -42,6 +42,28 @@ os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", "1")
 # Google a veces devuelve scopes extra (openid, email) — esto evita que oauthlib lance error
 os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
 
+# Persistencia: si las env vars GOOGLE_CREDENTIALS_JSON / GOOGLE_TOKEN_JSON existen,
+# escribir los archivos correspondientes al boot. Útil en containers efímeros (easypanel).
+_gcred_env = os.getenv("GOOGLE_CREDENTIALS_JSON", "").strip()
+if _gcred_env and not GOOGLE_CRED.exists():
+    try:
+        import json as _json
+        _json.loads(_gcred_env)  # validar
+        GOOGLE_CRED.write_text(_gcred_env)
+        print("✓ credentials.json escrito desde GOOGLE_CREDENTIALS_JSON")
+    except Exception as _e:
+        print(f"⚠️  GOOGLE_CREDENTIALS_JSON inválido: {_e}")
+
+_gtoken_env = os.getenv("GOOGLE_TOKEN_JSON", "").strip()
+if _gtoken_env and not GOOGLE_TOKEN.exists():
+    try:
+        import json as _json
+        _json.loads(_gtoken_env)  # validar
+        GOOGLE_TOKEN.write_text(_gtoken_env)
+        print("✓ token.json escrito desde GOOGLE_TOKEN_JSON")
+    except Exception as _e:
+        print(f"⚠️  GOOGLE_TOKEN_JSON inválido: {_e}")
+
 app = Flask(__name__, static_folder=str(RAIZ / "tablero"), static_url_path="/tablero")
 CORS(app)
 
