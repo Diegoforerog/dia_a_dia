@@ -290,6 +290,120 @@ def delete_habito(hid):
     return jsonify({"ok": True})
 
 
+# ============ AVISO 10 MIN ANTES DE EVENTOS DE CALENDARIO ============
+
+@app.route("/api/eventos/avisar_proximos", methods=["POST", "GET"])
+@requiere_auth
+def avisar_proximos_eventos():
+    """Devuelve eventos del calendario que arrancan en los próximos 15 min
+    y aún no se han avisado. Los marca como avisados al devolver.
+
+    Diseñado para correr cada 5 min desde n8n."""
+    from datetime import timedelta, timezone as _tz
+
+    if not _db.db_disponible():
+        return jsonify({"eventos": [], "error": "DB no disponible"}), 500
+
+    try:
+        from icalendar import Calendar
+        import recurring_ical_events
+        import urllib.request as urlreq
+    except ImportError:
+        return jsonify({"error": "Falta librería icalendar / recurring_ical_events"}), 500
+
+    minutos_antes = int(request.args.get("minutos", 10))
+    ventana_minutos = int(request.args.get("ventana", 15))  # lookahead
+
+    ahora = datetime.now().astimezone()
+    desde = ahora
+    hasta = ahora + timedelta(minutes=ventana_minutos)
+
+    clientes = {c["id"]: c for c in cargar("clientes.json").get("clientes", [])}
+    cals = [c for c in cargar("calendarios.json")["calendarios_gmail"]
+            if c.get("activo") and c.get("ical_url")]
+
+    # 1. Leer eventos de los calendarios en la ventana
+    proximos = []
+    for cal in cals:
+        try:
+            req = urlreq.Request(cal["ical_url"], headers={"User-Agent": "Organizador/1.0"})
+            with urlreq.urlopen(req, timeout=15) as r:
+                ics = r.read()
+            ical = Calendar.from_ical(ics)
+            # Pedimos una ventana algo amplia para no perder eventos en el borde
+            ocs = recurring_ical_events.of(ical).between(
+                ahora - timedelta(minutes=5), hasta + timedelta(minutes=5))
+            for ev in ocs:
+                start = ev.get("DTSTART").dt if ev.get("DTSTART") else None
+                end = ev.get("DTEND").dt if ev.get("DTEND") else start
+                uid = str(ev.get("UID", ""))
+                if not start or not hasattr(start, "hour"):
+                    continue  # all-day no aplica
+                # Normalizar a aware
+                if start.tzinfo is None:
+                    start = start.replace(tzinfo=ahora.tzinfo)
+                if end and end.tzinfo is None:
+                    end = end.replace(tzinfo=ahora.tzinfo)
+                # ¿Cae dentro de [desde, hasta]?
+                if desde <= start <= hasta:
+                    cli = clientes.get(cal.get("cliente_asociado"), {})
+                    proximos.append({
+                        "uid": uid,
+                        "titulo": str(ev.get("SUMMARY", "(sin título)")),
+                        "inicio": start,
+                        "fin": end,
+                        "ubicacion": str(ev.get("LOCATION", "")),
+                        "calendario": cal.get("nombre_para_mostrar"),
+                        "cliente": cli.get("nombre", ""),
+                        "color": cal.get("color", "#4A4D7A")
+                    })
+        except Exception as e:
+            print(f"⚠️  Error leyendo {cal.get('email','?')}: {e}")
+
+    # 2. Filtrar los ya avisados (consulta tabla)
+    ya_avisados = set()
+    if proximos:
+        ids = [(p["uid"], p["inicio"]) for p in proximos]
+        # Consulta una sola vez
+        for uid, ini in ids:
+            existing = _db.query(
+                "SELECT 1 FROM eventos_avisados WHERE evento_uid=%s AND inicio=%s AND tipo_aviso='pre_10min'",
+                (uid, ini))
+            if existing:
+                ya_avisados.add((uid, ini.isoformat()))
+
+    nuevos = [p for p in proximos if (p["uid"], p["inicio"].isoformat()) not in ya_avisados]
+
+    # 3. Marcar como avisados los nuevos
+    for p in nuevos:
+        try:
+            _db.execute(
+                "INSERT INTO eventos_avisados (evento_uid, inicio, tipo_aviso) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING",
+                (p["uid"], p["inicio"], "pre_10min"))
+        except Exception as e:
+            print(f"⚠️  Error guardando aviso: {e}")
+
+    # 4. Devolver
+    salida = []
+    for p in nuevos:
+        delta = p["inicio"] - ahora
+        min_restantes = max(0, int(delta.total_seconds() / 60))
+        salida.append({
+            "uid": p["uid"],
+            "titulo": p["titulo"],
+            "inicio": p["inicio"].isoformat(),
+            "fin": p["fin"].isoformat() if p["fin"] else None,
+            "hora_inicio": p["inicio"].strftime("%H:%M"),
+            "hora_fin": p["fin"].strftime("%H:%M") if p["fin"] else None,
+            "minutos_restantes": min_restantes,
+            "ubicacion": p["ubicacion"],
+            "calendario": p["calendario"],
+            "cliente": p["cliente"],
+            "color": p["color"]
+        })
+    return jsonify({"eventos": salida, "total": len(salida), "ventana_minutos": ventana_minutos})
+
+
 # ============ SESIÓN DEL BOT (estado entre mensajes) ============
 
 @app.route("/api/bot/sesion/<int:chat_id>", methods=["GET"])
