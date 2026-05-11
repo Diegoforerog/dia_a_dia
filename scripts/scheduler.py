@@ -20,11 +20,16 @@ from psycopg2.extras import RealDictCursor, Json
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.executors.pool import ThreadPoolExecutor
-import pytz
+
+# Timezone — preferir zoneinfo (Python 3.9+), fallback a pytz
+try:
+    from zoneinfo import ZoneInfo
+    TZ = ZoneInfo("America/Bogota")
+except ImportError:
+    import pytz
+    TZ = pytz.timezone("America/Bogota")
 
 import db as _db  # módulo local
-
-TZ = pytz.timezone("America/Bogota")
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
