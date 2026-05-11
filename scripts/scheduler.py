@@ -212,6 +212,16 @@ def sincronizar_eventos_calendario():
     hasta = ahora + timedelta(hours=24)
     clientes = {c["id"]: c for c in cargar("clientes.json").get("clientes", [])}
     nuevos = 0
+    # Dedupe entre calendarios: el mismo evento puede aparecer en varios calendarios
+    # del usuario (un evento compartido se ve desde @gmail y desde @nextgen al mismo
+    # tiempo). Usamos iCalUID + inicio como clave estable para programar UNA SOLA vez.
+    yapuestos = set()  # set de (icaluid_normalizado, inicio_iso)
+
+    def _norm_uid(u: str) -> str:
+        if not u:
+            return ""
+        # Quita sufijos @google.com / @resource.calendar.google.com para que matche
+        return u.split("@")[0]
 
     # ─── Calendarios OAuth (Google API) ───
     if cals_oauth:
@@ -240,7 +250,9 @@ def sincronizar_eventos_calendario():
                         ).execute()
                         cli = clientes.get(cal.get("cliente_asociado"), {})
                         for ev in r.get("items", []):
-                            uid = ev.get("id", "")
+                            # iCalUID es estable entre calendarios; id es por-calendario
+                            uid_raw = ev.get("iCalUID") or ev.get("id", "")
+                            uid = _norm_uid(uid_raw)
                             start_v = ev.get("start", {}).get("dateTime")
                             end_v   = ev.get("end",   {}).get("dateTime")
                             if not start_v:
@@ -253,6 +265,10 @@ def sincronizar_eventos_calendario():
                             aviso_at = start - timedelta(minutes=10)
                             if aviso_at <= ahora:
                                 continue
+                            dedupe_key = (uid, start.isoformat())
+                            if dedupe_key in yapuestos:
+                                continue
+                            yapuestos.add(dedupe_key)
                             if _db.query("SELECT 1 FROM eventos_avisados WHERE evento_uid=%s AND inicio=%s AND tipo_aviso='pre_10min'",
                                           (uid, start)):
                                 continue

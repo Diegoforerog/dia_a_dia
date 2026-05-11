@@ -2170,13 +2170,32 @@ def scheduler_diag():
                 out["running"] = s.running
             except Exception as e:
                 out["start_error"] = str(e)
+        # POST: si el body trae {"accion": "resync_eventos"}, borra jobs ev_* y resincroniza
+        if request.method == "POST":
+            body = request.get_json(silent=True) or {}
+            accion = body.get("accion") or request.args.get("accion")
+            if accion == "resync_eventos":
+                borrados = 0
+                for j in s.get_jobs():
+                    if j.id.startswith("ev_"):
+                        try:
+                            s.remove_job(j.id)
+                            borrados += 1
+                        except Exception:
+                            pass
+                out["jobs_borrados"] = borrados
+                try:
+                    _sched.sincronizar_eventos_calendario()
+                    out["resync"] = "ok"
+                except Exception as e:
+                    out["resync_error"] = str(e)
         jobs = s.get_jobs()
         out["jobs_count"] = len(jobs)
         out["jobs"] = [{
             "id": j.id,
             "next_run": j.next_run_time.isoformat() if j.next_run_time else None,
             "func": str(j.func_ref) if hasattr(j, 'func_ref') else str(j.func)
-        } for j in jobs[:20]]
+        } for j in jobs[:30]]
     except Exception as e:
         out["scheduler_error"] = str(e)
     return jsonify(out)
