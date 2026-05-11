@@ -194,7 +194,7 @@ def reprogramar_recordatorios_pendientes():
 # AVISO 10 MIN ANTES DE EVENTOS DE CALENDARIO
 # ─────────────────────────────────────────────────────────
 def sincronizar_eventos_calendario():
-    """Lee iCal de todos los calendarios activos. Para cada evento que arranca
+    """Lee iCal + OAuth de todos los calendarios activos. Para cada evento que arranca
     en las próximas 24h, programa un job a -10 min de su inicio."""
     try:
         from icalendar import Calendar
@@ -204,16 +204,83 @@ def sincronizar_eventos_calendario():
         return
 
     from comun import cargar
-    cals = [c for c in cargar("calendarios.json").get("calendarios_gmail", [])
-            if c.get("activo") and c.get("ical_url")]
-    if not cals:
-        return
+    todos = [c for c in cargar("calendarios.json").get("calendarios_gmail", []) if c.get("activo")]
+    cals = [c for c in todos if c.get("ical_url")]
+    cals_oauth = [c for c in todos if not c.get("ical_url")]
 
     ahora = datetime.now(TZ)
     hasta = ahora + timedelta(hours=24)
     clientes = {c["id"]: c for c in cargar("clientes.json").get("clientes", [])}
     nuevos = 0
 
+    # ─── Calendarios OAuth (Google API) ───
+    if cals_oauth:
+        try:
+            from pathlib import Path as _Path
+            token_path = _Path(__file__).resolve().parent.parent / "integraciones" / "token.json"
+            if token_path.exists():
+                from google.oauth2.credentials import Credentials
+                from google.auth.transport.requests import Request as GRequest
+                from googleapiclient.discovery import build
+                SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+                creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+                if creds.expired and creds.refresh_token:
+                    creds.refresh(GRequest())
+                    token_path.write_text(creds.to_json())
+                servicio = build("calendar", "v3", credentials=creds)
+                for cal in cals_oauth:
+                    try:
+                        r = servicio.events().list(
+                            calendarId=cal["email"],
+                            timeMin=ahora.isoformat(),
+                            timeMax=hasta.isoformat(),
+                            singleEvents=True,
+                            orderBy="startTime",
+                            maxResults=200
+                        ).execute()
+                        cli = clientes.get(cal.get("cliente_asociado"), {})
+                        for ev in r.get("items", []):
+                            uid = ev.get("id", "")
+                            start_v = ev.get("start", {}).get("dateTime")
+                            end_v   = ev.get("end",   {}).get("dateTime")
+                            if not start_v:
+                                continue
+                            try:
+                                start = datetime.fromisoformat(start_v.replace("Z", "+00:00"))
+                                end   = datetime.fromisoformat(end_v.replace("Z", "+00:00")) if end_v else None
+                            except Exception:
+                                continue
+                            aviso_at = start - timedelta(minutes=10)
+                            if aviso_at <= ahora:
+                                continue
+                            if _db.query("SELECT 1 FROM eventos_avisados WHERE evento_uid=%s AND inicio=%s AND tipo_aviso='pre_10min'",
+                                          (uid, start)):
+                                continue
+                            payload = {
+                                "uid": uid,
+                                "titulo": ev.get("summary", "(sin título)"),
+                                "inicio_iso": start.isoformat(),
+                                "fin_iso": end.isoformat() if end else None,
+                                "ubicacion": ev.get("location", ""),
+                                "calendario": cal.get("nombre_para_mostrar"),
+                                "cliente": cli.get("nombre", "")
+                            }
+                            job_id = f"ev_{uid}_{int(start.timestamp())}"
+                            get_scheduler().add_job(
+                                avisar_evento,
+                                "date",
+                                run_date=aviso_at,
+                                args=[payload],
+                                id=job_id,
+                                replace_existing=True
+                            )
+                            nuevos += 1
+                    except Exception as e:
+                        print(f"⚠️  Sync OAuth error {cal.get('email','?')}: {e}")
+        except Exception as e:
+            print(f"⚠️  Sync OAuth global error: {e}")
+
+    # ─── Calendarios iCal (legacy) ───
     for cal in cals:
         try:
             req = urllib.request.Request(cal["ical_url"], headers={"User-Agent": "Organizador/1.0"})
