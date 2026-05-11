@@ -845,9 +845,22 @@
   }
   .kpi-card.clickable:hover .kpi-link-arrow { opacity: 1; }
 
-  .kpi-action {
-    margin-top: 8px;
+  .kpi-action { margin-top: 8px; }
+  .kpi-fecha-row { display: flex; gap: 6px; }
+  .kpi-fecha-input {
+    background: rgba(255, 255, 255, .15);
+    color: var(--paper);
+    border: 1px solid rgba(255, 255, 255, .2);
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: inherit;
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+    color-scheme: dark;
   }
+  .kpi-fecha-input:focus { outline: none; border-color: rgba(255, 255, 255, .5); }
   .kpi-btn {
     background: rgba(255, 255, 255, .22);
     color: var(--paper);
@@ -862,8 +875,8 @@
     align-items: center;
     gap: 6px;
     transition: all .15s var(--ease);
-    width: 100%;
     justify-content: center;
+    white-space: nowrap;
   }
   .kpi-btn:hover {
     background: rgba(255, 255, 255, .32);
@@ -1369,10 +1382,13 @@
         <div class="kpi-num"><span id="kpi-plan-num">—</span> <small id="kpi-plan-unit">bloques</small></div>
         <div class="kpi-foot" id="kpi-plan-foot">Sin generar todavía</div>
         <div class="kpi-action" id="kpi-plan-action" style="display:none;">
-          <button class="kpi-btn" onclick="generarPlanAhora(event)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v9h-9"/></svg>
-            <span id="kpi-plan-btn-text">✨ Generar con IA ahora</span>
-          </button>
+          <div class="kpi-fecha-row">
+            <input type="date" id="kpi-plan-fecha" class="kpi-fecha-input" onclick="event.stopPropagation()">
+            <button class="kpi-btn" onclick="generarPlanAhora(event)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v9h-9"/></svg>
+              <span id="kpi-plan-btn-text">✨ Generar</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1871,6 +1887,11 @@ function pintarKPIs(registro, proyectos) {
   const kpiUnit = document.getElementById('kpi-plan-unit');
   const kpiFoot = document.getElementById('kpi-plan-foot');
   const kpiAction = document.getElementById('kpi-plan-action');
+  // Set default date picker to today
+  const fechaInput = document.getElementById('kpi-plan-fecha');
+  if (fechaInput && !fechaInput.value) {
+    fechaInput.value = new Date().toISOString().slice(0,10);
+  }
   if (plan && plan.bloques && plan.bloques.length) {
     kpiNum.textContent = plan.bloques.length;
     kpiUnit.textContent = 'bloques';
@@ -1917,17 +1938,19 @@ async function generarPlanAhora(e) {
   e.preventDefault();
   const btn = e.currentTarget;
   const txt = document.getElementById('kpi-plan-btn-text');
+  const fechaInput = document.getElementById('kpi-plan-fecha');
+  const fecha = fechaInput && fechaInput.value ? fechaInput.value : new Date().toISOString().slice(0,10);
   const original = txt.textContent;
   btn.disabled = true;
   btn.querySelector('svg').classList.add('spinning');
-  txt.textContent = 'Generando con IA · 10-15 seg…';
+  txt.textContent = 'Generando…';
 
   try {
     const token = await getToken();
     const r = await fetch(API_BASE + '/plan/generar', {
       method: 'POST',
       headers: { 'X-API-Token': token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ auto_aprobar: false })
+      body: JSON.stringify({ auto_aprobar: false, fecha: fecha })
     });
     if (!r.ok) {
       const errBody = await r.text();
@@ -1935,14 +1958,14 @@ async function generarPlanAhora(e) {
     }
     const resp = await r.json();
     if (resp && resp.plan) {
-      txt.textContent = '✓ Plan generado · recargando…';
-      setTimeout(() => window.location.reload(), 800);
+      txt.textContent = `✓ ${resp.eventos_considerados} ev · ${resp.tareas_consideradas} tar`;
+      setTimeout(() => window.location.reload(), 1200);
     } else {
       throw new Error(resp.error || 'No se recibió plan');
     }
   } catch (err) {
     console.error(err);
-    txt.textContent = '❌ ' + (err.message || '?').slice(0, 60);
+    txt.textContent = '❌ ' + (err.message || '?').slice(0, 40);
     btn.disabled = false;
     btn.querySelector('svg').classList.remove('spinning');
     setTimeout(() => { txt.textContent = original; }, 5000);

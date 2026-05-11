@@ -1595,7 +1595,10 @@ def get_plan_hoy():
 @app.route("/api/plan/generar", methods=["POST"])
 @requiere_auth
 def generar_plan_endpoint():
-    """Llama al planificador IA y guarda el plan del día."""
+    """Llama al planificador IA y guarda el plan del día.
+
+    Body opcional: { "fecha": "YYYY-MM-DD", "auto_aprobar": bool }
+    Si no se pasa fecha → hoy."""
     try:
         from plan_manana import construir_contexto, generar_plan
     except ImportError as e:
@@ -1604,13 +1607,34 @@ def generar_plan_endpoint():
     if not os.getenv("OPENAI_API_KEY"):
         return jsonify({"error": "Falta OPENAI_API_KEY"}), 500
 
-    ctx = construir_contexto()
+    body = request.get_json() or {}
+    fecha_str = body.get("fecha")
+    fecha = None
+    if fecha_str:
+        try:
+            fecha = date.fromisoformat(fecha_str)
+        except ValueError:
+            return jsonify({"error": f"Fecha inválida: {fecha_str}"}), 400
+
+    ctx = construir_contexto(fecha)
     plan = generar_plan(ctx)
-    registro = cargar_registro_dia()
+
+    # Guardar en planes_diarios SOLO si la fecha es hoy o futura
+    registro = cargar_registro_dia(ctx["fecha"])
     registro["plan_generado"] = plan
-    registro["aprobado"] = request.json.get("auto_aprobar", False) if request.is_json else False
+    registro["aprobado"] = bool(body.get("auto_aprobar", False))
+    registro["fecha"] = ctx["fecha"]
     guardar_registro_dia(registro)
-    return jsonify({"plan": plan, "fecha": registro["fecha"]})
+
+    return jsonify({
+        "plan": plan,
+        "fecha": ctx["fecha"],
+        "dia_semana": ctx["dia_semana"],
+        "eventos_considerados": len(ctx["eventos_calendario"]),
+        "espacios_libres": len(ctx["espacios_libres"]),
+        "habitos_aplicables": len(ctx["habitos_del_dia"]),
+        "tareas_consideradas": len(ctx["tareas_pendientes"])
+    })
 
 
 # ============ RESUMEN GENERAL (útil para Telegram /menu) ============
