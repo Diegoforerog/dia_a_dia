@@ -266,7 +266,8 @@ def post_habito():
         "duracion_min": body.get("duracion_min", 15),
         "activo": True,
         "racha_actual": 0,
-        "mejor_racha": 0
+        "mejor_racha": 0,
+        "dias": body.get("dias")  # int[] 1-7 (ISO) o None
     }
     data["habitos"].append(nuevo)
     guardar("habitos.json", data)

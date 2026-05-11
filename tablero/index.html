@@ -1352,9 +1352,24 @@ function pintarPlan(plan, clientes) {
   }
 }
 
+// ISO weekday: 1=Lun ... 7=Dom (Date.getDay() devuelve 0=Dom..6=Sáb)
+function isoWeekdayToday() {
+  const d = new Date().getDay();
+  return d === 0 ? 7 : d;
+}
+function habitoAplicaHoy(h, isoDow) {
+  if (!h.activo) return false;
+  if (h.frecuencia === 'diaria') return true;
+  if (h.frecuencia === 'dias_especificos') {
+    return (h.dias || []).includes(isoDow);
+  }
+  return false; // semanal/mensual no se muestran en vista diaria por ahora
+}
+
 function pintarHabitos(habitosData, registro) {
   const cumplidos = new Set((registro && registro.habitos_cumplidos) || []);
-  const activos = (habitosData.habitos || []).filter(h => h.activo);
+  const dow = isoWeekdayToday();
+  const activos = (habitosData.habitos || []).filter(h => habitoAplicaHoy(h, dow));
   const cats = habitosData.categorias || [];
   const catMap = {};
   cats.forEach(c => catMap[c.id] = c);

@@ -760,6 +760,47 @@
   .skip { position: absolute; left: -9999px; }
   .skip:focus { left: 16px; top: 16px; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 6px; z-index: 999; }
 
+  /* ───── DÍAS PICKER ───── */
+  .dias-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  @media (max-width: 600px) { .dias-grid { grid-template-columns: repeat(4, 1fr); } }
+  .dia-chip {
+    cursor: pointer;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 4px;
+    text-align: center;
+    background: var(--surface);
+    user-select: none;
+    transition: all .15s var(--ease);
+    font-size: 13px;
+    color: var(--charcoal);
+    font-weight: 500;
+  }
+  .dia-chip input { display: none; }
+  .dia-chip:hover { background: var(--surface-2); border-color: var(--line-strong); }
+  .dia-chip:has(input:checked) {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+    font-weight: 600;
+  }
+  .dias-resumen {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--charcoal);
+    background: var(--surface-2);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+  }
+
   /* ───── RECORDATORIOS ───── */
   .rec-row {
     display: grid;
@@ -1744,9 +1785,11 @@
             </div>
             <div>
               <label>Frecuencia</label>
-              <select name="frecuencia">
-                <option value="diaria">Diaria</option>
-                <option value="semanal">Semanal</option>
+              <select name="frecuencia" id="sel-frecuencia-hab" onchange="toggleDiasPicker()">
+                <option value="diaria">Diaria (todos los días)</option>
+                <option value="dias_especificos">Días específicos</option>
+                <option value="semanal">Una vez por semana</option>
+                <option value="mensual">Una vez por mes</option>
               </select>
             </div>
             <div>
@@ -1761,6 +1804,18 @@
             <div>
               <label>Duración (min)</label>
               <input type="number" name="duracion_min" value="15" min="0">
+            </div>
+            <div class="full" id="dias-picker" style="display:none;">
+              <label>¿Qué días? (selecciona uno o varios)</label>
+              <div class="dias-grid">
+                <label class="dia-chip"><input type="checkbox" name="dia" value="1"><span>Lun</span></label>
+                <label class="dia-chip"><input type="checkbox" name="dia" value="2"><span>Mar</span></label>
+                <label class="dia-chip"><input type="checkbox" name="dia" value="3"><span>Mié</span></label>
+                <label class="dia-chip"><input type="checkbox" name="dia" value="4"><span>Jue</span></label>
+                <label class="dia-chip"><input type="checkbox" name="dia" value="5"><span>Vie</span></label>
+                <label class="dia-chip"><input type="checkbox" name="dia" value="6"><span>Sáb</span></label>
+                <label class="dia-chip"><input type="checkbox" name="dia" value="7"><span>Dom</span></label>
+              </div>
             </div>
           </div>
           <div class="form-actions">
@@ -2373,29 +2428,60 @@ async function cargarHabitos() {
     <tr>
       <td><span class="tag">${c.icono} ${c.nombre}</span></td>
       <td><strong>${h.nombre}</strong></td>
-      <td style="color:var(--stone)">${h.horario_sugerido} · ${h.duracion_min} min</td>
+      <td style="color:var(--stone)">${h.horario_sugerido} · ${h.duracion_min} min · <span class="dias-resumen">${fmtDiasHabito(h)}</span></td>
       <td>${h.racha_actual > 0 ? `<span class="badge-streak">🔥 ${h.racha_actual} días</span>` : '<span style="color:var(--mist)">—</span>'}</td>
-      <td><button class="danger" onclick="eliminarHabito('${h.id}')">Eliminar</button></td>
+      <td>
+        <button class="btn-edit" onclick='abrirEditHabito(${JSON.stringify(h).replace(/'/g,"&apos;")})'>Editar</button>
+        <button class="danger" onclick="eliminarHabito('${h.id}')">Eliminar</button>
+      </td>
     </tr>`;
   }).join('') : emptyRow(5, 'Aún sin hábitos. Agrega uno para empezar a construir rutina.');
   document.getElementById('sel-categoria-hab').innerHTML =
     (data.categorias || []).map(c => `<option value="${c.id}">${c.icono} ${c.nombre}</option>`).join('');
 }
 
+function toggleDiasPicker() {
+  const sel = document.getElementById('sel-frecuencia-hab');
+  const picker = document.getElementById('dias-picker');
+  if (picker) picker.style.display = sel.value === 'dias_especificos' ? 'block' : 'none';
+}
+
 async function crearHabito(e) {
   e.preventDefault();
   const f = e.target;
+  const freq = f.frecuencia.value;
+  let dias = null;
+  if (freq === 'dias_especificos') {
+    dias = Array.from(f.querySelectorAll('input[name="dia"]:checked')).map(c => parseInt(c.value));
+    if (!dias.length) {
+      toast('Selecciona al menos un día', 'err');
+      return false;
+    }
+  }
   await api('/habitos', { method: 'POST', body: JSON.stringify({
     categoria_id: f.categoria_id.value,
     nombre: f.nombre.value,
-    frecuencia: f.frecuencia.value,
+    frecuencia: freq,
     horario_sugerido: f.horario_sugerido.value,
-    duracion_min: parseInt(f.duracion_min.value)
+    duracion_min: parseInt(f.duracion_min.value),
+    dias: dias
   })});
   toast('Hábito creado');
   f.reset();
+  toggleDiasPicker();
   cargarHabitos();
   return false;
+}
+
+const NOMBRES_DIA = ['', 'L', 'M', 'X', 'J', 'V', 'S', 'D'];
+function fmtDiasHabito(h) {
+  if (h.frecuencia === 'dias_especificos' && h.dias && h.dias.length) {
+    if (h.dias.length === 7) return 'Todos los días';
+    if (h.dias.length === 5 && [1,2,3,4,5].every(d => h.dias.includes(d))) return 'Lun a Vie';
+    if (h.dias.length === 2 && h.dias.includes(6) && h.dias.includes(7)) return 'Fin de semana';
+    return h.dias.sort((a,b)=>a-b).map(d => NOMBRES_DIA[d]).join('·');
+  }
+  return h.frecuencia;
 }
 
 async function eliminarHabito(id) {
@@ -3124,6 +3210,37 @@ async function abrirEditProyecto(p) {
   abrirModal();
 }
 
+async function abrirEditHabito(h) {
+  _editTipo = 'habito'; _editId = h.id;
+  document.getElementById('modal-eyebrow').textContent = 'Editar hábito';
+  document.getElementById('modal-title').textContent = h.nombre;
+  const cats = (await api('/habitos')).categorias || [];
+  const optsCat = cats.map(c => `<option value="${c.id}" ${c.id===h.categoria_id?'selected':''}>${c.icono} ${c.nombre}</option>`).join('');
+  const dias = h.dias || [];
+  const chipsHTML = [['1','Lun'],['2','Mar'],['3','Mié'],['4','Jue'],['5','Vie'],['6','Sáb'],['7','Dom']]
+    .map(([v,l]) => `<label class="dia-chip"><input type="checkbox" name="dia" value="${v}" ${dias.includes(parseInt(v))?'checked':''}><span>${l}</span></label>`).join('');
+  document.getElementById('modal-fields').innerHTML = `
+    <div><label>Categoría</label><select name="categoria_id">${optsCat}</select></div>
+    <div><label>Nombre</label><input name="nombre" value="${escapeHtml(h.nombre)}" required></div>
+    <div><label>Frecuencia</label><select name="frecuencia" id="edit-freq" onchange="document.getElementById('edit-dias').style.display=this.value==='dias_especificos'?'block':'none'">
+      ${[['diaria','Diaria'],['dias_especificos','Días específicos'],['semanal','Semanal'],['mensual','Mensual']].map(([v,l]) => `<option value="${v}" ${v===h.frecuencia?'selected':''}>${l}</option>`).join('')}
+    </select></div>
+    <div><label>Horario</label><select name="horario_sugerido">
+      ${['mañana','tarde','noche','todo el día'].map(s => `<option value="${s}" ${s===h.horario_sugerido?'selected':''}>${s}</option>`).join('')}
+    </select></div>
+    <div><label>Duración (min)</label><input type="number" name="duracion_min" value="${h.duracion_min||15}" min="0"></div>
+    <div><label>Activo</label><select name="activo">
+      <option value="true" ${h.activo?'selected':''}>Sí</option>
+      <option value="false" ${!h.activo?'selected':''}>No</option>
+    </select></div>
+    <div class="full" id="edit-dias" style="display:${h.frecuencia==='dias_especificos'?'block':'none'};">
+      <label>Días que aplica</label>
+      <div class="dias-grid">${chipsHTML}</div>
+    </div>
+  `;
+  abrirModal();
+}
+
 async function abrirEditTarea(t) {
   _editTipo = 'tarea'; _editId = t.id;
   document.getElementById('modal-eyebrow').textContent = 'Editar tarea';
@@ -3175,16 +3292,31 @@ async function guardarEdit(e) {
   e.preventDefault();
   const f = e.target;
   const body = {};
-  new FormData(f).forEach((v, k) => { body[k] = v === '' ? null : v; });
+  // FormData no captura múltiples "dia" como array, los procesamos manualmente después
+  new FormData(f).forEach((v, k) => {
+    if (k === 'dia') return; // los manejamos aparte
+    body[k] = v === '' ? null : v;
+  });
   if (_editTipo === 'recordatorio' && body.fecha_hora) {
     body.fecha_hora = body.fecha_hora + ':00-05:00';
   }
-  if (_editTipo === 'tarea' && body.duracion_min) body.duracion_min = parseInt(body.duracion_min);
-  const ruta = {tarea:'/tareas', proyecto:'/proyectos', recordatorio:'/recordatorios'}[_editTipo];
+  if ((_editTipo === 'tarea' || _editTipo === 'habito') && body.duracion_min) {
+    body.duracion_min = parseInt(body.duracion_min);
+  }
+  if (_editTipo === 'habito') {
+    body.activo = body.activo === 'true' || body.activo === true;
+    if (body.frecuencia === 'dias_especificos') {
+      body.dias = Array.from(f.querySelectorAll('input[name="dia"]:checked')).map(c => parseInt(c.value));
+      if (!body.dias.length) { toast('Selecciona al menos un día', 'err'); return false; }
+    } else {
+      body.dias = null;
+    }
+  }
+  const ruta = {tarea:'/tareas', proyecto:'/proyectos', recordatorio:'/recordatorios', habito:'/habitos'}[_editTipo];
   await api(`${ruta}/${_editId}`, { method: 'PUT', body: JSON.stringify(body) });
   toast('✓ Guardado');
   cerrarModal();
-  const recargar = {tarea: cargarTareas, proyecto: cargarProyectos, recordatorio: cargarRecordatorios}[_editTipo];
+  const recargar = {tarea: cargarTareas, proyecto: cargarProyectos, recordatorio: cargarRecordatorios, habito: cargarHabitos}[_editTipo];
   recargar();
   return false;
 }
