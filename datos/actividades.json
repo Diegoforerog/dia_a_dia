@@ -10,7 +10,20 @@
       "deadline": "2026-05-11",
       "notas": "",
       "estado": "pendiente",
-      "creada": "2026-05-10T19:08:50.733733"
+      "creada": "2026-05-10T19:08:50.733733+00:00",
+      "completada_en": null
+    },
+    {
+      "id": "tarea_20260510203014",
+      "cliente_id": "msl",
+      "proyecto_id": "proy_20260510202951",
+      "titulo": "Revisar casos",
+      "prioridad": "media",
+      "duracion_min": 120,
+      "deadline": "2026-05-12",
+      "notas": "",
+      "estado": "pendiente",
+      "creada": "2026-05-10T20:30:14.415828"
     }
   ]
 }

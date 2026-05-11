@@ -27,6 +27,13 @@
       "color": "#4ECDC4",
       "descripcion": "Vida privada, familia, salud, citas",
       "activo": true
+    },
+    {
+      "id": "msl",
+      "nombre": "MSL",
+      "color": "#00bfff",
+      "descripcion": "ITCA y SDM",
+      "activo": true
     }
   ]
 }

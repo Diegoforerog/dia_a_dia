@@ -17,6 +17,15 @@
       "prioridad": "alta",
       "deadline": "2026-05-11",
       "descripcion": "Se debe crear la página web, corregir y publicar."
+    },
+    {
+      "id": "proy_20260510202951",
+      "cliente_id": "msl",
+      "nombre": "CGR",
+      "estado": "activo",
+      "prioridad": "media",
+      "deadline": null,
+      "descripcion": ""
     }
   ]
 }
