@@ -290,6 +290,175 @@ def delete_habito(hid):
     return jsonify({"ok": True})
 
 
+# ============ SESIÓN DEL BOT (estado entre mensajes) ============
+
+@app.route("/api/bot/sesion/<int:chat_id>", methods=["GET"])
+@requiere_auth
+def get_sesion(chat_id):
+    if not _db.db_disponible():
+        return jsonify({"sesion": None})
+    rows = _db.query("SELECT flujo, paso, datos FROM sesiones_bot WHERE chat_id=%s", (chat_id,))
+    if rows:
+        s = rows[0]
+        return jsonify({"sesion": {"flujo": s["flujo"], "paso": s["paso"], "datos": s["datos"]}})
+    return jsonify({"sesion": None})
+
+
+@app.route("/api/bot/sesion/<int:chat_id>", methods=["POST"])
+@requiere_auth
+def set_sesion(chat_id):
+    body = request.get_json() or {}
+    if not _db.db_disponible():
+        return jsonify({"error": "DB no disponible"}), 500
+    from psycopg2.extras import Json
+    _db.execute("""
+        INSERT INTO sesiones_bot (chat_id, flujo, paso, datos)
+        VALUES (%s,%s,%s,%s)
+        ON CONFLICT (chat_id) DO UPDATE SET
+          flujo=EXCLUDED.flujo, paso=EXCLUDED.paso,
+          datos=EXCLUDED.datos, actualizado=NOW()
+    """, (chat_id, body.get("flujo",""), body.get("paso",""), Json(body.get("datos", {}))))
+    return jsonify({"ok": True})
+
+
+@app.route("/api/bot/sesion/<int:chat_id>", methods=["DELETE"])
+@requiere_auth
+def del_sesion(chat_id):
+    if _db.db_disponible():
+        _db.execute("DELETE FROM sesiones_bot WHERE chat_id=%s", (chat_id,))
+    return jsonify({"ok": True})
+
+
+# ============ REUNIONES (check disponibilidad + link Google Calendar) ============
+
+def _parse_iso(s):
+    """Parsea ISO con o sin TZ. Si no tiene TZ, asume Colombia (-05:00)."""
+    if not s: return None
+    if 'T' not in s:
+        s = s + 'T00:00:00-05:00'
+    elif '+' not in s and 'Z' not in s and s.count('-') < 3:
+        s = s + '-05:00'
+    try:
+        return datetime.fromisoformat(s)
+    except Exception:
+        return None
+
+
+@app.route("/api/reunion/proponer", methods=["POST"])
+@requiere_auth
+def proponer_reunion():
+    """Recibe propuesta de reunión, chequea conflictos contra calendarios iCal,
+    devuelve link de Google Calendar deeplink para crear con 1 click."""
+    from datetime import timedelta
+    import urllib.parse
+
+    body = request.get_json() or {}
+    titulo = (body.get("titulo") or "").strip()
+    fecha_hora = body.get("fecha_hora")  # ISO con TZ
+    duracion_min = int(body.get("duracion_min") or 60)
+    invitados = body.get("invitados") or []  # lista de strings
+    descripcion = (body.get("descripcion") or "").strip()
+    ubicacion = (body.get("ubicacion") or "").strip()
+
+    if not titulo or not fecha_hora:
+        return jsonify({"error": "Faltan campos: titulo o fecha_hora"}), 400
+
+    inicio = _parse_iso(fecha_hora)
+    if not inicio:
+        return jsonify({"error": "Fecha/hora inválida (usa ISO)"}), 400
+    fin = inicio + timedelta(minutes=duracion_min)
+
+    # Limpiar invitados (quitar vacíos, validar @)
+    inv_clean = [e.strip() for e in invitados if "@" in str(e)]
+
+    # === Chequear conflictos contra iCal ===
+    conflictos = []
+    try:
+        from icalendar import Calendar
+        import recurring_ical_events
+        import urllib.request as urlreq
+
+        cals = [c for c in cargar("calendarios.json")["calendarios_gmail"]
+                if c.get("activo") and c.get("ical_url")]
+
+        # Ampliar rango ±1 día para cubrir eventos que crucen medianoche
+        rango_desde = inicio - timedelta(hours=12)
+        rango_hasta = fin + timedelta(hours=12)
+
+        for cal in cals:
+            try:
+                req = urlreq.Request(cal["ical_url"], headers={"User-Agent": "Organizador/1.0"})
+                with urlreq.urlopen(req, timeout=15) as r:
+                    ics = r.read()
+                ical = Calendar.from_ical(ics)
+                ocs = recurring_ical_events.of(ical).between(rango_desde, rango_hasta)
+                for ev in ocs:
+                    e_start = ev.get("DTSTART").dt if ev.get("DTSTART") else None
+                    e_end = ev.get("DTEND").dt if ev.get("DTEND") else e_start
+                    if not e_start: continue
+                    # normalizar a datetime con TZ
+                    if not hasattr(e_start, "hour"):
+                        continue  # all-day no consideramos como conflicto duro
+                    if not hasattr(e_start, "tzinfo") or e_start.tzinfo is None:
+                        e_start = e_start.replace(tzinfo=inicio.tzinfo)
+                    if not hasattr(e_end, "tzinfo") or e_end.tzinfo is None:
+                        e_end = e_end.replace(tzinfo=inicio.tzinfo)
+                    # Overlap check: [inicio,fin) vs [e_start,e_end)
+                    if e_start < fin and e_end > inicio:
+                        conflictos.append({
+                            "titulo": str(ev.get("SUMMARY", "(sin título)")),
+                            "calendario": cal["nombre_para_mostrar"],
+                            "inicio": e_start.isoformat(),
+                            "fin": e_end.isoformat()
+                        })
+            except Exception:
+                pass
+    except ImportError:
+        pass
+
+    # === Construir Google Calendar deeplink ===
+    def _gcal_dt(d):
+        """Format UTC para Google Calendar deeplink."""
+        if d.tzinfo:
+            d_utc = d.astimezone()  # convertir a TZ local del server (Bogotá)
+            return d_utc.strftime("%Y%m%dT%H%M%S")
+        return d.strftime("%Y%m%dT%H%M%S")
+
+    gcal_params = {
+        "action": "TEMPLATE",
+        "text": titulo,
+        "dates": f"{_gcal_dt(inicio)}/{_gcal_dt(fin)}",
+        "ctz": "America/Bogota"
+    }
+    if descripcion:
+        gcal_params["details"] = descripcion
+    if ubicacion:
+        gcal_params["location"] = ubicacion
+    if inv_clean:
+        gcal_params["add"] = ",".join(inv_clean)
+
+    gcal_url = "https://calendar.google.com/calendar/render?" + urllib.parse.urlencode(gcal_params)
+
+    # Mensaje de status
+    if conflictos:
+        msg = f"⚠️ Tienes {len(conflictos)} conflicto{'s' if len(conflictos)!=1 else ''} en ese horario"
+    else:
+        msg = "✅ Horario disponible"
+
+    return jsonify({
+        "ok": True,
+        "titulo": titulo,
+        "inicio": inicio.isoformat(),
+        "fin": fin.isoformat(),
+        "duracion_min": duracion_min,
+        "invitados": inv_clean,
+        "conflictos": conflictos,
+        "disponible": len(conflictos) == 0,
+        "mensaje": msg,
+        "google_calendar_url": gcal_url
+    })
+
+
 # ============ RECORDATORIOS ============
 
 @app.route("/api/recordatorios", methods=["GET"])
