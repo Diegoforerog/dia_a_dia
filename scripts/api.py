@@ -460,6 +460,132 @@ def del_sesion(chat_id):
     return jsonify({"ok": True})
 
 
+# ============ ESPACIOS LIBRES EN LA AGENDA ============
+
+@app.route("/api/agenda/libres", methods=["GET"])
+@requiere_auth
+def agenda_libres():
+    """Calcula los espacios libres en un día dado, leyendo iCal y considerando
+    la ventana de trabajo (horarios.inicio_dia / fin_dia de config).
+
+    Query: ?fecha=YYYY-MM-DD&min_gap_min=15
+    """
+    from datetime import timedelta
+
+    fecha_str = request.args.get("fecha")
+    if not fecha_str:
+        return jsonify({"error": "Falta param 'fecha' (YYYY-MM-DD)"}), 400
+    try:
+        fecha = date.fromisoformat(fecha_str)
+    except ValueError:
+        return jsonify({"error": "Fecha inválida"}), 400
+
+    min_gap = int(request.args.get("min_gap_min", 15))
+
+    # Ventana de trabajo desde config
+    config = cargar("config.json")
+    horarios = config.get("horarios", {}) if isinstance(config, dict) else {}
+    inicio_dia = horarios.get("inicio_dia", "07:00")
+    fin_dia = horarios.get("fin_dia", "21:00")
+
+    try:
+        ih, im = map(int, inicio_dia.split(":"))
+        fh, fm = map(int, fin_dia.split(":"))
+    except Exception:
+        ih, im, fh, fm = 7, 0, 21, 0
+
+    # TZ Colombia
+    from datetime import timezone
+    tz = timezone(timedelta(hours=-5))
+    ventana_inicio = datetime.combine(fecha, datetime.min.time()).replace(hour=ih, minute=im, tzinfo=tz)
+    ventana_fin = datetime.combine(fecha, datetime.min.time()).replace(hour=fh, minute=fm, tzinfo=tz)
+
+    # Cargar eventos del día con expansión RRULE
+    try:
+        from icalendar import Calendar
+        import recurring_ical_events
+        import urllib.request as urlreq
+    except ImportError:
+        return jsonify({"error": "Falta librería icalendar / recurring_ical_events"}), 500
+
+    cals = [c for c in cargar("calendarios.json")["calendarios_gmail"]
+            if c.get("activo") and c.get("ical_url")]
+
+    eventos = []
+    for cal in cals:
+        try:
+            req = urlreq.Request(cal["ical_url"], headers={"User-Agent": "Organizador/1.0"})
+            with urlreq.urlopen(req, timeout=15) as r:
+                ics = r.read()
+            ical = Calendar.from_ical(ics)
+            ocs = recurring_ical_events.of(ical).between(
+                ventana_inicio - timedelta(hours=2),
+                ventana_fin + timedelta(hours=2))
+            for ev in ocs:
+                start = ev.get("DTSTART").dt if ev.get("DTSTART") else None
+                end = ev.get("DTEND").dt if ev.get("DTEND") else start
+                if not start or not hasattr(start, "hour"):
+                    continue  # all-day no bloquea
+                if start.tzinfo is None:
+                    start = start.replace(tzinfo=tz)
+                if end and end.tzinfo is None:
+                    end = end.replace(tzinfo=tz)
+                # Solo eventos que solapan con la ventana de trabajo
+                if end <= ventana_inicio or start >= ventana_fin:
+                    continue
+                eventos.append({
+                    "titulo": str(ev.get("SUMMARY", "(sin título)")),
+                    "inicio": max(start, ventana_inicio),
+                    "fin": min(end, ventana_fin),
+                    "calendario": cal.get("nombre_para_mostrar")
+                })
+        except Exception:
+            pass
+
+    eventos.sort(key=lambda e: e["inicio"])
+
+    # Calcular gaps entre eventos
+    libres = []
+    cursor = ventana_inicio
+    for ev in eventos:
+        gap_min = int((ev["inicio"] - cursor).total_seconds() / 60)
+        if gap_min >= min_gap:
+            libres.append({
+                "inicio": cursor.isoformat(),
+                "fin": ev["inicio"].isoformat(),
+                "duracion_min": gap_min
+            })
+        if ev["fin"] > cursor:
+            cursor = ev["fin"]
+    # Gap final
+    gap_final = int((ventana_fin - cursor).total_seconds() / 60)
+    if gap_final >= min_gap:
+        libres.append({
+            "inicio": cursor.isoformat(),
+            "fin": ventana_fin.isoformat(),
+            "duracion_min": gap_final
+        })
+
+    total_libre = sum(l["duracion_min"] for l in libres)
+    total_ocupado = int((ventana_fin - ventana_inicio).total_seconds() / 60) - total_libre
+
+    return jsonify({
+        "fecha": fecha_str,
+        "ventana_inicio": ventana_inicio.isoformat(),
+        "ventana_fin": ventana_fin.isoformat(),
+        "min_gap_min": min_gap,
+        "eventos": [{
+            "titulo": e["titulo"],
+            "inicio": e["inicio"].isoformat(),
+            "fin": e["fin"].isoformat(),
+            "calendario": e["calendario"]
+        } for e in eventos],
+        "espacios_libres": libres,
+        "total_libre_min": total_libre,
+        "total_ocupado_min": total_ocupado
+    })
+
+
 # ============ REUNIONES (check disponibilidad + link Google Calendar) ============
 
 def _parse_iso(s):
