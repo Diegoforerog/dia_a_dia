@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,0..100&family=Geist:wght@300..700&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..600,0..100&family=Inter:wght@400..700&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/es.global.min.js"></script>
 <style>
@@ -19,8 +19,9 @@
     --crimson:#A8392F; --crimson-soft:#F4E5E3;
     --amber:#B47B1E; --amber-soft:#F8EFDB;
     --indigo:#4A4D7A; --indigo-soft:#ECEDF4;
-    --font-display:"Fraunces","Times New Roman",serif;
-    --font-body:"Geist",-apple-system,BlinkMacSystemFont,sans-serif;
+    --font-brand:"Fraunces","Times New Roman",serif;
+    --font-display:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;
+    --font-body:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;
     --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",monospace;
     --ease:cubic-bezier(.4,0,.2,1);
   }
@@ -52,7 +53,7 @@
   }
   .brand { display: flex; flex-direction: column; gap: 2px; }
   .brand-mark {
-    font-family: var(--font-display);
+    font-family: var(--font-brand);
     font-weight: 400;
     font-style: italic;
     font-size: 28px;
