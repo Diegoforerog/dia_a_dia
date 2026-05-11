@@ -735,6 +735,84 @@
     margin-right: 4px;
   }
 
+  /* ───── KPI CARDS (Overview hero strip) ───── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px)  { .kpi-grid { grid-template-columns: 1fr; } }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: all .15s var(--ease);
+    cursor: default;
+  }
+  .kpi-plan {
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--burnt), var(--burnt-hover));
+    border-color: var(--burnt);
+    color: var(--paper);
+  }
+  .kpi-plan:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -8px rgba(37, 99, 235, .35); }
+  .kpi-plan .kpi-label, .kpi-plan .kpi-sub, .kpi-plan .kpi-foot { color: rgba(255,255,255,.85); }
+  .kpi-plan .kpi-num { color: var(--paper); }
+  .kpi-plan .kpi-icon { background: rgba(255,255,255,.18) !important; color: var(--paper) !important; }
+
+  .kpi-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .kpi-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .kpi-label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .kpi-sub {
+    font-size: 11.5px;
+    color: var(--stone);
+    margin-top: 2px;
+    line-height: 1.3;
+  }
+  .kpi-num {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -.02em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    margin-top: 4px;
+  }
+  .kpi-num small {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--stone);
+    letter-spacing: 0;
+    margin-left: 2px;
+  }
+  .kpi-foot {
+    font-size: 11.5px;
+    color: var(--stone);
+    margin-top: auto;
+    line-height: 1.35;
+  }
+
   /* ───── TOGGLE HOY/SEMANA/MES ───── */
   .view-toggle {
     display: inline-flex;
@@ -1150,6 +1228,66 @@
 
     <!-- VISTA HOY (default) -->
     <div id="vista-hoy" class="vista-modo activa">
+
+    <!-- KPIs ARRIBA — 4 cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-plan" onclick="document.getElementById('bloques').scrollIntoView({behavior:'smooth'})">
+        <div class="kpi-head">
+          <div class="kpi-icon" style="background:var(--burnt-soft);color:var(--burnt)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div>
+            <div class="kpi-label">Plan del día</div>
+            <div class="kpi-sub">Lo que tienes que hacer hoy</div>
+          </div>
+        </div>
+        <div class="kpi-num"><span id="kpi-plan-num">—</span> <small id="kpi-plan-unit">bloques</small></div>
+        <div class="kpi-foot" id="kpi-plan-foot">Sin generar todavía</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-head">
+          <div class="kpi-icon" style="background:var(--indigo-soft);color:var(--indigo)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+          <div>
+            <div class="kpi-label">Eventos de hoy</div>
+            <div class="kpi-sub">Calendarios conectados</div>
+          </div>
+        </div>
+        <div class="kpi-num"><span id="kpi-eventos-num">—</span> <small>eventos</small></div>
+        <div class="kpi-foot" id="kpi-eventos-foot">Próximo: —</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-head">
+          <div class="kpi-icon" style="background:var(--sage-soft);color:var(--sage)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 4-7.5"/><path d="M3 4v5h5"/></svg>
+          </div>
+          <div>
+            <div class="kpi-label">Hábitos hoy</div>
+            <div class="kpi-sub">Cumplimiento del día</div>
+          </div>
+        </div>
+        <div class="kpi-num"><span id="kpi-habitos-pct">0%</span></div>
+        <div class="kpi-foot"><span id="kpi-habitos-detalle">0/0 cumplidos</span> · <span id="kpi-habitos-racha">mejor racha 0</span></div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-head">
+          <div class="kpi-icon" style="background:var(--amber-soft);color:var(--amber)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <div>
+            <div class="kpi-label">Tareas pendientes</div>
+            <div class="kpi-sub">Trabajo por hacer</div>
+          </div>
+        </div>
+        <div class="kpi-num"><span id="kpi-tareas-num">—</span> <small>tareas</small></div>
+        <div class="kpi-foot" id="kpi-tareas-foot">—</div>
+      </div>
+    </div>
+
     <div class="grid">
 
       <!-- COLUMNA IZQUIERDA: PLAN -->
@@ -1445,6 +1583,14 @@ function pintarHabitos(habitosData, registro) {
   /* sidebar summary */
   document.getElementById('sum-habitos').textContent = `${cumplidos.size}/${activos.length}`;
   document.getElementById('sum-racha').textContent = mejor;
+
+  /* KPI habitos */
+  const kpiPct = document.getElementById('kpi-habitos-pct');
+  const kpiDet = document.getElementById('kpi-habitos-detalle');
+  const kpiRacha = document.getElementById('kpi-habitos-racha');
+  if (kpiPct) kpiPct.textContent = pct + '%';
+  if (kpiDet) kpiDet.textContent = `${cumplidos.size}/${activos.length} cumplidos`;
+  if (kpiRacha) kpiRacha.textContent = `mejor racha ${mejor}`;
 }
 
 async function pintarEventosHoy() {
@@ -1454,7 +1600,21 @@ async function pintarEventosHoy() {
     const ev = await apiGet(`/calendarios/eventos_rango?desde=${hoyStr}&hasta=${hoyStr}`);
     if (!ev || !Array.isArray(ev) || ev.length === 0) {
       div.innerHTML = '<div class="empty">Día libre. Sin eventos en tus calendarios.</div>';
+      document.getElementById('kpi-eventos-num').textContent = '0';
+      document.getElementById('kpi-eventos-foot').textContent = 'Día libre';
       return;
+    }
+    // KPI eventos: total + próximo
+    const ahora = new Date();
+    const futuros = ev.filter(e => !e.allDay && e.start && new Date(e.start) > ahora);
+    document.getElementById('kpi-eventos-num').textContent = ev.length;
+    if (futuros.length) {
+      const prox = futuros.sort((a,b) => (a.start||'').localeCompare(b.start||''))[0];
+      const horaProx = new Date(prox.start).toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', hour12:false});
+      const minRest = Math.max(0, Math.round((new Date(prox.start) - ahora) / 60000));
+      document.getElementById('kpi-eventos-foot').textContent = `Próximo: ${horaProx} (en ${minRest > 60 ? Math.round(minRest/60)+'h' : minRest+'min'})`;
+    } else {
+      document.getElementById('kpi-eventos-foot').textContent = 'Sin eventos restantes hoy';
     }
     /* ordenar por hora */
     ev.sort((a,b) => (a.start || '').localeCompare(b.start || ''));
@@ -1554,6 +1714,7 @@ function pintarStatus(registro) {
   pintarClientes(listaClientes, (proyectosData || {}).proyectos || []);
   pintarStatus(registro);
   pintarEventosHoy();
+  pintarKPIs(registro, (proyectosData||{}).proyectos || []);
 
   /* exponer datos globalmente para vistas semana y mes */
   window.__DATA__ = {
@@ -1561,6 +1722,43 @@ function pintarStatus(registro) {
     proyectos: (proyectosData||{}).proyectos || []
   };
 })();
+
+function pintarKPIs(registro, proyectos) {
+  // KPI plan
+  const plan = registro && registro.plan_generado;
+  const kpiNum = document.getElementById('kpi-plan-num');
+  const kpiUnit = document.getElementById('kpi-plan-unit');
+  const kpiFoot = document.getElementById('kpi-plan-foot');
+  if (plan && plan.bloques && plan.bloques.length) {
+    kpiNum.textContent = plan.bloques.length;
+    kpiUnit.textContent = 'bloques';
+    if (registro.aprobado) kpiFoot.textContent = '✓ Plan aprobado';
+    else kpiFoot.textContent = 'Pendiente de aprobar';
+  } else {
+    kpiNum.textContent = '0';
+    kpiUnit.textContent = '';
+    kpiFoot.textContent = 'Sin generar todavía · /generar';
+  }
+
+  // KPI tareas: pedir por API y actualizar
+  (async () => {
+    try {
+      const r = await apiGet('/tareas?estado=pendiente');
+      const lista = r.actividades || [];
+      document.getElementById('kpi-tareas-num').textContent = lista.length;
+      const altas = lista.filter(t => t.prioridad === 'alta').length;
+      const hoyStr = new Date().toISOString().slice(0,10);
+      const vencen = lista.filter(t => t.deadline && t.deadline <= hoyStr).length;
+      if (vencen > 0) {
+        document.getElementById('kpi-tareas-foot').textContent = `⚠️ ${vencen} vencen hoy · ${altas} prioridad alta`;
+      } else if (altas > 0) {
+        document.getElementById('kpi-tareas-foot').textContent = `${altas} prioridad alta`;
+      } else {
+        document.getElementById('kpi-tareas-foot').textContent = lista.length ? 'Sin urgentes' : 'Sin tareas pendientes';
+      }
+    } catch(e) {}
+  })();
+}
 
 /* ───── TOGGLE Hoy/Semana/Mes ───── */
 const DIAS_LARGOS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
