@@ -755,6 +755,60 @@
     gap: 14px;
     transition: all .15s var(--ease);
     cursor: default;
+    text-decoration: none;
+    color: inherit;
+  }
+  .kpi-card.clickable { cursor: pointer; }
+  .kpi-card.clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -8px rgba(14, 13, 11, .12);
+    border-color: var(--line-strong);
+  }
+  .kpi-link-arrow {
+    margin-top: auto;
+    padding-top: 4px;
+    font-size: 11.5px;
+    color: var(--burnt);
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity .15s var(--ease);
+  }
+  .kpi-card.clickable:hover .kpi-link-arrow { opacity: 1; }
+
+  .kpi-action {
+    margin-top: 8px;
+  }
+  .kpi-btn {
+    background: rgba(255, 255, 255, .22);
+    color: var(--paper);
+    border: 1px solid rgba(255, 255, 255, .25);
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all .15s var(--ease);
+    width: 100%;
+    justify-content: center;
+  }
+  .kpi-btn:hover {
+    background: rgba(255, 255, 255, .32);
+    border-color: rgba(255, 255, 255, .4);
+  }
+  .kpi-btn:disabled {
+    opacity: .6;
+    cursor: wait;
+  }
+  .kpi-btn svg.spinning {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
   .kpi-plan {
     cursor: pointer;
@@ -1229,11 +1283,12 @@
     <!-- VISTA HOY (default) -->
     <div id="vista-hoy" class="vista-modo activa">
 
-    <!-- KPIs ARRIBA — 4 cards -->
+    <!-- KPIs ARRIBA — 4 cards clickables -->
     <div class="kpi-grid">
-      <div class="kpi-card kpi-plan" onclick="document.getElementById('bloques').scrollIntoView({behavior:'smooth'})">
+
+      <div class="kpi-card kpi-plan clickable" id="kpi-plan-card" onclick="kpiPlanClick(event)">
         <div class="kpi-head">
-          <div class="kpi-icon" style="background:var(--burnt-soft);color:var(--burnt)">
+          <div class="kpi-icon" style="background:rgba(255,255,255,.18);color:var(--paper)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
           <div>
@@ -1243,9 +1298,15 @@
         </div>
         <div class="kpi-num"><span id="kpi-plan-num">—</span> <small id="kpi-plan-unit">bloques</small></div>
         <div class="kpi-foot" id="kpi-plan-foot">Sin generar todavía</div>
+        <div class="kpi-action" id="kpi-plan-action" style="display:none;">
+          <button class="kpi-btn" onclick="generarPlanAhora(event)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v9h-9"/></svg>
+            <span id="kpi-plan-btn-text">✨ Generar con IA ahora</span>
+          </button>
+        </div>
       </div>
 
-      <div class="kpi-card">
+      <a class="kpi-card clickable kpi-link" href="/tablero/agenda.html" aria-label="Ver agenda completa">
         <div class="kpi-head">
           <div class="kpi-icon" style="background:var(--indigo-soft);color:var(--indigo)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
@@ -1257,9 +1318,10 @@
         </div>
         <div class="kpi-num"><span id="kpi-eventos-num">—</span> <small>eventos</small></div>
         <div class="kpi-foot" id="kpi-eventos-foot">Próximo: —</div>
-      </div>
+        <div class="kpi-link-arrow">Ver agenda →</div>
+      </a>
 
-      <div class="kpi-card">
+      <a class="kpi-card clickable kpi-link" href="/tablero/admin.html" onclick="window.location.href='/tablero/admin.html#habitos'; return false;" aria-label="Ver hábitos">
         <div class="kpi-head">
           <div class="kpi-icon" style="background:var(--sage-soft);color:var(--sage)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 4-7.5"/><path d="M3 4v5h5"/></svg>
@@ -1271,9 +1333,10 @@
         </div>
         <div class="kpi-num"><span id="kpi-habitos-pct">0%</span></div>
         <div class="kpi-foot"><span id="kpi-habitos-detalle">0/0 cumplidos</span> · <span id="kpi-habitos-racha">mejor racha 0</span></div>
-      </div>
+        <div class="kpi-link-arrow">Ver hábitos →</div>
+      </a>
 
-      <div class="kpi-card">
+      <a class="kpi-card clickable kpi-link" href="/tablero/admin.html" onclick="window.location.href='/tablero/admin.html#tareas'; return false;" aria-label="Ver tareas">
         <div class="kpi-head">
           <div class="kpi-icon" style="background:var(--amber-soft);color:var(--amber)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
@@ -1285,7 +1348,9 @@
         </div>
         <div class="kpi-num"><span id="kpi-tareas-num">—</span> <small>tareas</small></div>
         <div class="kpi-foot" id="kpi-tareas-foot">—</div>
-      </div>
+        <div class="kpi-link-arrow">Ver tareas →</div>
+      </a>
+
     </div>
 
     <div class="grid">
@@ -1423,12 +1488,18 @@ async function leer(ruta) {
   } catch (e) { return null; }
 }
 
+/* base URL — local o prod */
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5050/api'
+  : '/api';
+
 /* token para llamar al api desde el navegador */
 async function getToken() {
   try {
-    const r = await fetch('http://localhost:5050/api/local-token');
+    const r = await fetch(API_BASE + '/local-token');
     if (r.ok) {
       const d = await r.json();
+      localStorage.setItem('organizador_token', d.token);
       return d.token;
     }
   } catch(e) {}
@@ -1438,7 +1509,7 @@ async function getToken() {
 async function apiGet(ruta) {
   const token = await getToken();
   try {
-    const r = await fetch('http://localhost:5050/api' + ruta, {
+    const r = await fetch(API_BASE + ruta, {
       headers: { 'X-API-Token': token }
     });
     if (!r.ok) return null;
@@ -1729,15 +1800,18 @@ function pintarKPIs(registro, proyectos) {
   const kpiNum = document.getElementById('kpi-plan-num');
   const kpiUnit = document.getElementById('kpi-plan-unit');
   const kpiFoot = document.getElementById('kpi-plan-foot');
+  const kpiAction = document.getElementById('kpi-plan-action');
   if (plan && plan.bloques && plan.bloques.length) {
     kpiNum.textContent = plan.bloques.length;
     kpiUnit.textContent = 'bloques';
-    if (registro.aprobado) kpiFoot.textContent = '✓ Plan aprobado';
-    else kpiFoot.textContent = 'Pendiente de aprobar';
+    if (registro.aprobado) kpiFoot.textContent = '✓ Plan aprobado · click para ver';
+    else kpiFoot.textContent = 'Pendiente de aprobar · click para ver';
+    if (kpiAction) kpiAction.style.display = 'none';
   } else {
     kpiNum.textContent = '0';
     kpiUnit.textContent = '';
-    kpiFoot.textContent = 'Sin generar todavía · /generar';
+    kpiFoot.textContent = 'Aún no se ha generado';
+    if (kpiAction) kpiAction.style.display = 'block';
   }
 
   // KPI tareas: pedir por API y actualizar
@@ -1758,6 +1832,58 @@ function pintarKPIs(registro, proyectos) {
       }
     } catch(e) {}
   })();
+}
+
+/* ───── KPI Plan: click logic ───── */
+function kpiPlanClick(e) {
+  // Si el click vino del botón, no scrollees
+  if (e.target.closest('.kpi-btn')) return;
+  const bloques = document.getElementById('bloques');
+  if (bloques) bloques.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function generarPlanAhora(e) {
+  e.stopPropagation();
+  e.preventDefault();
+  const btn = e.currentTarget;
+  const txt = document.getElementById('kpi-plan-btn-text');
+  const original = txt.textContent;
+  btn.disabled = true;
+  btn.querySelector('svg').classList.add('spinning');
+  txt.textContent = 'Generando con IA · 10-15 seg…';
+
+  try {
+    const token = await getToken();
+    const r = await fetch(API_BASE + '/plan/generar', {
+      method: 'POST',
+      headers: { 'X-API-Token': token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ auto_aprobar: false })
+    });
+    if (!r.ok) {
+      const errBody = await r.text();
+      throw new Error(`HTTP ${r.status}: ${errBody.slice(0,100)}`);
+    }
+    const resp = await r.json();
+    if (resp && resp.plan) {
+      txt.textContent = '✓ Plan generado · recargando…';
+      setTimeout(() => window.location.reload(), 800);
+    } else {
+      throw new Error(resp.error || 'No se recibió plan');
+    }
+  } catch (err) {
+    console.error(err);
+    txt.textContent = '❌ ' + (err.message || '?').slice(0, 60);
+    btn.disabled = false;
+    btn.querySelector('svg').classList.remove('spinning');
+    setTimeout(() => { txt.textContent = original; }, 5000);
+  }
+}
+
+/* api con base URL automática (localhost o prod) */
+function apiBase() {
+  return window.location.hostname === 'localhost'
+    ? 'http://localhost:5050/api'
+    : '/api';
 }
 
 /* ───── TOGGLE Hoy/Semana/Mes ───── */
