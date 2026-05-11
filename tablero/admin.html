@@ -2052,6 +2052,16 @@ async function eliminarHabito(id) {
 async function cargarTareas() {
   const clientes = (await api('/clientes')).clientes || [];
   const empMap = {}; clientes.forEach(e => empMap[e.id] = e);
+
+  /* asegurar que el select de clientes tiene opciones (puede no haberse cargado) */
+  const selCli = document.getElementById('sel-empresa-tarea');
+  if (selCli && (!selCli.options.length || selCli.options.length !== clientes.length)) {
+    selCli.innerHTML = clientes.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+  }
+
+  /* filtrar proyectos del cliente actualmente seleccionado — ESTE ERA EL BUG */
+  await cargarProyectosFiltrados();
+
   const data = await api('/tareas?estado=pendiente');
   const lista = data.actividades || [];
   document.getElementById('cnt-tareas').textContent = lista.length || '';
@@ -2071,11 +2081,20 @@ async function cargarTareas() {
 
 async function cargarProyectosFiltrados() {
   const cId = document.getElementById('sel-empresa-tarea').value;
+  const sel = document.getElementById('sel-proyecto-tarea');
+  if (!cId) {
+    sel.innerHTML = '<option value="">Selecciona un cliente primero</option>';
+    return;
+  }
   const data = await api('/proyectos');
   const filtrados = (data.proyectos || []).filter(p => p.cliente_id === cId);
-  document.getElementById('sel-proyecto-tarea').innerHTML =
-    '<option value="">(Sin proyecto)</option>' +
-    filtrados.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+  if (filtrados.length === 0) {
+    sel.innerHTML = '<option value="">(Sin proyectos para este cliente — opcional)</option>';
+  } else {
+    sel.innerHTML =
+      '<option value="">(Sin proyecto)</option>' +
+      filtrados.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+  }
 }
 
 async function crearTarea(e) {
