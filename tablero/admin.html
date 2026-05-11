@@ -760,6 +760,142 @@
   .skip { position: absolute; left: -9999px; }
   .skip:focus { left: 16px; top: 16px; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 6px; z-index: 999; }
 
+  /* ───── TAREAS AGRUPADAS (cliente → proyecto → tareas) ───── */
+  .cli-group {
+    margin-bottom: 28px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .cli-group:last-child { margin-bottom: 0; }
+  .cli-group-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px 22px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--c) 6%, transparent), transparent 60%);
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  .cli-group-bar {
+    width: 4px;
+    border-radius: 3px;
+    align-self: stretch;
+    flex-shrink: 0;
+  }
+  .cli-group-title {
+    font-family: var(--font-display);
+    font-weight: 450;
+    font-size: 22px;
+    line-height: 1.1;
+    letter-spacing: -.01em;
+    color: var(--ink);
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+    margin-bottom: 4px;
+  }
+  .cli-group-sub {
+    font-size: 12.5px;
+    color: var(--stone);
+    line-height: 1.4;
+  }
+  .cli-group-count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--stone);
+    background: var(--surface-2);
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    white-space: nowrap;
+    font-weight: 600;
+    align-self: center;
+  }
+
+  .proy-group {
+    padding: 16px 22px 18px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .proy-group:last-child { border-bottom: none; }
+
+  .proy-group-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--line);
+  }
+  .proy-icon {
+    font-size: 13px;
+    opacity: .85;
+  }
+  .proy-title {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 14.5px;
+    color: var(--charcoal);
+    font-variation-settings: "SOFT" 80;
+  }
+  .proy-count {
+    margin-left: auto;
+    font-size: 10.5px;
+    color: var(--mist);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    letter-spacing: .04em;
+  }
+
+  .tarea-item {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 10px;
+    padding: 10px 8px 10px 4px;
+    border-radius: 8px;
+    align-items: start;
+    transition: background .12s;
+  }
+  .tarea-item:hover { background: var(--surface-2); }
+  .tarea-prio {
+    padding-top: 2px;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .tarea-body { min-width: 0; }
+  .tarea-titulo {
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .tarea-notas {
+    font-size: 12.5px;
+    color: var(--stone);
+    margin-top: 3px;
+    line-height: 1.45;
+  }
+  .tarea-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .tarea-meta-item {
+    font-size: 11.5px;
+    color: var(--stone);
+    font-variant-numeric: tabular-nums;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .tarea-btn {
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+    align-self: center;
+  }
+
   /* ───── PROGRESO ───── */
   .metric-banner {
     display: grid;
@@ -1581,12 +1717,10 @@
           <div>
             <div class="card-eyebrow">Pendientes</div>
             <h2>Tareas activas</h2>
+            <p>Agrupadas por cliente y proyecto.</p>
           </div>
         </div>
-        <table id="tabla-tareas">
-          <thead><tr><th>Cliente</th><th>Tarea</th><th>Prioridad</th><th>Deadline</th><th></th></tr></thead>
-          <tbody></tbody>
-        </table>
+        <div id="tareas-agrupadas"></div>
       </div>
     </section>
 
@@ -2051,32 +2185,100 @@ async function eliminarHabito(id) {
 /* ───── TAREAS ───── */
 async function cargarTareas() {
   const clientes = (await api('/clientes')).clientes || [];
+  const proyectosAll = (await api('/proyectos')).proyectos || [];
   const empMap = {}; clientes.forEach(e => empMap[e.id] = e);
+  const proyMap = {}; proyectosAll.forEach(p => proyMap[p.id] = p);
 
-  /* asegurar que el select de clientes tiene opciones (puede no haberse cargado) */
   const selCli = document.getElementById('sel-empresa-tarea');
   if (selCli && (!selCli.options.length || selCli.options.length !== clientes.length)) {
     selCli.innerHTML = clientes.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
   }
-
-  /* filtrar proyectos del cliente actualmente seleccionado — ESTE ERA EL BUG */
   await cargarProyectosFiltrados();
 
   const data = await api('/tareas?estado=pendiente');
   const lista = data.actividades || [];
   document.getElementById('cnt-tareas').textContent = lista.length || '';
-  const tbody = document.querySelector('#tabla-tareas tbody');
-  tbody.innerHTML = lista.length ? lista.map(t => {
-    const e = empMap[t.cliente_id] || {nombre: '—', color: '#A8A29A'};
-    return `
-    <tr>
-      <td><div class="row-name"><span class="dot" style="background:${e.color}"></span>${e.nombre}</div></td>
-      <td><strong>${t.titulo}</strong>${t.notas ? `<div class="row-sub">${t.notas}</div>` : ''}</td>
-      <td><span class="pill ${t.prioridad}">${t.prioridad}</span></td>
-      <td style="color:var(--stone)">${t.deadline || '—'}</td>
-      <td><button class="ghost" onclick="cumplirTarea('${t.id}')">✓ Cumplir</button></td>
-    </tr>`;
-  }).join('') : emptyRow(5, 'Sin tareas pendientes. Buen momento para crear una.');
+
+  const cont = document.getElementById('tareas-agrupadas');
+  if (!lista.length) {
+    cont.innerHTML = '<div class="empty" style="padding:32px;">Sin tareas pendientes. Buen momento para crear una.</div>';
+    return;
+  }
+
+  // agrupar: cliente → proyecto → tareas[]
+  const grupos = {};
+  lista.forEach(t => {
+    const cid = t.cliente_id || '_sin_cli';
+    const pid = t.proyecto_id || '_sin_proy';
+    if (!grupos[cid]) grupos[cid] = {};
+    if (!grupos[cid][pid]) grupos[cid][pid] = [];
+    grupos[cid][pid].push(t);
+  });
+
+  const ordenClientes = clientes.map(c => c.id).concat(['_sin_cli']);
+  let html = '';
+
+  ordenClientes.forEach(cid => {
+    const proyectosCli = grupos[cid];
+    if (!proyectosCli) return;
+    const cli = empMap[cid] || { nombre: 'Sin cliente', color: '#A8A29A', descripcion: '' };
+    const totalCli = Object.values(proyectosCli).reduce((s, arr) => s + arr.length, 0);
+
+    html += `
+      <div class="cli-group">
+        <div class="cli-group-head" style="--c:${cli.color}">
+          <span class="cli-group-bar" style="background:${cli.color}"></span>
+          <div style="flex:1;min-width:0;">
+            <div class="cli-group-title">${cli.nombre}</div>
+            ${cli.descripcion ? `<div class="cli-group-sub">${cli.descripcion}</div>` : ''}
+          </div>
+          <span class="cli-group-count">${totalCli} tarea${totalCli !== 1 ? 's' : ''}</span>
+        </div>
+    `;
+
+    const proyectosDelCli = proyectosAll.filter(p => p.cliente_id === cid);
+    const ordenProy = proyectosDelCli.map(p => p.id).concat(['_sin_proy']);
+
+    ordenProy.forEach(pid => {
+      const tareas = proyectosCli[pid];
+      if (!tareas) return;
+      const proy = proyMap[pid];
+      const proyNom = proy ? proy.nombre : 'Sin proyecto';
+
+      html += `
+        <div class="proy-group">
+          <div class="proy-group-head">
+            <span class="proy-icon">${proy ? '📁' : '◌'}</span>
+            <span class="proy-title">${proyNom}</span>
+            ${proy && proy.prioridad ? `<span class="pill ${proy.prioridad}" style="margin-left:6px;">${proy.prioridad}</span>` : ''}
+            <span class="proy-count">${tareas.length}</span>
+          </div>
+      `;
+
+      tareas.forEach(t => {
+        const prioEmoji = {alta: '🔴', media: '🟡', baja: '⚪'}[t.prioridad] || '•';
+        const deadline = t.deadline ? `<span class="tarea-meta-item">📅 ${t.deadline}</span>` : '';
+        const duracion = t.duracion_min ? `<span class="tarea-meta-item">⏱ ${t.duracion_min} min</span>` : '';
+        html += `
+          <div class="tarea-item">
+            <div class="tarea-prio">${prioEmoji}</div>
+            <div class="tarea-body">
+              <div class="tarea-titulo">${t.titulo}</div>
+              ${t.notas ? `<div class="tarea-notas">${t.notas}</div>` : ''}
+              ${(deadline || duracion) ? `<div class="tarea-meta">${deadline}${duracion}</div>` : ''}
+            </div>
+            <button class="ghost tarea-btn" onclick="cumplirTarea('${t.id}')">✓</button>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  cont.innerHTML = html;
 }
 
 async function cargarProyectosFiltrados() {
