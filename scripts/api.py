@@ -1740,6 +1740,28 @@ def eventos_rango():
                             color_id = ev.get("colorId")
                             color_evt = paleta["event"].get(color_id) if color_id else None
                             color_final = color_evt or color_cal
+                            # Asistentes (lista de invitados + estado de respuesta)
+                            attendees = []
+                            for a in (ev.get("attendees") or []):
+                                attendees.append({
+                                    "email": a.get("email", ""),
+                                    "nombre": a.get("displayName") or a.get("email", "").split("@")[0],
+                                    "respuesta": a.get("responseStatus", "needsAction"),
+                                    "es_organizador": a.get("organizer", False),
+                                    "es_yo": a.get("self", False)
+                                })
+                            # Organizador (si no está en attendees)
+                            organizador = ev.get("organizer", {}) or {}
+                            # Links: web de Google Calendar + Meet
+                            html_link = ev.get("htmlLink", "")
+                            meet_link = ev.get("hangoutLink", "")
+                            if not meet_link:
+                                # algunos eventos usan conferenceData
+                                cd = ev.get("conferenceData", {}) or {}
+                                for ep_entry in (cd.get("entryPoints") or []):
+                                    if ep_entry.get("entryPointType") == "video":
+                                        meet_link = ep_entry.get("uri", "")
+                                        break
                             eventos.append({
                                 "id": ev.get("id"),
                                 "title": ev.get("summary", "(sin título)"),
@@ -1758,7 +1780,12 @@ def eventos_rango():
                                     "color_calendario": color_cal,
                                     "color_evento_propio": color_evt,
                                     "ubicacion": ev.get("location", ""),
-                                    "descripcion": (ev.get("description") or "")[:300]
+                                    "descripcion": (ev.get("description") or "")[:500],
+                                    "asistentes": attendees,
+                                    "organizador_email": organizador.get("email", ""),
+                                    "organizador_nombre": organizador.get("displayName") or organizador.get("email", ""),
+                                    "html_link": html_link,
+                                    "meet_link": meet_link
                                 }
                             })
                     except Exception as e:

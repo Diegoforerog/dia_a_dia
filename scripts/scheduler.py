@@ -272,6 +272,14 @@ def sincronizar_eventos_calendario():
                             if _db.query("SELECT 1 FROM eventos_avisados WHERE evento_uid=%s AND inicio=%s AND tipo_aviso='pre_10min'",
                                           (uid, start)):
                                 continue
+                            # Link de Meet (puede venir como hangoutLink o conferenceData)
+                            meet_link = ev.get("hangoutLink", "")
+                            if not meet_link:
+                                cd = ev.get("conferenceData", {}) or {}
+                                for ep_entry in (cd.get("entryPoints") or []):
+                                    if ep_entry.get("entryPointType") == "video":
+                                        meet_link = ep_entry.get("uri", "")
+                                        break
                             payload = {
                                 "uid": uid,
                                 "titulo": ev.get("summary", "(sin título)"),
@@ -279,7 +287,9 @@ def sincronizar_eventos_calendario():
                                 "fin_iso": end.isoformat() if end else None,
                                 "ubicacion": ev.get("location", ""),
                                 "calendario": cal.get("nombre_para_mostrar"),
-                                "cliente": cli.get("nombre", "")
+                                "cliente": cli.get("nombre", ""),
+                                "html_link": ev.get("htmlLink", ""),
+                                "meet_link": meet_link
                             }
                             job_id = f"ev_{uid}_{int(start.timestamp())}"
                             get_scheduler().add_job(
@@ -377,6 +387,10 @@ def avisar_evento(payload: dict):
         texto += f"\n📅 {payload['calendario']}"
     if payload.get("ubicacion"):
         texto += f"\n📍 {payload['ubicacion']}"
+    if payload.get("meet_link"):
+        texto += f"\n\n🎥 [Unirse al Meet]({payload['meet_link']})"
+    if payload.get("html_link"):
+        texto += f"\n📖 [Ver evento en Calendar]({payload['html_link']})"
 
     telegram_send(texto)
     try:
