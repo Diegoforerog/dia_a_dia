@@ -1450,6 +1450,49 @@ def health():
     return jsonify({"ok": True, "fecha": date.today().isoformat()})
 
 
+@app.route("/api/scheduler/diag", methods=["GET", "POST"])
+@requiere_auth
+def scheduler_diag():
+    """Diagnóstico del scheduler. Reintenta arranque si está caído."""
+    out = {"sched_ok": _SCHED_OK, "ahora": datetime.now().isoformat()}
+    if not _SCHED_OK:
+        out["error"] = "Módulo scheduler no se pudo importar al boot"
+        # intentar import ahora
+        try:
+            import scheduler as _s
+            out["import_retry"] = "ok"
+            try:
+                _s.iniciar()
+                out["start_retry"] = "ok"
+            except Exception as e:
+                out["start_retry"] = str(e)
+        except Exception as e:
+            out["import_retry"] = str(e)
+        return jsonify(out)
+
+    try:
+        s = _sched.get_scheduler()
+        out["running"] = s.running
+        if not s.running:
+            try:
+                _sched.iniciar()
+                out["start_retry"] = "ok"
+                s = _sched.get_scheduler()
+                out["running"] = s.running
+            except Exception as e:
+                out["start_error"] = str(e)
+        jobs = s.get_jobs()
+        out["jobs_count"] = len(jobs)
+        out["jobs"] = [{
+            "id": j.id,
+            "next_run": j.next_run_time.isoformat() if j.next_run_time else None,
+            "func": str(j.func_ref) if hasattr(j, 'func_ref') else str(j.func)
+        } for j in jobs[:20]]
+    except Exception as e:
+        out["scheduler_error"] = str(e)
+    return jsonify(out)
+
+
 # ============ TOKEN AUTO (solo localhost) ============
 
 @app.route("/api/local-token", methods=["GET"])
