@@ -63,16 +63,41 @@ def get_scheduler():
     return _scheduler
 
 
+def _asegurar_tabla_eventos_conocidos():
+    """Crea la tabla eventos_conocidos si no existe."""
+    try:
+        _db.execute("""
+            CREATE TABLE IF NOT EXISTS eventos_conocidos (
+                uid TEXT NOT NULL,
+                inicio TIMESTAMPTZ NOT NULL,
+                titulo TEXT,
+                fin TIMESTAMPTZ,
+                calendario TEXT,
+                cliente TEXT,
+                ubicacion TEXT,
+                organizador TEXT,
+                html_link TEXT,
+                meet_link TEXT,
+                visto_at TIMESTAMPTZ DEFAULT NOW(),
+                PRIMARY KEY (uid, inicio)
+            )
+        """)
+    except Exception as e:
+        print(f"⚠️  No se pudo crear tabla eventos_conocidos: {e}")
+
+
 def iniciar():
     """Llamar UNA VEZ al boot de la API."""
     s = get_scheduler()
     if s.running:
         return
     s.start()
-    # Job recurrente: sincroniza iCal cada hora
+    _asegurar_tabla_eventos_conocidos()
+    # Job recurrente: sincroniza eventos cada 30 min (antes 1h)
+    # Más frecuente para detectar reuniones recién agendadas
     s.add_job(
         sincronizar_eventos_calendario,
-        "interval", hours=1,
+        "interval", minutes=30,
         id="_sync_ical_horario",
         replace_existing=True,
         next_run_time=datetime.now(TZ) + timedelta(seconds=30)  # corre en 30 seg al boot
@@ -209,9 +234,21 @@ def sincronizar_eventos_calendario():
     cals_oauth = [c for c in todos if not c.get("ical_url")]
 
     ahora = datetime.now(TZ)
-    hasta = ahora + timedelta(hours=24)
+    # Ventana de DETECCIÓN: 7 días (para descubrir reuniones recién agendadas)
+    hasta_deteccion = ahora + timedelta(days=7)
+    # Ventana de AVISOS -10 min: solo próximas 24h
+    limite_aviso = ahora + timedelta(hours=24)
+    hasta = limite_aviso  # mantenemos var para código iCal legacy
     clientes = {c["id"]: c for c in cargar("clientes.json").get("clientes", [])}
     nuevos = 0
+    # Detectar si es la PRIMERA sync de esta tabla (no notificar todo de golpe)
+    es_primer_sync = False
+    try:
+        rows = _db.query("SELECT COUNT(*)::int AS n FROM eventos_conocidos")
+        es_primer_sync = (rows[0]["n"] == 0) if rows else True
+    except Exception:
+        es_primer_sync = True
+    notificados_nuevos = 0
     # Dedupe entre calendarios: el mismo evento puede aparecer en varios calendarios
     # del usuario (un evento compartido se ve desde @gmail y desde @nextgen al mismo
     # tiempo). Usamos iCalUID + inicio como clave estable para programar UNA SOLA vez.
@@ -261,10 +298,10 @@ def sincronizar_eventos_calendario():
                         r = servicio.events().list(
                             calendarId=cal["email"],
                             timeMin=ahora.isoformat(),
-                            timeMax=hasta.isoformat(),
+                            timeMax=hasta_deteccion.isoformat(),  # 7 días para detectar eventos nuevos
                             singleEvents=True,
                             orderBy="startTime",
-                            maxResults=200
+                            maxResults=500
                         ).execute()
                         cli = clientes.get(cal.get("cliente_asociado"), {})
                         for ev in r.get("items", []):
@@ -280,16 +317,10 @@ def sincronizar_eventos_calendario():
                                 end   = datetime.fromisoformat(end_v.replace("Z", "+00:00")) if end_v else None
                             except Exception:
                                 continue
-                            aviso_at = start - timedelta(minutes=10)
-                            if aviso_at <= ahora:
-                                continue
                             dedupe_key = (uid, start.isoformat())
                             if dedupe_key in yapuestos:
                                 continue
                             yapuestos.add(dedupe_key)
-                            if _db.query("SELECT 1 FROM eventos_avisados WHERE evento_uid=%s AND inicio=%s AND tipo_aviso='pre_10min'",
-                                          (uid, start)):
-                                continue
                             # Link de Meet (puede venir como hangoutLink o conferenceData)
                             meet_link = ev.get("hangoutLink", "")
                             if not meet_link:
@@ -298,6 +329,53 @@ def sincronizar_eventos_calendario():
                                     if ep_entry.get("entryPointType") == "video":
                                         meet_link = ep_entry.get("uri", "")
                                         break
+                            org = ev.get("organizer", {}) or {}
+                            organizador = org.get("displayName") or org.get("email", "")
+                            # ¿Evento NUEVO? Si no lo conocíamos, lo registramos y notificamos
+                            try:
+                                existe = _db.query(
+                                    "SELECT 1 FROM eventos_conocidos WHERE uid=%s AND inicio=%s",
+                                    (uid, start)
+                                )
+                                if not existe:
+                                    _db.execute("""
+                                        INSERT INTO eventos_conocidos
+                                          (uid, inicio, titulo, fin, calendario, cliente, ubicacion, organizador, html_link, meet_link)
+                                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                                        ON CONFLICT (uid, inicio) DO NOTHING
+                                    """, (uid, start,
+                                          ev.get("summary", "(sin título)"),
+                                          end,
+                                          cal.get("nombre_para_mostrar"),
+                                          cli.get("nombre", ""),
+                                          ev.get("location", ""),
+                                          organizador,
+                                          ev.get("htmlLink", ""),
+                                          meet_link))
+                                    if not es_primer_sync:
+                                        _notificar_evento_nuevo({
+                                            "titulo": ev.get("summary", "(sin título)"),
+                                            "inicio": start,
+                                            "fin": end,
+                                            "calendario": cal.get("nombre_para_mostrar"),
+                                            "cliente": cli.get("nombre", ""),
+                                            "ubicacion": ev.get("location", ""),
+                                            "organizador": organizador,
+                                            "html_link": ev.get("htmlLink", ""),
+                                            "meet_link": meet_link
+                                        })
+                                        notificados_nuevos += 1
+                            except Exception as e:
+                                print(f"⚠️  No se pudo trackear evento conocido: {e}")
+                            # Programar aviso -10 min sólo si está dentro de las próximas 24h
+                            if start > limite_aviso:
+                                continue
+                            aviso_at = start - timedelta(minutes=10)
+                            if aviso_at <= ahora:
+                                continue
+                            if _db.query("SELECT 1 FROM eventos_avisados WHERE evento_uid=%s AND inicio=%s AND tipo_aviso='pre_10min'",
+                                          (uid, start)):
+                                continue
                             payload = {
                                 "uid": uid,
                                 "titulo": ev.get("summary", "(sin título)"),
@@ -376,8 +454,41 @@ def sincronizar_eventos_calendario():
                 nuevos += 1
         except Exception as e:
             print(f"⚠️  Sync iCal error {cal.get('email','?')}: {e}")
-    if nuevos:
-        print(f"📅 Sync iCal: programados {nuevos} avisos")
+    if nuevos or notificados_nuevos or es_primer_sync:
+        marca = " (primer sync — registrando sin notificar)" if es_primer_sync else ""
+        print(f"📅 Sync: programados {nuevos} avisos -10min · {notificados_nuevos} eventos nuevos notificados a Telegram{marca}")
+
+
+def _notificar_evento_nuevo(info: dict):
+    """Envía a Telegram el aviso de un evento recién agendado."""
+    try:
+        DIAS_ES = ["lunes","martes","miércoles","jueves","viernes","sábado","domingo"]
+        MESES_ES = ["","ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"]
+        inicio = info["inicio"]
+        inicio_local = inicio.astimezone(TZ)
+        fin_local = info.get("fin").astimezone(TZ) if info.get("fin") else None
+        dia = DIAS_ES[inicio_local.weekday()].capitalize()
+        fecha = f"{dia} {inicio_local.day} {MESES_ES[inicio_local.month]}"
+        hora = inicio_local.strftime("%H:%M")
+        rango = hora
+        if fin_local:
+            rango += f" – {fin_local.strftime('%H:%M')}"
+        texto = f"📅 *Nueva reunión agendada*\n\n*{info['titulo']}*\n\n🕐 {fecha} · {rango}"
+        if info.get("cliente"):
+            texto += f"\n🏢 {info['cliente']}"
+        elif info.get("calendario"):
+            texto += f"\n📅 {info['calendario']}"
+        if info.get("organizador"):
+            texto += f"\n👤 Por: {info['organizador']}"
+        if info.get("ubicacion"):
+            texto += f"\n📍 {info['ubicacion']}"
+        if info.get("meet_link"):
+            texto += f"\n\n🎥 [Unirse al Meet]({info['meet_link']})"
+        if info.get("html_link"):
+            texto += f"\n📖 [Ver en Calendar]({info['html_link']})"
+        telegram_send(texto)
+    except Exception as e:
+        print(f"⚠️  Error notificando evento nuevo: {e}")
 
 
 def _evento_sigue_vigente(payload: dict, inicio: datetime) -> bool:
