@@ -86,6 +86,24 @@ def _asegurar_tabla_eventos_conocidos():
         print(f"⚠️  No se pudo crear tabla eventos_conocidos: {e}")
 
 
+def _asegurar_tabla_resumen_diario():
+    """Tabla para idempotencia: garantiza que el resumen se envíe EXACTAMENTE
+    una vez por día, sobreviviendo reinicios del container."""
+    try:
+        _db.execute("""
+            CREATE TABLE IF NOT EXISTS resumen_diario_enviado (
+                fecha DATE PRIMARY KEY,
+                enviado_at TIMESTAMPTZ DEFAULT NOW(),
+                eventos_count INT DEFAULT 0,
+                tareas_count INT DEFAULT 0,
+                habitos_count INT DEFAULT 0,
+                intentos INT DEFAULT 1
+            )
+        """)
+    except Exception as e:
+        print(f"⚠️  No se pudo crear tabla resumen_diario_enviado: {e}")
+
+
 def iniciar():
     """Llamar UNA VEZ al boot de la API."""
     s = get_scheduler()
@@ -93,24 +111,28 @@ def iniciar():
         return
     s.start()
     _asegurar_tabla_eventos_conocidos()
+    _asegurar_tabla_resumen_diario()
     # Job recurrente: sincroniza eventos cada 30 min (antes 1h)
-    # Más frecuente para detectar reuniones recién agendadas
     s.add_job(
         sincronizar_eventos_calendario,
         "interval", minutes=30,
         id="_sync_ical_horario",
         replace_existing=True,
-        next_run_time=datetime.now(TZ) + timedelta(seconds=30)  # corre en 30 seg al boot
+        next_run_time=datetime.now(TZ) + timedelta(seconds=30)
     )
     # Resumen matutino: cada día a la hora de despertar configurada
     _programar_resumen_matutino()
-    # Re-programar recordatorios pendientes (por si hubo restart)
+    # RECOVERY: si ya pasó la hora de despertar HOY y no se envió → enviar
+    _intentar_resumen_si_falta()
+    # Re-programar recordatorios pendientes
     reprogramar_recordatorios_pendientes()
     print("⚙️  Scheduler iniciado · jobs:", len(s.get_jobs()))
 
 
 def _programar_resumen_matutino():
-    """Lee config.horario_sueno.despertar y programa el resumen diario a esa hora."""
+    """Lee config.horario_sueno.despertar y programa el resumen diario a esa hora.
+    misfire_grace_time alto: si el sistema estaba caído cuando tocaba, lo dispara
+    hasta 1h después de su hora teórica."""
     try:
         from apscheduler.triggers.cron import CronTrigger
         from comun import cargar
@@ -123,11 +145,42 @@ def _programar_resumen_matutino():
             enviar_resumen_matutino,
             CronTrigger(hour=hora, minute=minuto, timezone=TZ),
             id="_resumen_matutino",
-            replace_existing=True
+            replace_existing=True,
+            misfire_grace_time=3600  # tolera hasta 1h de atraso
         )
-        print(f"☀️  Resumen matutino programado para las {despertar} todos los días")
+        print(f"☀️  Resumen matutino programado para las {despertar} (misfire grace 1h)")
     except Exception as e:
         print(f"⚠️  No se pudo programar resumen matutino: {e}")
+
+
+def _intentar_resumen_si_falta():
+    """Al boot: si ya pasó la hora de despertar HOY y NO se envió resumen →
+    enviarlo ahora. Cubre el caso de easypanel reiniciando el container
+    justo a la hora teórica."""
+    try:
+        from comun import cargar
+        cfg = cargar("config.json")
+        sueno = cfg.get("horario_sueno") if isinstance(cfg, dict) else None
+        despertar = (sueno or {}).get("despertar", "06:00")
+        hora, minuto = map(int, despertar.split(":"))
+        ahora = datetime.now(TZ)
+        hora_hoy = ahora.replace(hour=hora, minute=minuto, second=0, microsecond=0)
+        if ahora < hora_hoy:
+            return  # aún no es hora, el cron lo manejará
+        rows = _db.query("SELECT 1 FROM resumen_diario_enviado WHERE fecha=%s", (ahora.date(),))
+        if rows:
+            return  # ya se envió hoy
+        # Demora 60s para no interferir con el arranque y para que la DB termine de levantarse
+        print(f"☀️  Recovery: resumen de hoy aún no enviado, ejecutando en 60s...")
+        get_scheduler().add_job(
+            enviar_resumen_matutino,
+            "date",
+            run_date=ahora + timedelta(seconds=60),
+            id="_resumen_recovery",
+            replace_existing=True
+        )
+    except Exception as e:
+        print(f"⚠️  Recovery resumen: {e}")
 
 
 # ─────────────────────────────────────────────────────────
@@ -482,10 +535,29 @@ def sincronizar_eventos_calendario():
         print(f"📅 Sync: programados {nuevos} avisos -10min · {notificados_nuevos} eventos nuevos notificados a Telegram{marca}")
 
 
-def enviar_resumen_matutino():
-    """Compone y envía por Telegram el resumen del día: eventos + tareas + hábitos."""
+def enviar_resumen_matutino(forzar: bool = False):
+    """Compone y envía por Telegram el resumen del día: eventos + tareas + hábitos.
+
+    IDEMPOTENTE: si ya se envió hoy, no envía de nuevo (a menos que forzar=True).
+    RESILIENTE: reintenta hasta 3 veces si Telegram falla.
+    """
     try:
         from comun import cargar
+        import time as _time
+        ahora_check = datetime.now(TZ)
+        hoy_check = ahora_check.date()
+        # Idempotencia: ¿ya se envió hoy?
+        if not forzar:
+            try:
+                rows = _db.query(
+                    "SELECT enviado_at FROM resumen_diario_enviado WHERE fecha=%s",
+                    (hoy_check,)
+                )
+                if rows:
+                    print(f"☀️  Resumen de {hoy_check} ya enviado (a las {rows[0]['enviado_at']}), no duplico")
+                    return
+            except Exception as e:
+                print(f"⚠️  No se pudo verificar tabla resumen_diario: {e}")
         DIAS_ES = ["lunes","martes","miércoles","jueves","viernes","sábado","domingo"]
         MESES_ES = ["","enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
         EMOJI_PRIORIDAD = {"alta":"🔴","media":"🟡","baja":"⚪"}
@@ -614,8 +686,42 @@ def enviar_resumen_matutino():
             print(f"⚠️  Resumen: error leyendo hábitos: {e}")
 
         partes.append("\n_Buen día. Que tu energía rinda._ 💪")
-        telegram_send("\n".join(partes))
-        print(f"☀️  Resumen matutino enviado: {len(eventos_hoy)} eventos, {len(tareas_hoy)} tareas")
+
+        # Reintento: hasta 3 intentos con espera creciente
+        mensaje = "\n".join(partes)
+        ok = False
+        intentos = 0
+        for intento in range(3):
+            intentos = intento + 1
+            ok = telegram_send(mensaje)
+            if ok:
+                break
+            print(f"⚠️  Resumen matutino intento {intentos} falló, reintentando...")
+            _time.sleep(15 * (intento + 1))  # 15s, 30s, 45s
+
+        if ok:
+            # Marcar como enviado HOY (idempotencia)
+            try:
+                _db.execute("""
+                    INSERT INTO resumen_diario_enviado
+                      (fecha, eventos_count, tareas_count, habitos_count, intentos)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (fecha) DO UPDATE SET
+                      enviado_at = NOW(),
+                      eventos_count = EXCLUDED.eventos_count,
+                      tareas_count = EXCLUDED.tareas_count,
+                      habitos_count = EXCLUDED.habitos_count,
+                      intentos = EXCLUDED.intentos
+                """, (hoy_check, len(eventos_hoy), len(tareas_hoy),
+                      len([h for h in (cargar('habitos.json').get('habitos') or [])
+                           if h.get('activo', True)]), intentos))
+                print(f"☀️  Resumen matutino enviado y registrado: "
+                      f"{len(eventos_hoy)} eventos, {len(tareas_hoy)} tareas "
+                      f"(intento {intentos}/3)")
+            except Exception as e:
+                print(f"⚠️  Resumen enviado pero no se pudo registrar en DB: {e}")
+        else:
+            print(f"❌ Resumen matutino FALLÓ tras 3 intentos. Telegram no respondió.")
     except Exception as e:
         import traceback; traceback.print_exc()
         print(f"⚠️  Error en resumen matutino: {e}")

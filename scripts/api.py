@@ -2169,14 +2169,45 @@ def health():
 @app.route("/api/scheduler/test_resumen_matutino", methods=["POST"])
 @requiere_auth
 def test_resumen_matutino():
-    """Dispara el resumen matutino ahora mismo (para test)."""
+    """Dispara el resumen matutino ahora mismo (forzando, ignora si ya se envió)."""
     if not _SCHED_OK:
         return jsonify({"error": "Scheduler no disponible"}), 500
     try:
-        _sched.enviar_resumen_matutino()
+        _sched.enviar_resumen_matutino(forzar=True)
         return jsonify({"ok": True, "mensaje": "Resumen enviado a Telegram"})
     except Exception as e:
         import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/scheduler/estado_resumen", methods=["GET"])
+@requiere_auth
+def estado_resumen_diario():
+    """Devuelve los últimos 7 días: ¿se envió el resumen? ¿a qué hora?"""
+    try:
+        from comun import _USAR_DB
+        if not _USAR_DB:
+            return jsonify({"error": "DB no disponible"}), 500
+        import db as _bd
+        rows = _bd.query("""
+            SELECT fecha, enviado_at, eventos_count, tareas_count, habitos_count, intentos
+            FROM resumen_diario_enviado
+            ORDER BY fecha DESC
+            LIMIT 7
+        """)
+        return jsonify({
+            "ultimos_7_dias": [
+                {
+                    "fecha": str(r["fecha"]),
+                    "enviado_at": r["enviado_at"].isoformat() if r.get("enviado_at") else None,
+                    "eventos": r["eventos_count"],
+                    "tareas": r["tareas_count"],
+                    "habitos": r["habitos_count"],
+                    "intentos": r["intentos"]
+                } for r in rows
+            ]
+        })
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
