@@ -781,9 +781,20 @@ async function obtenerToken() {
       if (d.token) {
         TOKEN = d.token;
         localStorage.setItem('organizador_token', TOKEN);
+        return TOKEN;
       }
     }
   } catch(e) {}
+  // Producción: pedir token al usuario
+  const userToken = prompt(
+    '🔐 Token de acceso requerido\n\n' +
+    'Es la primera vez que abrís la agenda en este navegador.\n' +
+    'Pegá tu token de acceso (configurado en easypanel como ORGANIZADOR_TOKEN):'
+  );
+  if (userToken && userToken.trim()) {
+    TOKEN = userToken.trim();
+    localStorage.setItem('organizador_token', TOKEN);
+  }
   return TOKEN;
 }
 

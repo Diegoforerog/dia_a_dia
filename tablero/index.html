@@ -1794,15 +1794,32 @@ const API_BASE = window.location.hostname === 'localhost' || window.location.hos
 
 /* token para llamar al api desde el navegador */
 async function getToken() {
+  // 1. Si ya está en localStorage, usarlo (no hace falta llamar al servidor)
+  let t = localStorage.getItem('organizador_token') || '';
+  if (t) return t;
+  // 2. Probar /local-token (solo funciona en desarrollo local)
   try {
     const r = await fetch(API_BASE + '/local-token');
     if (r.ok) {
       const d = await r.json();
-      localStorage.setItem('organizador_token', d.token);
-      return d.token;
+      if (d.token) {
+        localStorage.setItem('organizador_token', d.token);
+        return d.token;
+      }
     }
   } catch(e) {}
-  return localStorage.getItem('organizador_token') || '';
+  // 3. Si seguimos sin token, pedírselo al usuario UNA vez
+  const userToken = prompt(
+    '🔐 Token de acceso requerido\n\n' +
+    'Es la primera vez que abrís este tablero en este navegador.\n' +
+    'Pegá tu token de acceso (lo configuraste en easypanel como ORGANIZADOR_TOKEN):'
+  );
+  if (userToken && userToken.trim()) {
+    t = userToken.trim();
+    localStorage.setItem('organizador_token', t);
+    return t;
+  }
+  return '';
 }
 
 async function apiGet(ruta) {

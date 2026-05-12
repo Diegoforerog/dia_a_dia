@@ -2552,9 +2552,20 @@ async function cargarTokenAuto() {
       if (d.token) {
         TOKEN = d.token;
         localStorage.setItem('organizador_token', TOKEN);
+        return;
       }
     }
   } catch(e) { /* ignore */ }
+  // Producción: pedir token al usuario
+  const userToken = prompt(
+    '🔐 Token de acceso requerido\n\n' +
+    'Es la primera vez que abrís el admin en este navegador.\n' +
+    'Pegá tu token de acceso (configurado en easypanel como ORGANIZADOR_TOKEN):'
+  );
+  if (userToken && userToken.trim()) {
+    TOKEN = userToken.trim();
+    localStorage.setItem('organizador_token', TOKEN);
+  }
 }
 
 function authHeaders() {
