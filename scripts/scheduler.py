@@ -407,13 +407,22 @@ def sincronizar_eventos_calendario():
                                         break
                             org = ev.get("organizer", {}) or {}
                             organizador = org.get("displayName") or org.get("email", "")
-                            # ¿Evento NUEVO? Si no lo conocíamos, lo registramos y notificamos
+                            # Detección de "evento NUEVO" — solo notifica la
+                            # PRIMERA vez que vemos un UID, no las siguientes
+                            # instancias del mismo evento recurrente.
                             try:
-                                existe = _db.query(
+                                # ¿Hemos visto ANTES este UID (con cualquier inicio)?
+                                uid_ya_visto = _db.query(
+                                    "SELECT 1 FROM eventos_conocidos WHERE uid=%s LIMIT 1",
+                                    (uid,)
+                                )
+                                # ¿Hemos visto esta instancia específica (uid, inicio)?
+                                instancia_existe = _db.query(
                                     "SELECT 1 FROM eventos_conocidos WHERE uid=%s AND inicio=%s",
                                     (uid, start)
                                 )
-                                if not existe:
+                                if not instancia_existe:
+                                    # Registrar siempre la instancia (para tracking)
                                     _db.execute("""
                                         INSERT INTO eventos_conocidos
                                           (uid, inicio, titulo, fin, calendario, cliente, ubicacion, organizador, html_link, meet_link)
@@ -428,7 +437,9 @@ def sincronizar_eventos_calendario():
                                           organizador,
                                           ev.get("htmlLink", ""),
                                           meet_link))
-                                    if not es_primer_sync:
+                                    # Notificar SOLO si el UID era totalmente nuevo
+                                    # (alguien te invitó por primera vez a este evento)
+                                    if not uid_ya_visto and not es_primer_sync:
                                         _notificar_evento_nuevo({
                                             "titulo": ev.get("summary", "(sin título)"),
                                             "inicio": start,
