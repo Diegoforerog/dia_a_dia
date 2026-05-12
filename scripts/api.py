@@ -2166,6 +2166,20 @@ def health():
     return jsonify({"ok": True, "fecha": date.today().isoformat()})
 
 
+@app.route("/api/scheduler/test_resumen_matutino", methods=["POST"])
+@requiere_auth
+def test_resumen_matutino():
+    """Dispara el resumen matutino ahora mismo (para test)."""
+    if not _SCHED_OK:
+        return jsonify({"error": "Scheduler no disponible"}), 500
+    try:
+        _sched.enviar_resumen_matutino()
+        return jsonify({"ok": True, "mensaje": "Resumen enviado a Telegram"})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/scheduler/diag", methods=["GET", "POST"])
 @requiere_auth
 def scheduler_diag():

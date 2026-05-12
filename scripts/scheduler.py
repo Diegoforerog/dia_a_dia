@@ -102,9 +102,32 @@ def iniciar():
         replace_existing=True,
         next_run_time=datetime.now(TZ) + timedelta(seconds=30)  # corre en 30 seg al boot
     )
+    # Resumen matutino: cada día a la hora de despertar configurada
+    _programar_resumen_matutino()
     # Re-programar recordatorios pendientes (por si hubo restart)
     reprogramar_recordatorios_pendientes()
     print("⚙️  Scheduler iniciado · jobs:", len(s.get_jobs()))
+
+
+def _programar_resumen_matutino():
+    """Lee config.horario_sueno.despertar y programa el resumen diario a esa hora."""
+    try:
+        from apscheduler.triggers.cron import CronTrigger
+        from comun import cargar
+        cfg = cargar("config.json")
+        sueno = cfg.get("horario_sueno") if isinstance(cfg, dict) else None
+        despertar = (sueno or {}).get("despertar", "06:00")
+        hora, minuto = map(int, despertar.split(":"))
+        s = get_scheduler()
+        s.add_job(
+            enviar_resumen_matutino,
+            CronTrigger(hour=hora, minute=minuto, timezone=TZ),
+            id="_resumen_matutino",
+            replace_existing=True
+        )
+        print(f"☀️  Resumen matutino programado para las {despertar} todos los días")
+    except Exception as e:
+        print(f"⚠️  No se pudo programar resumen matutino: {e}")
 
 
 # ─────────────────────────────────────────────────────────
@@ -457,6 +480,145 @@ def sincronizar_eventos_calendario():
     if nuevos or notificados_nuevos or es_primer_sync:
         marca = " (primer sync — registrando sin notificar)" if es_primer_sync else ""
         print(f"📅 Sync: programados {nuevos} avisos -10min · {notificados_nuevos} eventos nuevos notificados a Telegram{marca}")
+
+
+def enviar_resumen_matutino():
+    """Compone y envía por Telegram el resumen del día: eventos + tareas + hábitos."""
+    try:
+        from comun import cargar
+        DIAS_ES = ["lunes","martes","miércoles","jueves","viernes","sábado","domingo"]
+        MESES_ES = ["","enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
+        EMOJI_PRIORIDAD = {"alta":"🔴","media":"🟡","baja":"⚪"}
+
+        ahora = datetime.now(TZ)
+        hoy = ahora.date()
+        nombre_dia = DIAS_ES[ahora.weekday()].capitalize()
+        fecha_human = f"{nombre_dia} {hoy.day} de {MESES_ES[hoy.month]}"
+        nombre_usuario = (cargar("config.json").get("usuario") or {}).get("nombre", "")
+        saludo = f"☀️ *Buenos días{' ' + nombre_usuario if nombre_usuario else ''}*"
+        partes = [saludo, f"\n📅 *Hoy {fecha_human}*"]
+
+        # ─── EVENTOS DEL DÍA ───
+        eventos_hoy = []
+        try:
+            from pathlib import Path as _Path
+            token_path = _Path(__file__).resolve().parent.parent / "integraciones" / "token.json"
+            if token_path.exists():
+                from google.oauth2.credentials import Credentials
+                from google.auth.transport.requests import Request as GRequest
+                from googleapiclient.discovery import build
+                SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+                creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+                if creds.expired and creds.refresh_token:
+                    creds.refresh(GRequest())
+                    token_path.write_text(creds.to_json())
+                servicio = build("calendar", "v3", credentials=creds)
+                cals = [c for c in cargar("calendarios.json").get("calendarios_gmail", [])
+                        if c.get("activo") and not c.get("ical_url")]
+                inicio_dia = datetime.combine(hoy, datetime.min.time()).replace(tzinfo=TZ)
+                fin_dia = datetime.combine(hoy, datetime.max.time()).replace(tzinfo=TZ)
+                vistos = set()
+                for cal in cals:
+                    try:
+                        r = servicio.events().list(
+                            calendarId=cal["email"],
+                            timeMin=inicio_dia.isoformat(),
+                            timeMax=fin_dia.isoformat(),
+                            singleEvents=True,
+                            orderBy="startTime",
+                            maxResults=100
+                        ).execute()
+                        for ev in r.get("items", []):
+                            start_v = ev.get("start", {}).get("dateTime")
+                            if not start_v:
+                                continue
+                            uid = (ev.get("iCalUID") or ev.get("id", "")).split("@")[0]
+                            try:
+                                start = datetime.fromisoformat(start_v.replace("Z", "+00:00")).astimezone(TZ)
+                            except Exception:
+                                continue
+                            key = (uid, start.isoformat())
+                            if key in vistos:
+                                continue
+                            vistos.add(key)
+                            eventos_hoy.append({
+                                "hora": start.strftime("%H:%M"),
+                                "titulo": ev.get("summary", "(sin título)"),
+                                "calendario": cal.get("nombre_para_mostrar", "")
+                            })
+                    except Exception:
+                        continue
+            eventos_hoy.sort(key=lambda e: e["hora"])
+        except Exception as e:
+            print(f"⚠️  Resumen: error leyendo eventos: {e}")
+
+        if eventos_hoy:
+            partes.append(f"\n*━━ Eventos del día ({len(eventos_hoy)}) ━━*")
+            for ev in eventos_hoy:
+                partes.append(f"🕐 {ev['hora']}  {ev['titulo']}")
+        else:
+            partes.append("\n*━━ Eventos del día ━━*\n_Sin reuniones agendadas hoy_ ✨")
+
+        # ─── TAREAS PENDIENTES CON DEADLINE HOY ───
+        tareas_hoy = []
+        try:
+            rows = _db.query(
+                "SELECT id, titulo, prioridad, cliente_id FROM actividades "
+                "WHERE estado='pendiente' AND deadline=%s ORDER BY "
+                "CASE prioridad WHEN 'alta' THEN 1 WHEN 'media' THEN 2 ELSE 3 END",
+                (hoy,)
+            )
+            clientes = {c["id"]: c.get("nombre", "") for c in cargar("clientes.json").get("clientes", [])}
+            for r in rows:
+                tareas_hoy.append({
+                    "titulo": r["titulo"],
+                    "prioridad": r.get("prioridad", "media"),
+                    "cliente": clientes.get(r.get("cliente_id"), "")
+                })
+        except Exception as e:
+            print(f"⚠️  Resumen: error leyendo tareas: {e}")
+
+        if tareas_hoy:
+            partes.append(f"\n*━━ Tareas con deadline hoy ({len(tareas_hoy)}) ━━*")
+            for t in tareas_hoy:
+                emoji = EMOJI_PRIORIDAD.get(t["prioridad"], "•")
+                cli_txt = f" · _{t['cliente']}_" if t["cliente"] else ""
+                partes.append(f"{emoji} {t['titulo']}{cli_txt}")
+
+        # ─── HÁBITOS DEL DÍA ───
+        try:
+            habs_data = cargar("habitos.json")
+            cats = {c["id"]: c for c in habs_data.get("categorias", [])}
+            todos_habs = habs_data.get("habitos", [])
+            # APScheduler usa 0=Lun..6=Dom; el JSON usa 1=Lun..7=Dom
+            dia_iso = ahora.isoweekday()  # 1..7
+            habs_hoy = []
+            for h in todos_habs:
+                if not h.get("activo", True):
+                    continue
+                dias = h.get("dias")
+                # Si el hábito tiene 'dias' definido como lista y este día no está → saltar
+                if dias and isinstance(dias, list) and dia_iso not in dias:
+                    continue
+                habs_hoy.append(h)
+            if habs_hoy:
+                partes.append(f"\n*━━ Hábitos del día ({len(habs_hoy)}) ━━*")
+                for h in habs_hoy[:8]:
+                    cat = cats.get(h.get("categoria_id"), {})
+                    icono = cat.get("icono") or h.get("icono") or "•"
+                    dur = f" · {h.get('duracion_min')}min" if h.get("duracion_min") else ""
+                    partes.append(f"{icono} {h.get('nombre','(sin nombre)')}{dur}")
+                if len(habs_hoy) > 8:
+                    partes.append(f"_+ {len(habs_hoy)-8} más_")
+        except Exception as e:
+            print(f"⚠️  Resumen: error leyendo hábitos: {e}")
+
+        partes.append("\n_Buen día. Que tu energía rinda._ 💪")
+        telegram_send("\n".join(partes))
+        print(f"☀️  Resumen matutino enviado: {len(eventos_hoy)} eventos, {len(tareas_hoy)} tareas")
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        print(f"⚠️  Error en resumen matutino: {e}")
 
 
 def _notificar_evento_nuevo(info: dict):
