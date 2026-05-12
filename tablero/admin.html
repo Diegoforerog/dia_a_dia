@@ -2527,7 +2527,9 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'http://localhost:5050/api';
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:5050/api'
+  : '/api';
 let TOKEN = localStorage.getItem('organizador_token') || '';
 
 /* fecha del día en sidebar */
