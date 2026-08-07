@@ -98,4 +98,7 @@ def guardar_registro_dia(registro: dict) -> None:
 
 
 def nuevo_id(prefijo: str) -> str:
-    return f"{prefijo}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    # Sufijo aleatorio para evitar colisiones cuando se generan varios ids
+    # en el mismo segundo (p. ej. sembrar el canvas de golpe).
+    from secrets import token_hex
+    return f"{prefijo}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{token_hex(3)}"
