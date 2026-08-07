@@ -184,6 +184,24 @@ def _intentar_resumen_si_falta():
 
 
 # ─────────────────────────────────────────────────────────
+# Enrutador de avisos por persona (Fase 2)
+# ─────────────────────────────────────────────────────────
+def _enrutar(persona_id, titulo, cuerpo, url="/", tag="", telegram_texto=None):
+    """Envía un aviso al dueño (persona) por Web Push + su Telegram.
+    Si no hay persona (calendario sin dueño), cae al Telegram global de siempre."""
+    if persona_id:
+        try:
+            import avisos
+            return avisos.avisar_persona(persona_id, titulo, cuerpo, url=url,
+                                         tag=tag, telegram_texto=telegram_texto)
+        except Exception as e:
+            print(f"⚠️  Enrutador avisos: {e}")
+    # Sin dueño → comportamiento clásico (Telegram global)
+    telegram_send(telegram_texto if telegram_texto is not None else f"*{titulo}*\n{cuerpo}")
+    return {"push": 0, "telegram": True, "fallback": True}
+
+
+# ─────────────────────────────────────────────────────────
 # Telegram envío directo
 # ─────────────────────────────────────────────────────────
 def telegram_send(texto: str, parse_mode: str = "Markdown") -> bool:
@@ -252,7 +270,9 @@ def disparar_recordatorio(rec_id: str):
     if r.get("repetir") and r["repetir"] != "no":
         texto += f"\n_🔁 se repite {r['repetir']}_"
 
-    telegram_send(texto)
+    cuerpo = r["titulo"] + (f" · {hora}" if hora else "")
+    _enrutar(r.get("persona_id"), "Recordatorio", cuerpo,
+             url="/", tag=f"rec_{rec_id}", telegram_texto=texto)
     _db.execute(
         "UPDATE recordatorios SET enviado=TRUE, enviado_at=NOW() WHERE id=%s",
         (rec_id,)
@@ -446,6 +466,7 @@ def sincronizar_eventos_calendario():
                                             "fin": end,
                                             "calendario": cal.get("nombre_para_mostrar"),
                                             "cliente": cli.get("nombre", ""),
+                                            "persona_id": cal.get("persona_id"),
                                             "ubicacion": ev.get("location", ""),
                                             "organizador": organizador,
                                             "html_link": ev.get("htmlLink", ""),
@@ -471,6 +492,7 @@ def sincronizar_eventos_calendario():
                                 "ubicacion": ev.get("location", ""),
                                 "calendario": cal.get("nombre_para_mostrar"),
                                 "cliente": cli.get("nombre", ""),
+                                "persona_id": cal.get("persona_id"),
                                 "html_link": ev.get("htmlLink", ""),
                                 "meet_link": meet_link
                             }
@@ -527,7 +549,8 @@ def sincronizar_eventos_calendario():
                     "fin_iso": end.isoformat() if end else None,
                     "ubicacion": str(ev.get("LOCATION", "")),
                     "calendario": cal.get("nombre_para_mostrar"),
-                    "cliente": cli.get("nombre", "")
+                    "cliente": cli.get("nombre", ""),
+                    "persona_id": cal.get("persona_id")
                 }
                 s = get_scheduler()
                 s.add_job(
@@ -546,8 +569,163 @@ def sincronizar_eventos_calendario():
         print(f"📅 Sync: programados {nuevos} avisos -10min · {notificados_nuevos} eventos nuevos notificados a Telegram{marca}")
 
 
+def _asegurar_tabla_resumen_persona():
+    try:
+        _db.execute("""
+            CREATE TABLE IF NOT EXISTS resumen_persona_enviado (
+                fecha DATE NOT NULL, persona_id TEXT NOT NULL,
+                enviado_at TIMESTAMPTZ DEFAULT NOW(),
+                PRIMARY KEY (fecha, persona_id))""")
+    except Exception as e:
+        print(f"⚠️  tabla resumen_persona_enviado: {e}")
+
+
+def _habitos_de_hoy(ahora):
+    """Lista de hábitos activos que tocan hoy (compartidos; por-persona llega en Fase 3)."""
+    from comun import cargar
+    try:
+        habs_data = cargar("habitos.json")
+        cats = {c["id"]: c for c in habs_data.get("categorias", [])}
+        dia_iso = ahora.isoweekday()
+        salida = []
+        for h in habs_data.get("habitos", []):
+            if not h.get("activo", True):
+                continue
+            dias = h.get("dias")
+            if dias and isinstance(dias, list) and dia_iso not in dias:
+                continue
+            cat = cats.get(h.get("categoria_id"), {})
+            salida.append({"nombre": h.get("nombre", "(sin nombre)"),
+                           "icono": cat.get("icono") or h.get("icono") or "•"})
+        return salida
+    except Exception as e:
+        print(f"⚠️  Resumen: hábitos: {e}")
+        return []
+
+
+def _leer_eventos_google(cals, inicio_dia, fin_dia):
+    """[{hora,titulo,calendario}] de eventos OAuth para los calendarios dados (hoy)."""
+    eventos = []
+    cals = [c for c in cals if not c.get("ical_url")]
+    if not cals:
+        return eventos
+    try:
+        from pathlib import Path as _Path
+        token_path = _Path(__file__).resolve().parent.parent / "integraciones" / "token.json"
+        if not token_path.exists():
+            return eventos
+        from google.oauth2.credentials import Credentials
+        from google.auth.transport.requests import Request as GRequest
+        from googleapiclient.discovery import build
+        SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+        creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+        if creds.expired and creds.refresh_token:
+            creds.refresh(GRequest()); token_path.write_text(creds.to_json())
+        servicio = build("calendar", "v3", credentials=creds)
+        vistos = set()
+        for cal in cals:
+            try:
+                r = servicio.events().list(
+                    calendarId=cal["email"], timeMin=inicio_dia.isoformat(),
+                    timeMax=fin_dia.isoformat(), singleEvents=True,
+                    orderBy="startTime", maxResults=100).execute()
+                for ev in r.get("items", []):
+                    sv = ev.get("start", {}).get("dateTime")
+                    if not sv:
+                        continue
+                    uid = (ev.get("iCalUID") or ev.get("id", "")).split("@")[0]
+                    try:
+                        start = datetime.fromisoformat(sv.replace("Z", "+00:00")).astimezone(TZ)
+                    except Exception:
+                        continue
+                    k = (uid, start.isoformat())
+                    if k in vistos:
+                        continue
+                    vistos.add(k)
+                    eventos.append({"hora": start.strftime("%H:%M"),
+                                    "titulo": ev.get("summary", "(sin título)"),
+                                    "calendario": cal.get("nombre_para_mostrar", "")})
+            except Exception:
+                continue
+        eventos.sort(key=lambda e: e["hora"])
+    except Exception as e:
+        print(f"⚠️  Resumen: error leyendo eventos: {e}")
+    return eventos
+
+
 def enviar_resumen_matutino(forzar: bool = False):
+    """Envía el resumen matutino. Si alguna persona ya configuró sus canales
+    (Telegram propio o Web Push), lo manda PERSONALIZADO a cada una (sus
+    calendarios + su trabajo del canvas + hábitos). Si nadie configuró canales
+    todavía, mantiene el comportamiento clásico (Telegram global)."""
+    from comun import cargar
+    personas = [p for p in cargar("personas.json").get("personas", []) if p.get("activo", True)]
+    configuradas = [p for p in personas
+                    if p.get("telegram_chat_id") or (p.get("push_subscriptions"))]
+    if not configuradas:
+        return _resumen_global(forzar)
+
+    DIAS_ES = ["lunes","martes","miércoles","jueves","viernes","sábado","domingo"]
+    MESES_ES = ["","enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
+    ahora = datetime.now(TZ); hoy = ahora.date()
+    fecha_human = f"{DIAS_ES[ahora.weekday()].capitalize()} {hoy.day} de {MESES_ES[hoy.month]}"
+    inicio_dia = datetime.combine(hoy, datetime.min.time()).replace(tzinfo=TZ)
+    fin_dia = datetime.combine(hoy, datetime.max.time()).replace(tzinfo=TZ)
+    cals_all = [c for c in cargar("calendarios.json").get("calendarios_gmail", []) if c.get("activo")]
+    historias = cargar("historias.json").get("historias", [])
+    habs_hoy = _habitos_de_hoy(ahora)
+    _asegurar_tabla_resumen_persona()
+
+    import avisos
+    enviados = 0
+    for p in configuradas:
+        if not forzar:
+            try:
+                if _db.query("SELECT 1 FROM resumen_persona_enviado WHERE fecha=%s AND persona_id=%s",
+                             (hoy, p["id"])):
+                    continue
+            except Exception:
+                pass
+        cals_p = [c for c in cals_all if c.get("persona_id") == p["id"]]
+        eventos = _leer_eventos_google(cals_p, inicio_dia, fin_dia)
+        his_p = [h for h in historias
+                 if h.get("responsable_id") == p["id"] and h.get("estado") != "hecho"
+                 and (h.get("estado") == "en_progreso"
+                      or (h.get("fecha_objetivo") and h["fecha_objetivo"] <= hoy.isoformat()))]
+
+        partes = [f"☀️ *Buenos días {p['nombre']}*", f"\n📅 *Hoy {fecha_human}*"]
+        if eventos:
+            partes.append(f"\n*━━ Tus reuniones ({len(eventos)}) ━━*")
+            partes += [f"🕐 {e['hora']}  {e['titulo']}" for e in eventos]
+        else:
+            partes.append("\n*━━ Reuniones ━━*\n_Sin reuniones hoy_ ✨")
+        if his_p:
+            partes.append(f"\n*━━ Tu trabajo de hoy ({len(his_p)}) ━━*")
+            partes += [f"• {h['titulo']}" for h in his_p[:8]]
+            if len(his_p) > 8:
+                partes.append(f"_+ {len(his_p)-8} más en el tablero_")
+        if habs_hoy:
+            partes.append(f"\n*━━ Hábitos del día ({len(habs_hoy)}) ━━*")
+            partes += [f"{h['icono']} {h['nombre']}" for h in habs_hoy[:8]]
+        partes.append("\n_Buen día. Que tu energía rinda._ 💪")
+        texto = "\n".join(partes)
+        cuerpo_push = f"{len(eventos)} reunión(es) · {len(his_p)} del tablero · {len(habs_hoy)} hábitos"
+
+        try:
+            res = avisos.avisar_persona(p["id"], "Tu plan de hoy", cuerpo_push,
+                                        url="/", tag="resumen", telegram_texto=texto)
+            if res.get("push") or res.get("telegram"):
+                _db.execute("""INSERT INTO resumen_persona_enviado (fecha, persona_id)
+                               VALUES (%s,%s) ON CONFLICT DO NOTHING""", (hoy, p["id"]))
+                enviados += 1
+        except Exception as e:
+            print(f"⚠️  Resumen persona {p.get('nombre')}: {e}")
+    print(f"☀️  Resumen matutino por persona: {enviados}/{len(configuradas)} enviados")
+
+
+def _resumen_global(forzar: bool = False):
     """Compone y envía por Telegram el resumen del día: eventos + tareas + hábitos.
+    (Comportamiento clásico, cuando aún nadie configuró canales por persona.)
 
     IDEMPOTENTE: si ya se envió hoy, no envía de nuevo (a menos que forzar=True).
     RESILIENTE: reintenta hasta 3 veces si Telegram falla.
@@ -765,7 +943,14 @@ def _notificar_evento_nuevo(info: dict):
             texto += f"\n\n🎥 [Unirse al Meet]({info['meet_link']})"
         if info.get("html_link"):
             texto += f"\n📖 [Ver en Calendar]({info['html_link']})"
-        telegram_send(texto)
+        _enrutar(
+            info.get("persona_id"),
+            "Nueva reunión agendada",
+            f"{info['titulo']} · {fecha} {rango}",
+            url="/tablero/agenda.html",
+            tag=f"nuevo_{info.get('titulo','')[:20]}",
+            telegram_texto=texto,
+        )
     except Exception as e:
         print(f"⚠️  Error notificando evento nuevo: {e}")
 
@@ -864,7 +1049,15 @@ def avisar_evento(payload: dict):
     if payload.get("html_link"):
         texto += f"\n📖 [Ver evento en Calendar]({payload['html_link']})"
 
-    telegram_send(texto)
+    cuerpo = f"{payload['titulo']} · {hora_ini}" + (f"–{hora_fin}" if hora_fin else "")
+    _enrutar(
+        payload.get("persona_id"),
+        f"En {min_restantes} min",
+        cuerpo,
+        url=payload.get("meet_link") or "/tablero/agenda.html",
+        tag=f"ev_{payload.get('uid','')[:24]}",
+        telegram_texto=texto,
+    )
     try:
         _db.execute(
             "INSERT INTO eventos_avisados (evento_uid, inicio, tipo_aviso) VALUES (%s,%s,%s) "

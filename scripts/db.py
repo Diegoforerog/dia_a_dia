@@ -113,7 +113,8 @@ def cargar(nombre_archivo: str) -> Dict:
         }
 
     if nombre_archivo == "calendarios.json":
-        rows = query("""SELECT id, email, ical_url, nombre_para_mostrar, cliente_asociado, color, activo
+        rows = query("""SELECT id, email, ical_url, nombre_para_mostrar, cliente_asociado,
+                               persona_id, color, activo
                         FROM calendarios ORDER BY nombre_para_mostrar""")
         return {"calendarios_gmail": [_row_to_dict(r) for r in rows]}
 
@@ -123,7 +124,7 @@ def cargar(nombre_archivo: str) -> Dict:
 
     if nombre_archivo == "recordatorios.json":
         rows = query("""SELECT id, titulo, mensaje, fecha_hora, repetir, cliente_id,
-                               enviado, enviado_at, activo, creado_at
+                               persona_id, enviado, enviado_at, activo, creado_at
                         FROM recordatorios ORDER BY fecha_hora DESC""")
         return {"recordatorios": [_row_to_dict(r) for r in rows]}
 
@@ -208,7 +209,7 @@ def guardar(nombre_archivo: str, datos: Dict) -> None:
     if nombre_archivo == "calendarios.json":
         _sync_lista("calendarios", datos.get("calendarios_gmail", []),
                     ["id","email","ical_url","nombre_para_mostrar",
-                     "cliente_asociado","color","activo"])
+                     "cliente_asociado","persona_id","color","activo"])
         return
 
     if nombre_archivo == "config.json":
@@ -221,7 +222,7 @@ def guardar(nombre_archivo: str, datos: Dict) -> None:
     if nombre_archivo == "recordatorios.json":
         _sync_lista("recordatorios", datos.get("recordatorios", []),
                     ["id","titulo","mensaje","fecha_hora","repetir","cliente_id",
-                     "enviado","enviado_at","activo"])
+                     "persona_id","enviado","enviado_at","activo"])
         return
 
     if nombre_archivo == "personas.json":

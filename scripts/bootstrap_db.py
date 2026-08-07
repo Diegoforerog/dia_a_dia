@@ -121,6 +121,17 @@ def ejecutar():
                 avisado_at TIMESTAMPTZ DEFAULT NOW(),
                 UNIQUE (evento_uid, inicio, tipo_aviso))""")
 
+        # ── 2c. Columnas nuevas idempotentes (corre en cada boot; cubre BD ya
+        # existente donde no se re-ejecutan las migraciones de esquema) ──
+        for alter in [
+            "ALTER TABLE calendarios   ADD COLUMN IF NOT EXISTS persona_id TEXT",
+            "ALTER TABLE recordatorios ADD COLUMN IF NOT EXISTS persona_id TEXT",
+        ]:
+            try:
+                cur.execute(alter)
+            except Exception as e:
+                _t(f"⚠️  columna: {str(e).splitlines()[0]}")
+
         # ── 3. Importar datos del Postgres viejo (por tabla: solo si está vacía) ──
         viejo_host = os.environ.get("MIGRAR_DESDE_HOST", "")
         if viejo_host:

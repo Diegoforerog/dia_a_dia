@@ -268,10 +268,74 @@ def put_persona(pid):
     data = _asegurar_personas()
     for p in data["personas"]:
         if p["id"] == pid:
-            p.update({k: v for k, v in body.items() if k != "id"})
+            # push_subscriptions se maneja solo por los endpoints de push
+            p.update({k: v for k, v in body.items() if k not in ("id", "push_subscriptions")})
             guardar("personas.json", data)
-            return jsonify(p)
+            # No devolver las suscripciones (ruido/privacidad)
+            salida = {k: v for k, v in p.items() if k != "push_subscriptions"}
+            return jsonify(salida)
     return jsonify({"error": "Persona no encontrada"}), 404
+
+
+# ============ AVISOS / WEB PUSH (Fase 2) ============
+
+@app.route("/api/push/clave-publica", methods=["GET"])
+def push_clave_publica():
+    """applicationServerKey (VAPID) para que el navegador se suscriba.
+    Público: no expone secretos, solo la clave pública."""
+    try:
+        import avisos
+        return jsonify({"clave": avisos.clave_publica(), "disponible": avisos.push_disponible()})
+    except Exception as e:
+        return jsonify({"clave": "", "disponible": False, "error": str(e)})
+
+
+@app.route("/api/push/suscribir", methods=["POST"])
+@requiere_auth
+def push_suscribir():
+    body = request.get_json() or {}
+    persona_id = body.get("persona_id")
+    sub = body.get("subscription")
+    if not persona_id or not sub or not sub.get("endpoint"):
+        return jsonify({"error": "Falta persona_id o subscription"}), 400
+    import avisos
+    if avisos.guardar_suscripcion(persona_id, sub):
+        return jsonify({"ok": True})
+    return jsonify({"error": "Persona no encontrada"}), 404
+
+
+@app.route("/api/push/desuscribir", methods=["POST"])
+@requiere_auth
+def push_desuscribir():
+    body = request.get_json() or {}
+    persona_id = body.get("persona_id")
+    endpoint = body.get("endpoint")
+    if not persona_id or not endpoint:
+        return jsonify({"error": "Falta persona_id o endpoint"}), 400
+    import avisos
+    avisos.quitar_suscripcion(persona_id, endpoint)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/push/prueba", methods=["POST"])
+@requiere_auth
+def push_prueba():
+    """Envía un aviso de prueba a la persona por todos sus canales."""
+    body = request.get_json() or {}
+    persona_id = body.get("persona_id")
+    if not persona_id:
+        return jsonify({"error": "Falta persona_id"}), 400
+    import avisos
+    persona = avisos._persona(persona_id)
+    nombre = persona.get("nombre", "")
+    res = avisos.avisar_persona(
+        persona_id,
+        "Día a día",
+        f"¡Hola {nombre}! Tus avisos están funcionando 🎉",
+        url="/",
+        tag="prueba",
+    )
+    return jsonify({"ok": True, "resultado": res})
 
 
 # ============ ÉPICAS (Fase 1 — fases de un proyecto) ============
@@ -1514,6 +1578,7 @@ def post_calendario():
         "ical_url": body.get("ical_url", ""),
         "nombre_para_mostrar": nombre,
         "cliente_asociado": body.get("cliente_asociado") or body.get("empresa_asociada"),
+        "persona_id": body.get("persona_id"),
         "color": body.get("color", "#4ECDC4"),
         "activo": body.get("activo", True)
     }

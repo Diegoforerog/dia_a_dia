@@ -2223,6 +2223,10 @@
               <select name="cliente_asociado" required id="sel-empresa-cal"></select>
             </div>
             <div>
+              <label>Dueño (recibe los avisos)</label>
+              <select name="persona_id" id="sel-persona-cal"></select>
+            </div>
+            <div>
               <label>Color</label>
               <div class="color-input">
                 <input type="color" name="color" value="#4A4D7A">
@@ -2251,7 +2255,7 @@
           </button>
         </div>
         <table id="tabla-cal">
-          <thead><tr><th>Calendario</th><th>Cliente</th><th>Tipo</th><th></th></tr></thead>
+          <thead><tr><th>Calendario</th><th>Cliente</th><th>Dueño</th><th>Tipo</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
         <div id="eventos-hoy" style="margin-top: 18px;"></div>
@@ -2926,13 +2930,18 @@ async function cumplirTarea(id) {
 }
 
 /* ───── CALENDARIOS ───── */
+let _personasCache = [];
 async function cargarCalendarios() {
   const clientes = (await api('/clientes')).clientes || [];
   const empMap = {}; clientes.forEach(e => empMap[e.id] = e);
+  _personasCache = ((await api('/personas')).personas || []).filter(p => p.activo !== false);
+  const perMap = {}; _personasCache.forEach(p => perMap[p.id] = p);
   const data = await api('/calendarios');
   const lista = data.calendarios_gmail || [];
   document.getElementById('cnt-calendarios').textContent = lista.length || '';
   const tbody = document.querySelector('#tabla-cal tbody');
+  const opcionesPersona = (sel) => `<option value="">— sin dueño —</option>` +
+    _personasCache.map(p => `<option value="${p.id}" ${sel === p.id ? 'selected' : ''}>${p.nombre}</option>`).join('');
   tbody.innerHTML = lista.length ? lista.map(c => {
     const e = empMap[c.cliente_asociado] || {nombre: '—', color: '#A8A29A'};
     const tipo = c.ical_url ? 'iCal' : 'Email';
@@ -2940,12 +2949,20 @@ async function cargarCalendarios() {
     <tr>
       <td><div class="row-name"><span class="dot" style="background:${c.color}"></span><strong>${c.nombre_para_mostrar}</strong></div></td>
       <td><span class="tag" style="background:${e.color}1A;color:${e.color};border-color:${e.color}33">${e.nombre}</span></td>
+      <td><select onchange="cambiarDuenoCalendario('${c.id}', this.value)" style="padding:5px 8px;font-size:12.5px;">${opcionesPersona(c.persona_id)}</select></td>
       <td style="color:var(--stone)">${tipo}</td>
       <td><button class="danger" onclick="eliminarCalendario('${c.id}')">Eliminar</button></td>
     </tr>`;
-  }).join('') : emptyRow(4, 'Aún sin calendarios conectados. Pega tu primer enlace iCal arriba.');
+  }).join('') : emptyRow(5, 'Aún sin calendarios conectados. Pega tu primer enlace iCal arriba.');
   document.getElementById('sel-empresa-cal').innerHTML =
     clientes.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+  const selP = document.getElementById('sel-persona-cal');
+  if (selP) selP.innerHTML = opcionesPersona('');
+}
+
+async function cambiarDuenoCalendario(id, persona_id) {
+  await api('/calendarios/' + id, { method: 'PUT', body: JSON.stringify({ persona_id: persona_id || null }) });
+  toast(persona_id ? 'Dueño actualizado — recibirá los avisos' : 'Calendario sin dueño');
 }
 
 async function crearCalendario(e) {
@@ -2955,6 +2972,7 @@ async function crearCalendario(e) {
     ical_url: f.ical_url.value.trim(),
     nombre_para_mostrar: f.nombre_para_mostrar.value,
     cliente_asociado: f.cliente_asociado.value,
+    persona_id: f.persona_id.value || null,
     color: f.color_hex.value || f.color.value,
     activo: true
   })});

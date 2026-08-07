@@ -11,3 +11,5 @@ pytz>=2024.1
 google-auth>=2.30
 google-auth-oauthlib>=1.2
 google-api-python-client>=2.130
+pywebpush>=2.0
+cryptography>=42.0

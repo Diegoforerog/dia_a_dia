@@ -103,12 +103,24 @@
 
     _modoEdicion(ov) {
       const cont = ov.querySelector('.dd-persona-cards');
+      cont.classList.add('editando-lista');
       cont.innerHTML = DD.personas.map(p => `
-        <div class="dd-persona-card editando" style="--pc:${p.color}">
-          <span class="dd-persona-avatar">${p.emoji || DD.iniciales(p)}</span>
-          <input class="dd-persona-input" data-id="${p.id}" value="${p.nombre}" maxlength="20" aria-label="Nombre">
-          <input type="color" class="dd-persona-color" data-id="${p.id}" value="${p.color}" aria-label="Color">
+        <div class="dd-persona-fila" style="--pc:${p.color}">
+          <div class="dd-fila-top">
+            <input type="color" class="dd-persona-color" data-id="${p.id}" value="${p.color}" aria-label="Color">
+            <input class="dd-persona-input" data-id="${p.id}" value="${p.nombre}" maxlength="20" aria-label="Nombre" placeholder="Nombre">
+          </div>
+          <label class="dd-fila-tg">
+            <span>Telegram chat ID <small>(opcional)</small></span>
+            <input class="dd-persona-tg" data-id="${p.id}" value="${p.telegram_chat_id || ''}" inputmode="numeric" placeholder="ej. 5654764212">
+          </label>
+          <button type="button" class="dd-btn-push" data-id="${p.id}">🔔 Recibir avisos en este celular</button>
+          <span class="dd-push-estado" data-id="${p.id}"></span>
         </div>`).join('');
+
+      cont.querySelectorAll('.dd-btn-push').forEach(b =>
+        b.addEventListener('click', () => DD.activarPush(b.dataset.id, ov)));
+
       const btnEd = ov.querySelector('#dd-editar-nombres');
       btnEd.textContent = '✓ Guardar cambios';
       btnEd.onclick = async () => {
@@ -116,18 +128,61 @@
         for (const p of DD.personas) {
           const inp = cont.querySelector(`.dd-persona-input[data-id="${p.id}"]`);
           const col = cont.querySelector(`.dd-persona-color[data-id="${p.id}"]`);
+          const tg = cont.querySelector(`.dd-persona-tg[data-id="${p.id}"]`);
           const nombre = (inp?.value || '').trim() || p.nombre;
           const color = col?.value || p.color;
-          if (nombre !== p.nombre || color !== p.color) {
+          const chat = (tg?.value || '').trim();
+          if (nombre !== p.nombre || color !== p.color || chat !== (p.telegram_chat_id || '')) {
             try {
-              await DD.fetch('/personas/' + p.id, { method: 'PUT', body: JSON.stringify({ nombre, color }) });
-              p.nombre = nombre; p.color = color;
-            } catch (e) { console.warn('DD rename:', e.message); }
+              await DD.fetch('/personas/' + p.id, { method: 'PUT',
+                body: JSON.stringify({ nombre, color, telegram_chat_id: chat }) });
+              p.nombre = nombre; p.color = color; p.telegram_chat_id = chat;
+            } catch (e) { console.warn('DD guardar persona:', e.message); }
           }
         }
         DD._cerrarSelector();
         DD.abrirSelector(true);
       };
+    },
+
+    /* ── Web Push: suscribir este dispositivo a los avisos de una persona ── */
+    async activarPush(personaId, ov) {
+      const est = ov?.querySelector(`.dd-push-estado[data-id="${personaId}"]`);
+      const set = (t, ok) => { if (est) { est.textContent = t; est.className = 'dd-push-estado' + (ok ? ' ok' : ' err'); } };
+      try {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+          set('Este navegador no soporta avisos', false); return;
+        }
+        set('Pidiendo permiso…');
+        const permiso = await Notification.requestPermission();
+        if (permiso !== 'granted') { set('Permiso denegado en el navegador', false); return; }
+        const reg = await navigator.serviceWorker.ready;
+        const { clave, disponible } = await DD.fetch('/push/clave-publica');
+        if (!disponible || !clave) { set('El servidor aún no tiene avisos push', false); return; }
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: DD._urlB64ToUint8(clave),
+          });
+        }
+        await DD.fetch('/push/suscribir', { method: 'POST',
+          body: JSON.stringify({ persona_id: personaId, subscription: sub.toJSON() }) });
+        await DD.fetch('/push/prueba', { method: 'POST', body: JSON.stringify({ persona_id: personaId }) });
+        set('✓ Activado — te enviamos una prueba', true);
+      } catch (e) {
+        console.warn('activarPush:', e);
+        set('No se pudo activar: ' + e.message, false);
+      }
+    },
+
+    _urlB64ToUint8(base64) {
+      const pad = '='.repeat((4 - (base64.length % 4)) % 4);
+      const b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+      const raw = atob(b64);
+      const arr = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+      return arr;
     },
 
     _cerrarSelector() {
@@ -191,10 +246,24 @@
     font-size:15px;cursor:pointer;padding:6px 9px;border-radius:8px;}
   .dd-persona-cerrar:hover{background:#F0ECE2;color:#3A3733;}
   .dd-persona-card.editando{cursor:default;}
-  .dd-persona-input{width:100%;text-align:center;font-family:inherit;font-size:14px;font-weight:600;
-    border:1px solid #E8E4DA;border-radius:8px;padding:7px 8px;background:#FBFAF6;color:#0E0D0B;}
-  .dd-persona-input:focus{outline:none;border-color:var(--pc);}
-  .dd-persona-color{width:42px;height:28px;border:1px solid #E8E4DA;border-radius:6px;background:none;cursor:pointer;padding:2px;}
+  .dd-persona-cards.editando-lista{grid-template-columns:1fr;gap:12px;}
+  .dd-persona-fila{border:1.5px solid #E8E4DA;border-left:3px solid var(--pc);border-radius:12px;
+    padding:12px 14px;display:flex;flex-direction:column;gap:9px;text-align:left;background:#fff;}
+  .dd-fila-top{display:flex;align-items:center;gap:10px;}
+  .dd-fila-tg{display:flex;flex-direction:column;gap:3px;font-size:11px;color:#7A746B;text-transform:none;letter-spacing:0;}
+  .dd-fila-tg small{color:#A8A29A;}
+  .dd-persona-input{flex:1;font-family:inherit;font-size:14.5px;font-weight:600;
+    border:1px solid #E8E4DA;border-radius:8px;padding:8px 10px;background:#FBFAF6;color:#0E0D0B;}
+  .dd-persona-input:focus,.dd-persona-tg input:focus{outline:none;border-color:var(--pc);}
+  .dd-persona-tg input{font-family:inherit;font-size:13px;border:1px solid #E8E4DA;border-radius:8px;padding:7px 10px;background:#FBFAF6;color:#0E0D0B;}
+  .dd-persona-color{width:44px;height:36px;border:1px solid #E8E4DA;border-radius:8px;background:none;cursor:pointer;padding:2px;flex-shrink:0;}
+  .dd-btn-push{font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+    border:1px solid var(--pc);color:var(--pc);background:color-mix(in srgb,var(--pc) 8%,#fff);
+    border-radius:9px;padding:9px 12px;transition:background .15s;}
+  .dd-btn-push:hover{background:color-mix(in srgb,var(--pc) 16%,#fff);}
+  .dd-push-estado{font-size:11.5px;color:#7A746B;min-height:14px;}
+  .dd-push-estado.ok{color:#5C8A6F;font-weight:600;}
+  .dd-push-estado.err{color:#A8392F;}
 
   .dd-chip-persona{display:flex;align-items:center;gap:10px;width:100%;margin-top:10px;padding:9px 10px;
     background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;cursor:pointer;
