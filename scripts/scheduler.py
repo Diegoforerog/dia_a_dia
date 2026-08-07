@@ -580,8 +580,9 @@ def _asegurar_tabla_resumen_persona():
         print(f"⚠️  tabla resumen_persona_enviado: {e}")
 
 
-def _habitos_de_hoy(ahora):
-    """Lista de hábitos activos que tocan hoy (compartidos; por-persona llega en Fase 3)."""
+def _habitos_de_hoy(ahora, persona_id=None):
+    """Hábitos activos que tocan hoy. Si se da persona_id: sus personales + los
+    de pareja. Sin persona: todos (comportamiento clásico)."""
     from comun import cargar
     try:
         habs_data = cargar("habitos.json")
@@ -594,6 +595,10 @@ def _habitos_de_hoy(ahora):
             dias = h.get("dias")
             if dias and isinstance(dias, list) and dia_iso not in dias:
                 continue
+            if persona_id:
+                alcance = h.get("alcance", "pareja")
+                if alcance == "personal" and h.get("persona_id") != persona_id:
+                    continue
             cat = cats.get(h.get("categoria_id"), {})
             salida.append({"nombre": h.get("nombre", "(sin nombre)"),
                            "icono": cat.get("icono") or h.get("icono") or "•"})
@@ -673,7 +678,6 @@ def enviar_resumen_matutino(forzar: bool = False):
     fin_dia = datetime.combine(hoy, datetime.max.time()).replace(tzinfo=TZ)
     cals_all = [c for c in cargar("calendarios.json").get("calendarios_gmail", []) if c.get("activo")]
     historias = cargar("historias.json").get("historias", [])
-    habs_hoy = _habitos_de_hoy(ahora)
     _asegurar_tabla_resumen_persona()
 
     import avisos
@@ -692,6 +696,7 @@ def enviar_resumen_matutino(forzar: bool = False):
                  if h.get("responsable_id") == p["id"] and h.get("estado") != "hecho"
                  and (h.get("estado") == "en_progreso"
                       or (h.get("fecha_objetivo") and h["fecha_objetivo"] <= hoy.isoformat()))]
+        habs_hoy = _habitos_de_hoy(ahora, p["id"])
 
         partes = [f"☀️ *Buenos días {p['nombre']}*", f"\n📅 *Hoy {fecha_human}*"]
         if eventos:

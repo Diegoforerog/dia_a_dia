@@ -126,6 +126,8 @@ def ejecutar():
         for alter in [
             "ALTER TABLE calendarios   ADD COLUMN IF NOT EXISTS persona_id TEXT",
             "ALTER TABLE recordatorios ADD COLUMN IF NOT EXISTS persona_id TEXT",
+            "ALTER TABLE habitos ADD COLUMN IF NOT EXISTS alcance TEXT DEFAULT 'personal'",
+            "ALTER TABLE habitos ADD COLUMN IF NOT EXISTS persona_id TEXT",
         ]:
             try:
                 cur.execute(alter)

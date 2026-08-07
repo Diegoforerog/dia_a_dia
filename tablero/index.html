@@ -1910,10 +1910,19 @@ function habitoAplicaHoy(h, isoDow) {
   return false; // semanal/mensual no se muestran en vista diaria por ahora
 }
 
+function habitoDeMiPersona(h) {
+  // Fase 3: personal → solo su dueño; pareja → ambos. Sin persona elegida → todo.
+  const yo = (window.DD && DD.personaId && DD.personaId()) || '';
+  if (!yo) return true;
+  const alcance = h.alcance || 'pareja';
+  return alcance === 'pareja' || h.persona_id === yo;
+}
+
 function pintarHabitos(habitosData, registro) {
   const cumplidos = new Set((registro && registro.habitos_cumplidos) || []);
   const dow = isoWeekdayToday();
-  const activos = (habitosData.habitos || []).filter(h => habitoAplicaHoy(h, dow));
+  const activos = (habitosData.habitos || [])
+    .filter(h => habitoAplicaHoy(h, dow) && habitoDeMiPersona(h));
   const cats = habitosData.categorias || [];
   const catMap = {};
   cats.forEach(c => catMap[c.id] = c);
@@ -2168,9 +2177,17 @@ function pintarStatus(registro) {
   /* exponer datos globalmente para vistas semana y mes */
   window.__DATA__ = {
     clientes: listaClientes,
-    proyectos: (proyectosData||{}).proyectos || []
+    proyectos: (proyectosData||{}).proyectos || [],
+    habitos: habitosData || {habitos:[], categorias:[]},
+    registro: registro
   };
 })();
+
+/* Al cambiar de persona (chip del sidebar), repintar hábitos y KPI del día */
+document.addEventListener('dd:persona', () => {
+  const d = window.__DATA__;
+  if (d && d.habitos) pintarHabitos(d.habitos, d.registro);
+});
 
 function pintarKPIs(registro, proyectos) {
   // KPI plan

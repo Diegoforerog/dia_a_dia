@@ -105,7 +105,8 @@ def cargar(nombre_archivo: str) -> Dict:
     if nombre_archivo == "habitos.json":
         cats = query("SELECT id, nombre, icono, color FROM habito_categorias ORDER BY nombre")
         habs = query("""SELECT id, categoria_id, nombre, frecuencia, horario_sugerido,
-                               duracion_min, activo, racha_actual, mejor_racha, dias, tipo
+                               duracion_min, activo, racha_actual, mejor_racha, dias, tipo,
+                               alcance, persona_id
                         FROM habitos ORDER BY created_at""")
         return {
             "categorias": [_row_to_dict(c) for c in cats],
@@ -203,7 +204,8 @@ def guardar(nombre_archivo: str, datos: Dict) -> None:
                     ["id","nombre","icono","color"])
         _sync_lista("habitos", datos.get("habitos", []),
                     ["id","categoria_id","nombre","frecuencia","horario_sugerido",
-                     "duracion_min","activo","racha_actual","mejor_racha","dias","tipo"])
+                     "duracion_min","activo","racha_actual","mejor_racha","dias","tipo",
+                     "alcance","persona_id"])
         return
 
     if nombre_archivo == "calendarios.json":

@@ -2033,6 +2033,16 @@
               <label>Duración (min)</label>
               <input type="number" name="duracion_min" value="15" min="0">
             </div>
+            <div class="full">
+              <label>¿De quién es este hábito?</label>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <select name="alcance" id="sel-alcance-hab" onchange="toggleDuenoHabito()" style="flex:1; min-width:180px;">
+                  <option value="pareja">👫 De pareja — ambos lo cumplen</option>
+                  <option value="personal">👤 Personal — de una persona</option>
+                </select>
+                <select name="persona_id" id="sel-persona-hab" style="flex:1; min-width:150px; display:none;"></select>
+              </div>
+            </div>
             <div class="full" id="dias-picker" style="display:none;">
               <label>¿Qué días? (selecciona uno o varios)</label>
               <div class="dias-grid">
@@ -2701,6 +2711,7 @@ async function eliminarProyecto(id) {
 
 /* ───── HÁBITOS ───── */
 async function cargarHabitos() {
+  await _cargarPersonasHab();
   const data = await api('/habitos');
   const catMap = {}; (data.categorias || []).forEach(c => catMap[c.id] = c);
   document.getElementById('cnt-habitos').textContent = (data.habitos || []).length || '';
@@ -2716,10 +2727,14 @@ async function cargarHabitos() {
           ? `<span class="badge-streak" style="color:var(--sage)">✨ ${h.racha_actual} días sin caer</span>`
           : `<span class="badge-streak">🔥 ${h.racha_actual} días</span>`)
       : '<span style="color:var(--mist)">—</span>';
+    const alcance = h.alcance || 'pareja';
+    const scopeBadge = alcance === 'personal'
+      ? `<span class="tipo-badge" style="background:var(--indigo-soft);color:var(--indigo)">👤 ${nombrePersona(h.persona_id)}</span>`
+      : `<span class="tipo-badge" style="background:var(--sage-soft);color:var(--sage)">👫 Pareja</span>`;
     return `
     <tr>
       <td><span class="tag">${c.icono} ${c.nombre}</span></td>
-      <td><strong>${h.nombre}</strong> ${tipoBadge}</td>
+      <td><strong>${h.nombre}</strong> ${tipoBadge} ${scopeBadge}</td>
       <td style="color:var(--stone)">${h.horario_sugerido} · ${h.duracion_min} min · <span class="dias-resumen">${fmtDiasHabito(h)}</span></td>
       <td>${rachaTxt}</td>
       <td>
@@ -2730,6 +2745,21 @@ async function cargarHabitos() {
   }).join('') : emptyRow(5, 'Aún sin hábitos. Agrega uno para empezar a construir rutina.');
   document.getElementById('sel-categoria-hab').innerHTML =
     (data.categorias || []).map(c => `<option value="${c.id}">${c.icono} ${c.nombre}</option>`).join('');
+  const selP = document.getElementById('sel-persona-hab');
+  if (selP) selP.innerHTML = _personasHab.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+}
+
+let _personasHab = [];
+async function _cargarPersonasHab() {
+  try { _personasHab = ((await api('/personas')).personas || []).filter(p => p.activo !== false); }
+  catch (e) { _personasHab = []; }
+}
+function nombrePersona(id) { const p = _personasHab.find(x => x.id === id); return p ? p.nombre : '—'; }
+
+function toggleDuenoHabito() {
+  const sel = document.getElementById('sel-alcance-hab');
+  const dueno = document.getElementById('sel-persona-hab');
+  if (dueno) dueno.style.display = sel.value === 'personal' ? 'block' : 'none';
 }
 
 function toggleDiasPicker() {
@@ -2751,6 +2781,7 @@ async function crearHabito(e) {
     }
   }
   const tipo = f.querySelector('input[name="tipo"]:checked')?.value || 'bueno';
+  const alcance = f.alcance.value;
   await api('/habitos', { method: 'POST', body: JSON.stringify({
     categoria_id: f.categoria_id.value,
     nombre: f.nombre.value,
@@ -2758,11 +2789,14 @@ async function crearHabito(e) {
     horario_sugerido: f.horario_sugerido.value,
     duracion_min: parseInt(f.duracion_min.value),
     dias: dias,
-    tipo: tipo
+    tipo: tipo,
+    alcance: alcance,
+    persona_id: alcance === 'personal' ? f.persona_id.value : null
   })});
   toast(tipo === 'malo' ? '🔴 Hábito a eliminar creado' : '🟢 Hábito a construir creado');
   f.reset();
   toggleDiasPicker();
+  toggleDuenoHabito();
   cargarHabitos();
   return false;
 }
@@ -3598,6 +3632,7 @@ async function abrirEditProyecto(p) {
 }
 
 async function abrirEditHabito(h) {
+  if (!_personasHab.length) await _cargarPersonasHab();
   _editTipo = 'habito'; _editId = h.id;
   document.getElementById('modal-eyebrow').textContent = 'Editar hábito';
   document.getElementById('modal-title').textContent = h.nombre;
@@ -3626,6 +3661,13 @@ async function abrirEditHabito(h) {
     <div><label>Activo</label><select name="activo">
       <option value="true" ${h.activo?'selected':''}>Sí</option>
       <option value="false" ${!h.activo?'selected':''}>No</option>
+    </select></div>
+    <div><label>¿De quién es?</label><select name="alcance" id="edit-alcance" onchange="document.getElementById('edit-dueno').style.display=this.value==='personal'?'block':'none'">
+      <option value="pareja" ${(h.alcance||'pareja')==='pareja'?'selected':''}>👫 De pareja</option>
+      <option value="personal" ${h.alcance==='personal'?'selected':''}>👤 Personal</option>
+    </select></div>
+    <div id="edit-dueno" style="display:${h.alcance==='personal'?'block':'none'};"><label>Dueño</label><select name="persona_id">
+      ${_personasHab.map(p => `<option value="${p.id}" ${p.id===h.persona_id?'selected':''}>${p.nombre}</option>`).join('')}
     </select></div>
     <div class="full" id="edit-dias" style="display:${h.frecuencia==='dias_especificos'?'block':'none'};">
       <label>Días que aplica</label>

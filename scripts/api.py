@@ -614,6 +614,7 @@ def get_habitos():
 def post_habito():
     body = request.get_json()
     data = cargar("habitos.json")
+    alcance = body.get("alcance", "pareja")
     nuevo = {
         "id": body.get("id") or nuevo_id("hab"),
         "categoria_id": body["categoria_id"],
@@ -625,7 +626,9 @@ def post_habito():
         "racha_actual": 0,
         "mejor_racha": 0,
         "dias": body.get("dias"),  # int[] 1-7 (ISO) o None
-        "tipo": body.get("tipo", "bueno")  # 'bueno' (cumplir) o 'malo' (evitar)
+        "tipo": body.get("tipo", "bueno"),  # 'bueno' (cumplir) o 'malo' (evitar)
+        "alcance": alcance if alcance in ("personal", "pareja") else "pareja",
+        "persona_id": body.get("persona_id") if alcance == "personal" else None,
     }
     data["habitos"].append(nuevo)
     guardar("habitos.json", data)
@@ -640,6 +643,9 @@ def put_habito(hid):
     for h in data["habitos"]:
         if h["id"] == hid:
             h.update({k: v for k, v in body.items() if k != "id"})
+            # coherencia: 'pareja' no lleva dueño
+            if h.get("alcance") == "pareja":
+                h["persona_id"] = None
             guardar("habitos.json", data)
             return jsonify(h)
     return jsonify({"error": "Hábito no encontrado"}), 404
@@ -2662,11 +2668,29 @@ def root():
     return send_from_directory(str(RAIZ / "tablero"), "index.html")
 
 
-# ============ SEMILLA PRO (Fase 0+1): personas + migración de actividades ============
+def _asegurar_habitos_alcance():
+    """Fase 3: los hábitos que ya existían (rutina de Diego) se marcan como
+    personales de Diego. Idempotente: solo toca los que no tienen alcance/dueño."""
+    data = cargar("habitos.json")
+    cambio = False
+    for h in data.get("habitos", []):
+        if not h.get("alcance"):
+            h["alcance"] = "personal"
+            cambio = True
+        if h.get("alcance") == "personal" and not h.get("persona_id"):
+            h["persona_id"] = "persona_diego"
+            cambio = True
+    if cambio:
+        guardar("habitos.json", data)
+        print("✓ Semilla hábitos: alcance/dueño asignado a los existentes")
+
+
+# ============ SEMILLA PRO (Fase 0+1+3): personas + migración + hábitos ============
 # Idempotente; corre en cada boot (local y gunicorn) sin efectos si ya está hecho.
 try:
     _asegurar_personas()
     _migrar_actividades_a_historias()
+    _asegurar_habitos_alcance()
 except Exception as _e:
     print(f"⚠️  Semilla SCRUM no aplicada: {_e}")
 
