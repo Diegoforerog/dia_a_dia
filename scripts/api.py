@@ -2946,7 +2946,7 @@ def sugerir_menu():
 
     body = request.get_json() or {}
     semana = body.get("semana") or _semana_iso()
-    momentos = body.get("momentos") or ["desayuno", "almuerzo", "cena"]
+    momentos = body.get("momentos") or ["desayuno", "almuerzo", "comida"]
 
     gustos = cargar("config.json").get("gustos") or {}
     recetas = [{"nombre": r["nombre"], "tipo": r.get("tipo")} for r in cargar("recetas.json").get("recetas", [])]

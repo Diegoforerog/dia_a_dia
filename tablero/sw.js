@@ -5,7 +5,7 @@
    - API: siempre red (nunca cachear datos).
    - Push: listo para la Fase 2 (avisos por persona). */
 
-const VERSION = 'dd-v3';
+const VERSION = 'dd-v4';
 const SHELL = [
   '/',
   '/tablero/index.html',

@@ -261,7 +261,7 @@
       <div style="display:flex;gap:12px;">
         <div style="flex:1;"><label>Tipo</label><select id="rec-tipo">
           <option value="desayuno">Desayuno</option><option value="almuerzo" selected>Almuerzo</option>
-          <option value="cena">Cena</option><option value="snack">Snack</option>
+          <option value="comida">Comida</option><option value="snack">Snack</option>
         </select></div>
         <div style="flex:1;"><label>Favorita</label><select id="rec-fav"><option value="false">No</option><option value="true">Sí ⭐</option></select></div>
       </div>
@@ -286,7 +286,7 @@
 
 <script>
 const DIAS = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
-const MOMENTOS = ['desayuno','almuerzo','cena'];
+const MOMENTOS = ['desayuno','almuerzo','comida'];
 const S = { recetas: [], despensa: [], mercado: [], menu: {dias:{}}, gustos: {le_gusta:[],no_come:[],restricciones:[],preferencias_texto:''} };
 let semanaActual = null;   // YYYY-Www
 let recEdit = null;
@@ -478,7 +478,8 @@ function pintarTags(cont,key,cls){
   (S.gustos[key]||[]).forEach((v,i)=>{ const s=document.createElement('span'); s.className='tag '+cls; s.innerHTML=`${esc(v)} <button>✕</button>`; s.querySelector('button').onclick=()=>{ S.gustos[key].splice(i,1); pintarTags(cont,key,cls); }; c.insertBefore(s,inp); });
 }
 async function guardarGustos(){ S.gustos.preferencias_texto=document.getElementById('gustos-texto').value;
-  await DD.fetch('/gustos',{method:'PUT',body:JSON.stringify(S.gustos)}); toast('Gustos guardados — la IA los usará'); }
+  await DD.fetch('/gustos',{method:'PUT',body:JSON.stringify(S.gustos)});
+  toast('Gustos guardados ✓ Ve a «Menú» y dale ✨ Sugerir con IA'); }
 
 /* ═══ util ═══ */
 function abrir(id){document.getElementById(id).classList.add('abierto');}

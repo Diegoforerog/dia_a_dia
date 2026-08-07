@@ -729,10 +729,10 @@ def enviar_resumen_matutino(forzar: bool = False):
             partes.append(f"\n*━━ Hábitos del día ({len(habs_hoy)}) ━━*")
             partes += [f"{h['icono']} {h['nombre']}" for h in habs_hoy[:8]]
         if comida:
-            partes.append("\n*━━ Comida de hoy ━━*")
+            partes.append("\n*━━ Menú de hoy ━━*")
             etiquetas = {"desayuno": "🍳 Desayuno", "almuerzo": "🍽️ Almuerzo",
-                         "cena": "🌙 Cena", "snack": "🍎 Snack"}
-            for momento in ("desayuno", "almuerzo", "cena", "snack"):
+                         "comida": "🌙 Comida", "snack": "🍎 Snack"}
+            for momento in ("desayuno", "almuerzo", "comida", "snack"):
                 if comida.get(momento):
                     partes.append(f"{etiquetas[momento]}: {comida[momento]}")
         partes.append("\n_Buen día. Que tu energía rinda._ 💪")
@@ -908,10 +908,10 @@ def _resumen_global(forzar: bool = False):
         try:
             comida = _comida_de_hoy(ahora)
             if comida:
-                partes.append("\n*━━ Comida de hoy ━━*")
+                partes.append("\n*━━ Menú de hoy ━━*")
                 etq = {"desayuno": "🍳 Desayuno", "almuerzo": "🍽️ Almuerzo",
-                       "cena": "🌙 Cena", "snack": "🍎 Snack"}
-                for momento in ("desayuno", "almuerzo", "cena", "snack"):
+                       "comida": "🌙 Comida", "snack": "🍎 Snack"}
+                for momento in ("desayuno", "almuerzo", "comida", "snack"):
                     if comida.get(momento):
                         partes.append(f"{etq[momento]}: {comida[momento]}")
         except Exception as e:
