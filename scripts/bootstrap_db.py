@@ -14,7 +14,6 @@ Se activa con BOOTSTRAP_DB=1. Es idempotente y seguro de correr en cada boot:
 Pensado para mudanzas de VPS/servicio sin pasos manuales.
 """
 import os
-import re
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -36,23 +35,6 @@ def _conn(host, port, user, password, dbname):
     return c
 
 
-def _split_sql(texto: str):
-    """Divide un .sql en sentencias respetando bloques $$...$$ (plpgsql)."""
-    stmts, actual, en_dolar = [], [], False
-    for linea in texto.splitlines():
-        sin_comentario = linea.split("--")[0] if not en_dolar else linea
-        actual.append(linea)
-        for _ in re.findall(r"\$\$", sin_comentario):
-            en_dolar = not en_dolar
-        if not en_dolar and sin_comentario.rstrip().endswith(";"):
-            stmt = "\n".join(actual).strip()
-            if stmt and not stmt.startswith("--"):
-                stmts.append(stmt)
-            actual = []
-    resto = "\n".join(actual).strip()
-    if resto and not resto.startswith("--"):
-        stmts.append(resto)
-    return stmts
 
 
 def ejecutar():
@@ -96,6 +78,8 @@ def ejecutar():
     try:
         # ── 2. Esquema (si falta la tabla ancla, correr TODO de nuevo —
         # auto-sanador si un intento anterior quedó a medias) ──
+        cur.execute("CREATE SCHEMA IF NOT EXISTS organizador")
+        cur.execute("SET search_path TO organizador, public")
         cur.execute("""SELECT 1 FROM information_schema.tables
                        WHERE table_schema='organizador' AND table_name='clientes'""")
         if cur.fetchone():
@@ -104,15 +88,16 @@ def ejecutar():
             archivos = [RAIZ / "db" / "schema.sql"] + sorted((RAIZ / "db").glob("migracion_*.sql"))
             _t(f"Bootstrap: creando esquema con {len(archivos)} archivos…")
             for f in archivos:
-                stmts = _split_sql(f.read_text())
-                errs = 0
-                for stmt in stmts:
-                    try:
-                        cur.execute(stmt)
-                    except Exception as e:
-                        errs += 1
-                        _t(f"⚠️  {f.name}: {str(e).splitlines()[0]}")
-                _t(f"  {f.name}: {len(stmts)} sentencias, {errs} errores")
+                # Cada archivo se ejecuta COMPLETO (multi-sentencia). En una BD
+                # fresca la secuencia corre limpia; si un archivo falla se
+                # registra y se sigue con el siguiente.
+                try:
+                    cur.execute(f.read_text())
+                    _t(f"  ✓ {f.name}")
+                except Exception as e:
+                    _t(f"  ⚠️ {f.name}: {str(e).splitlines()[0]}")
+                # Los archivos pueden cambiar el search_path — lo restauramos
+                cur.execute("SET search_path TO organizador, public")
             _t("✓ Bootstrap: esquema creado")
 
         # ── 2b. Tablas de runtime del scheduler (las crea él también, pero
