@@ -10,3 +10,4 @@ integraciones/.oauth_state
 *.zip
 *.local.json
 node_modules/
+.venv/

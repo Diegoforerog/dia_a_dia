@@ -1,0 +1,21 @@
+{
+  "name": "Día a día",
+  "short_name": "Día a día",
+  "description": "El centro de mando de la casa: proyectos, agenda, hábitos y plan del día.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FBFAF6",
+  "theme_color": "#0F172A",
+  "icons": [
+    { "src": "/tablero/iconos/icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/tablero/iconos/icono-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/tablero/iconos/icono-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Hoy", "url": "/", "description": "Tu plan del día" },
+    { "name": "Proyectos", "url": "/tablero/proyectos.html", "description": "Canvas de proyectos" },
+    { "name": "Agenda", "url": "/tablero/agenda.html", "description": "Calendario completo" }
+  ]
+}

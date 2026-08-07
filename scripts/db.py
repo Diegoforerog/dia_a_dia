@@ -127,6 +127,25 @@ def cargar(nombre_archivo: str) -> Dict:
                         FROM recordatorios ORDER BY fecha_hora DESC""")
         return {"recordatorios": [_row_to_dict(r) for r in rows]}
 
+    if nombre_archivo == "personas.json":
+        rows = query("""SELECT id, nombre, color, emoji, activo, telegram_chat_id,
+                               push_subscriptions, orden
+                        FROM personas ORDER BY orden, created_at""")
+        return {"personas": [_row_to_dict(r) for r in rows]}
+
+    if nombre_archivo == "epicas.json":
+        rows = query("""SELECT id, proyecto_id, titulo, descripcion, prioridad, estado, orden
+                        FROM epicas ORDER BY orden, created_at""")
+        return {"epicas": [_row_to_dict(r) for r in rows]}
+
+    if nombre_archivo == "historias.json":
+        rows = query("""SELECT id, proyecto_id, epica_id, titulo, descripcion, responsable_id,
+                               prioridad, estado, etiquetas, estimacion_horas, fecha_objetivo,
+                               motivo_bloqueo, criterios, subtareas, origen, orden,
+                               creada, completada_en
+                        FROM historias ORDER BY orden, creada""")
+        return {"historias": [_row_to_dict(r) for r in rows]}
+
     return {}
 
 
@@ -134,11 +153,14 @@ def cargar(nombre_archivo: str) -> Dict:
 # GUARDAR — sincroniza listas completas (upsert + delete faltantes)
 # ============================================================
 
-def _sync_lista(tabla: str, items: List[Dict], columnas: List[str], pk: str = "id"):
-    """Upsert de cada item + DELETE de los ids que ya no están."""
+def _sync_lista(tabla: str, items: List[Dict], columnas: List[str], pk: str = "id",
+                json_cols: Optional[set] = None):
+    """Upsert de cada item + DELETE de los ids que ya no están.
+    json_cols: columnas JSONB que deben envolverse con psycopg2 Json()."""
     if not items:
         execute(f"DELETE FROM {tabla}")
         return
+    json_cols = json_cols or set()
     ids_actuales = [i[pk] for i in items]
     placeholders = ",".join(["%s"] * len(ids_actuales))
     execute(f"DELETE FROM {tabla} WHERE {pk} NOT IN ({placeholders})", ids_actuales)
@@ -146,7 +168,7 @@ def _sync_lista(tabla: str, items: List[Dict], columnas: List[str], pk: str = "i
     vals_placeholder = ",".join(["%s"] * len(columnas))
     update_set = ",".join([f"{c}=EXCLUDED.{c}" for c in columnas if c != pk])
     for it in items:
-        valores = [it.get(c) for c in columnas]
+        valores = [Json(it.get(c)) if c in json_cols else it.get(c) for c in columnas]
         sql = f"""INSERT INTO {tabla} ({cols}) VALUES ({vals_placeholder})
                   ON CONFLICT ({pk}) DO UPDATE SET {update_set}"""
         execute(sql, valores)
@@ -196,6 +218,27 @@ def guardar(nombre_archivo: str, datos: Dict) -> None:
         _sync_lista("recordatorios", datos.get("recordatorios", []),
                     ["id","titulo","mensaje","fecha_hora","repetir","cliente_id",
                      "enviado","enviado_at","activo"])
+        return
+
+    if nombre_archivo == "personas.json":
+        _sync_lista("personas", datos.get("personas", []),
+                    ["id","nombre","color","emoji","activo","telegram_chat_id",
+                     "push_subscriptions","orden"],
+                    json_cols={"push_subscriptions"})
+        return
+
+    if nombre_archivo == "epicas.json":
+        _sync_lista("epicas", datos.get("epicas", []),
+                    ["id","proyecto_id","titulo","descripcion","prioridad","estado","orden"])
+        return
+
+    if nombre_archivo == "historias.json":
+        _sync_lista("historias", datos.get("historias", []),
+                    ["id","proyecto_id","epica_id","titulo","descripcion","responsable_id",
+                     "prioridad","estado","etiquetas","estimacion_horas","fecha_objetivo",
+                     "motivo_bloqueo","criterios","subtareas","origen","orden",
+                     "creada","completada_en"],
+                    json_cols={"etiquetas","criterios","subtareas"})
         return
 
 

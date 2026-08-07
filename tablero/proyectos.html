@@ -1,0 +1,1127 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Día a día — Proyectos</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..600,0..100&family=Inter:wght@400..700&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
+<script src="/tablero/dd.js" defer></script>
+<style>
+  /* ─────────────────────────────────────────────
+     DÍA A DÍA — Proyectos (canvas Kanban)
+     Mismo lenguaje visual que Hoy / Agenda / Configuración.
+     ───────────────────────────────────────────── */
+  :root {
+    --paper:        #FBFAF6;
+    --paper-deep:   #F5F2EA;
+    --surface:      #FFFFFF;
+    --surface-2:    #F8F6F0;
+
+    --ink:          #0E0D0B;
+    --charcoal:     #3A3733;
+    --stone:        #7A746B;
+    --mist:         #A8A29A;
+
+    --line:         #E8E4DA;
+    --line-soft:    #F0ECE2;
+    --line-strong:  #D5CFC2;
+
+    --burnt:        #2563EB;
+    --burnt-hover:  #1D4ED8;
+    --burnt-soft:   #EFF6FF;
+    --burnt-line:   #BFDBFE;
+
+    --sage:         #5C8A6F;
+    --sage-soft:    #E8F0EA;
+
+    --crimson:      #A8392F;
+    --crimson-soft: #F4E5E3;
+
+    --amber:        #B47B1E;
+    --amber-soft:   #F8EFDB;
+
+    --indigo:       #4A4D7A;
+    --indigo-soft:  #ECEDF4;
+
+    --font-brand:   "Fraunces", "Times New Roman", serif;
+    --font-display: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body:    "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+    --ease:         cubic-bezier(.4, 0, .2, 1);
+    --ease-out:     cubic-bezier(0, 0, .2, 1);
+  }
+
+  * { box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink);
+    background: var(--paper);
+    font-feature-settings: "ss01", "ss02", "cv11";
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(194, 91, 44, .025) 0%, transparent 45%),
+      radial-gradient(circle at 85% 90%, rgba(74, 77, 122, .02) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' /%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .03 0' /%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' /%3E%3C/svg%3E");
+  }
+
+  .app { display: grid; grid-template-columns: 264px 1fr; min-height: 100vh; }
+
+  /* ───── SIDEBAR (idéntico a Hoy) ───── */
+  .sidebar {
+    position: sticky; top: 0; height: 100vh;
+    padding: 24px 18px;
+    border-right: 1px solid #0F172A;
+    background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+    display: flex; flex-direction: column; gap: 22px;
+    color: #E2E8F0;
+    --sb-muted: #94A3B8; --sb-text: #E2E8F0; --sb-hover: rgba(255,255,255,.08);
+  }
+  .sidebar .brand-mark { color: #FFFFFF; }
+  .brand { display: flex; flex-direction: column; gap: 2px; }
+  .brand-mark {
+    font-family: var(--font-brand); font-weight: 400; font-style: italic;
+    font-size: 28px; line-height: 1; letter-spacing: -.02em;
+    font-variation-settings: "SOFT" 100, "opsz" 144;
+  }
+  .brand-tag { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--sb-muted); font-weight: 500; }
+
+  .nav-section { display: flex; flex-direction: column; gap: 2px; }
+  .nav-label { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--sb-muted); padding: 0 10px 6px; font-weight: 600; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px;
+    color: var(--sb-text); font-size: 13.5px; text-decoration: none;
+    transition: background .15s var(--ease), color .15s var(--ease);
+    position: relative; background: transparent; border: none; cursor: pointer;
+    font-family: inherit; text-align: left; width: 100%; font-weight: 500;
+  }
+  .nav-item:hover { background: var(--sb-hover); color: #FFFFFF; }
+  .nav-item.active { background: #FFFFFF; color: #0F172A; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+  .nav-item.active::before {
+    content: ""; position: absolute; left: -18px; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 18px; background: #60A5FA; border-radius: 0 2px 2px 0;
+  }
+  .nav-icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+  .sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
+  .foot-link { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; color: var(--sb-muted); font-size: 12.5px; text-decoration: none; }
+  .foot-link:hover { background: var(--sb-hover); color: #FFFFFF; }
+  .foot-link svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+
+  /* ───── MAIN ───── */
+  main { padding: 34px 34px 80px; min-width: 0; }
+
+  .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 22px; flex-wrap: wrap; }
+  .hero h1 {
+    font-family: var(--font-brand); font-weight: 500; font-size: 44px; line-height: 1.04;
+    letter-spacing: -.025em; margin: 4px 0 6px;
+  }
+  .hero h1 em { font-style: italic; color: var(--burnt); font-variation-settings: "SOFT" 100; }
+  .hero p { margin: 0; color: var(--stone); font-size: 13.5px; max-width: 560px; }
+  .greeting { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--stone); font-weight: 600; }
+
+  .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; border-radius: 10px;
+    font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--line); background: var(--surface); color: var(--charcoal);
+    transition: all .15s var(--ease);
+  }
+  .btn:hover { border-color: var(--line-strong); background: var(--surface-2); }
+  .btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .btn.primario { background: var(--burnt); border-color: var(--burnt); color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,.25); }
+  .btn.primario:hover { background: var(--burnt-hover); border-color: var(--burnt-hover); }
+  .btn.peligro { color: var(--crimson); border-color: color-mix(in srgb, var(--crimson) 30%, transparent); background: var(--crimson-soft); }
+
+  /* ── selector de proyecto (chips) ── */
+  .proy-strip { display: flex; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px; scrollbar-width: thin; }
+  .proy-chip {
+    display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-family: inherit;
+    font-size: 13px; font-weight: 600; color: var(--charcoal); white-space: nowrap;
+    transition: all .15s var(--ease); flex-shrink: 0;
+  }
+  .proy-chip:hover { border-color: var(--line-strong); }
+  .proy-chip.activo { background: #0F172A; border-color: #0F172A; color: #fff; box-shadow: 0 2px 10px rgba(15,23,42,.22); }
+  .proy-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .proy-chip .proy-cliente { font-size: 10.5px; font-weight: 500; color: var(--mist); }
+  .proy-chip.activo .proy-cliente { color: #94A3B8; }
+  .proy-chip.mas { border-style: dashed; color: var(--stone); font-weight: 500; }
+
+  /* ── barra de filtros ── */
+  .filtros { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; }
+  .seg button {
+    display: inline-flex; align-items: center; gap: 6px; border: none; background: none; cursor: pointer;
+    font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--stone);
+    padding: 6px 12px; border-radius: 8px; transition: all .13s var(--ease);
+  }
+  .seg button.activo { background: #0F172A; color: #fff; }
+  .seg .mini-avatar { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #fff; background: var(--pc, var(--stone)); }
+  .filtros select, .filtros input[type="search"] {
+    font-family: inherit; font-size: 13px; color: var(--charcoal);
+    border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 8px 12px;
+  }
+  .filtros select:focus, .filtros input:focus { outline: none; border-color: var(--burnt-line); box-shadow: 0 0 0 3px var(--burnt-soft); }
+  .filtros input[type="search"] { width: 190px; }
+  .filtros .spacer { flex: 1; }
+
+  /* ── BOARD ── */
+  .board { display: grid; grid-template-columns: repeat(6, minmax(232px, 1fr)); gap: 12px; align-items: start; }
+  @media (max-width: 1500px) {
+    .board { display: flex; overflow-x: auto; padding-bottom: 16px; scroll-snap-type: x proximity; }
+    .col { flex: 0 0 272px; scroll-snap-align: start; }
+  }
+  .col { background: var(--paper-deep); border: 1px solid var(--line-soft); border-radius: 14px; padding: 10px; min-height: 220px; display: flex; flex-direction: column; gap: 8px; transition: background .15s var(--ease), border-color .15s var(--ease); }
+  .col.dragover { border: 1.5px dashed var(--cc, var(--stone)); background: color-mix(in srgb, var(--cc, var(--stone)) 6%, var(--paper-deep)); }
+  .col-head { display: flex; align-items: center; gap: 8px; padding: 4px 6px 2px; }
+  .col-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--cc); flex-shrink: 0; }
+  .col-tit { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--charcoal); }
+  .col-count { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--mist); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+  .col-vacia { border: 1.5px dashed var(--line); border-radius: 10px; padding: 18px 10px; text-align: center; color: var(--mist); font-size: 12px; }
+
+  /* ── tarjeta ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-left-width: 3px; border-radius: 10px;
+    padding: 11px 12px 10px; cursor: grab; position: relative;
+    box-shadow: 0 1px 2px rgba(15,23,42,.04);
+    transition: transform .14s var(--ease), box-shadow .14s var(--ease), border-color .14s var(--ease), opacity .14s var(--ease);
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(15,23,42,.09); border-color: var(--line-strong); }
+  .card.arrastrando { opacity: .35; }
+  .card.ghost {
+    position: fixed; z-index: 950; margin: 0; pointer-events: none;
+    transform: rotate(2deg) scale(1.03); opacity: .96; cursor: grabbing;
+    box-shadow: 0 18px 44px rgba(15,23,42,.28);
+  }
+  body.dd-arrastrando { user-select: none; -webkit-user-select: none; cursor: grabbing; }
+  .card.hecha .card-tit { color: var(--stone); text-decoration: line-through; text-decoration-color: var(--sage); text-decoration-thickness: 1.5px; }
+  .card-tit { font-size: 13.5px; font-weight: 600; line-height: 1.35; margin-bottom: 6px; }
+  .card-epica { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--indigo); background: var(--indigo-soft); border-radius: 6px; padding: 2px 8px; margin-bottom: 7px; max-width: 100%; }
+  .card-epica span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 7px; }
+  .card-tag { font-size: 10.5px; color: var(--burnt); background: var(--burnt-soft); border-radius: 5px; padding: 1px 7px; }
+  .card-bloqueo { display: flex; gap: 6px; align-items: flex-start; font-size: 11.5px; color: var(--crimson); background: var(--crimson-soft); border-radius: 7px; padding: 5px 8px; margin-bottom: 7px; line-height: 1.4; }
+  .card-foot { display: flex; align-items: center; gap: 8px; }
+  .avatar { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9.5px; font-weight: 700; color: #fff; background: var(--pc, var(--mist)); flex-shrink: 0; box-shadow: 0 0 0 2px var(--surface); }
+  .card-meta { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--stone); font-variant-numeric: tabular-nums; }
+  .card-meta svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .card-meta.vencida { color: var(--crimson); font-weight: 600; }
+  .card-foot .der { margin-left: auto; display: inline-flex; gap: 8px; }
+
+  /* ── vacío general ── */
+  .vacio-general { text-align: center; padding: 70px 20px; border: 1.5px dashed var(--line-strong); border-radius: 18px; background: var(--surface-2); }
+  .vacio-general h3 { font-family: var(--font-brand); font-weight: 500; font-size: 26px; margin: 0 0 6px; }
+  .vacio-general p { color: var(--stone); margin: 0 0 18px; }
+
+  /* ── DRAWER detalle historia ── */
+  .drawer-fondo { position: fixed; inset: 0; background: rgba(15,23,42,.32); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity .2s var(--ease); z-index: 800; }
+  .drawer-fondo.abierto { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100vw); z-index: 810;
+    background: var(--paper); border-left: 1px solid var(--line);
+    transform: translateX(102%); transition: transform .25s var(--ease-out);
+    display: flex; flex-direction: column; box-shadow: -18px 0 50px rgba(15,23,42,.14);
+  }
+  .drawer.abierto { transform: none; }
+  .drawer-head { display: flex; align-items: center; gap: 10px; padding: 18px 22px 14px; border-bottom: 1px solid var(--line-soft); }
+  .drawer-estado-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--cc, var(--stone)); }
+  .drawer-head .crumb { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--stone); font-weight: 600; }
+  .drawer-guardado { margin-left: auto; font-size: 11.5px; color: var(--sage); opacity: 0; transition: opacity .3s; }
+  .drawer-guardado.visible { opacity: 1; }
+  .drawer-x { background: none; border: none; cursor: pointer; color: var(--stone); font-size: 16px; padding: 6px 9px; border-radius: 8px; }
+  .drawer-x:hover { background: var(--line-soft); color: var(--ink); }
+  .drawer-cuerpo { overflow-y: auto; padding: 20px 22px 40px; display: flex; flex-direction: column; gap: 20px; }
+
+  .d-titulo { font-family: var(--font-display); font-size: 19px; font-weight: 650; line-height: 1.3; border: 1px solid transparent; border-radius: 8px; padding: 6px 8px; margin: -6px -8px 0; width: calc(100% + 16px); background: transparent; color: var(--ink); font-family: inherit; resize: none; }
+  .d-titulo:hover { border-color: var(--line); }
+  .d-titulo:focus { outline: none; border-color: var(--burnt-line); background: var(--surface); box-shadow: 0 0 0 3px var(--burnt-soft); }
+
+  .d-campo { display: flex; flex-direction: column; gap: 7px; }
+  .d-etq { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--stone); }
+  .d-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .drawer select, .drawer input[type="date"], .drawer input[type="number"], .drawer input[type="text"], .drawer textarea {
+    font-family: inherit; font-size: 13px; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 9px; background: var(--surface); padding: 8px 11px; width: 100%;
+  }
+  .drawer textarea { min-height: 74px; resize: vertical; line-height: 1.5; }
+  .drawer select:focus, .drawer input:focus, .drawer textarea:focus { outline: none; border-color: var(--burnt-line); box-shadow: 0 0 0 3px var(--burnt-soft); }
+
+  .d-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .d-pill { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 13px; font-family: inherit; font-size: 12px; font-weight: 600; color: var(--stone); cursor: pointer; transition: all .13s var(--ease); }
+  .d-pill.baja.activo    { background: var(--surface-2);   color: var(--charcoal); border-color: var(--line-strong); }
+  .d-pill.media.activo   { background: var(--amber-soft);  color: var(--amber);  border-color: color-mix(in srgb, var(--amber) 30%, transparent); }
+  .d-pill.alta.activo    { background: var(--crimson-soft);color: var(--crimson);border-color: color-mix(in srgb, var(--crimson) 30%, transparent); }
+  .d-pill.critica.activo { background: #7A1F17; color: #fff; border-color: #7A1F17; }
+
+  .d-avatars { display: flex; gap: 8px; }
+  .d-avatar-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; font-family: inherit; padding: 4px 6px; border-radius: 10px; }
+  .d-avatar-btn .avatar { width: 34px; height: 34px; font-size: 13px; opacity: .45; transition: all .15s var(--ease); box-shadow: none; }
+  .d-avatar-btn span.nom { font-size: 10.5px; color: var(--stone); }
+  .d-avatar-btn.activo .avatar { opacity: 1; box-shadow: 0 0 0 2.5px var(--paper), 0 0 0 4.5px var(--pc); }
+  .d-avatar-btn.activo span.nom { color: var(--ink); font-weight: 600; }
+
+  .checklist { display: flex; flex-direction: column; gap: 4px; }
+  .check-item { display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line-soft); }
+  .check-item input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--sage); cursor: pointer; flex-shrink: 0; }
+  .check-item .txt { flex: 1; font-size: 13px; }
+  .check-item.hecho .txt { color: var(--mist); text-decoration: line-through; }
+  .check-item .del { background: none; border: none; cursor: pointer; color: var(--mist); font-size: 13px; padding: 2px 6px; border-radius: 6px; opacity: 0; transition: opacity .12s; }
+  .check-item:hover .del { opacity: 1; }
+  .check-item .del:hover { color: var(--crimson); background: var(--crimson-soft); }
+  .check-add { display: flex; gap: 7px; margin-top: 4px; }
+  .check-add input { flex: 1; }
+  .check-add button { flex-shrink: 0; }
+  .d-progreso { font-size: 11.5px; color: var(--stone); font-variant-numeric: tabular-nums; }
+  .d-barra { height: 4px; border-radius: 4px; background: var(--line-soft); overflow: hidden; margin-top: 5px; }
+  .d-barra i { display: block; height: 100%; background: var(--sage); border-radius: 4px; transition: width .3s var(--ease); }
+
+  .d-bloqueo { border: 1px solid color-mix(in srgb, var(--crimson) 30%, transparent); background: var(--crimson-soft); border-radius: 12px; padding: 13px 14px; }
+  .d-bloqueo .d-etq { color: var(--crimson); }
+  .d-bloqueo textarea { border-color: color-mix(in srgb, var(--crimson) 25%, transparent); background: #fff; }
+
+  .d-zona-peligro { border-top: 1px solid var(--line-soft); padding-top: 16px; display: flex; justify-content: flex-end; }
+
+  /* ── MODALES ── */
+  .modal-fondo { position: fixed; inset: 0; background: rgba(15,23,42,.42); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 900; padding: 20px; }
+  .modal-fondo.abierto { display: flex; }
+  .modal { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; width: 100%; max-width: 460px; max-height: 88vh; overflow-y: auto; box-shadow: 0 26px 70px rgba(15,23,42,.3); }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px 0; }
+  .modal-head h3 { font-family: var(--font-brand); font-weight: 500; font-size: 22px; margin: 0; letter-spacing: -.01em; }
+  .modal-cuerpo { padding: 16px 22px 22px; display: flex; flex-direction: column; gap: 14px; }
+  .modal-cuerpo label { display: flex; flex-direction: column; gap: 6px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--stone); }
+  .modal-cuerpo input, .modal-cuerpo select, .modal-cuerpo textarea {
+    font-family: inherit; font-size: 13.5px; color: var(--ink); letter-spacing: normal; text-transform: none; font-weight: 400;
+    border: 1px solid var(--line); border-radius: 9px; background: var(--surface); padding: 9px 12px;
+  }
+  .modal-cuerpo input:focus, .modal-cuerpo select:focus, .modal-cuerpo textarea:focus { outline: none; border-color: var(--burnt-line); box-shadow: 0 0 0 3px var(--burnt-soft); }
+  .modal-acciones { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
+
+  /* épicas dentro del modal */
+  .epica-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  .epica-item .tit { flex: 1; font-size: 13.5px; font-weight: 600; }
+  .epica-item .cnt { font-family: var(--font-mono); font-size: 11px; color: var(--mist); }
+  .epica-item select { padding: 4px 8px; font-size: 12px; }
+  .epica-item .del { background: none; border: none; cursor: pointer; color: var(--mist); padding: 4px 7px; border-radius: 6px; }
+  .epica-item .del:hover { color: var(--crimson); background: var(--crimson-soft); }
+
+  .toast { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(20px); background: #0F172A; color: #fff; border-radius: 12px; padding: 11px 20px; font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none; transition: all .25s var(--ease); z-index: 999; box-shadow: 0 10px 30px rgba(15,23,42,.35); }
+  .toast.visible { opacity: 1; transform: translateX(-50%); }
+
+  @media (max-width: 920px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { position: relative; height: auto; flex-direction: row; flex-wrap: wrap; padding: 18px 20px; }
+    .nav-section { flex-direction: row; flex-wrap: wrap; flex: 1 1 100%; }
+    .nav-item { flex: 0 0 auto; padding: 8px 12px; width: auto; }
+    .nav-item.active::before { display: none; }
+    .nav-label, .sidebar-foot { display: none; }
+    main { padding: 22px 16px 60px; }
+    .hero h1 { font-size: 34px; }
+    .filtros input[type="search"] { width: 100%; }
+    .d-fila { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card, .drawer, .drawer-fondo, .col { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">Día <em>a</em> día</div>
+      <div class="brand-tag">tu ritual diario</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Tablero</div>
+      <a href="/" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2v4M4.9 4.9l2.8 2.8M2 12h4M19.1 4.9l-2.8 2.8M22 12h-4M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/></svg>
+        <span>Hoy</span>
+      </a>
+      <a href="/tablero/agenda.html" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span>Agenda</span>
+      </a>
+      <a href="/tablero/proyectos.html" class="nav-item active">
+        <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="8" rx="1"/></svg>
+        <span>Proyectos</span>
+      </a>
+      <div class="nav-label" style="margin-top:8px;">Configurar</div>
+      <a href="/tablero/admin.html" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9"/></svg>
+        <span>Configuración</span>
+      </a>
+    </div>
+
+    <div class="sidebar-foot">
+      <a class="foot-link" href="/tablero/admin.html">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M3 21c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+        Clientes y catálogos
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+    <div class="hero">
+      <div>
+        <div class="greeting">Sacarlos adelante, juntos</div>
+        <h1>Proyectos <em>en marcha</em></h1>
+        <p>Cada proyecto tiene su canvas: fases, historias y quién se encarga. Arrastra las tarjetas según avancen.</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn" onclick="abrirModalEpicas()">
+          <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+          Fases
+        </button>
+        <button class="btn primario" onclick="abrirModalHistoria()">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Nueva historia
+        </button>
+      </div>
+    </div>
+
+    <div class="proy-strip" id="proy-strip"></div>
+
+    <div class="filtros" id="filtros" style="display:none;">
+      <div class="seg" id="seg-persona"></div>
+      <select id="filtro-epica" onchange="F.epica=this.value; pintarBoard()">
+        <option value="">Todas las fases</option>
+      </select>
+      <input type="search" id="filtro-q" placeholder="Buscar historia…" oninput="F.q=this.value.toLowerCase(); pintarBoard()">
+      <div class="spacer"></div>
+    </div>
+
+    <div id="board" class="board" style="display:none;"></div>
+
+    <div id="vacio" class="vacio-general" style="display:none;">
+      <h3>Empecemos por el primero</h3>
+      <p>Crea un proyecto y ármale su canvas de fases e historias.</p>
+      <button class="btn primario" onclick="abrirModalProyecto()">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Crear proyecto
+      </button>
+    </div>
+  </main>
+</div>
+
+<!-- DRAWER: detalle de historia -->
+<div class="drawer-fondo" id="drawer-fondo" onclick="cerrarDrawer()"></div>
+<aside class="drawer" id="drawer" aria-label="Detalle de la historia">
+  <div class="drawer-head">
+    <span class="drawer-estado-dot" id="d-dot"></span>
+    <span class="crumb" id="d-crumb">Historia</span>
+    <span class="drawer-guardado" id="d-guardado">Guardado ✓</span>
+    <button class="drawer-x" onclick="cerrarDrawer()" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="drawer-cuerpo" id="drawer-cuerpo"></div>
+</aside>
+
+<!-- MODAL: nueva historia -->
+<div class="modal-fondo" id="modal-historia">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><h3>Nueva historia</h3><button class="drawer-x" onclick="cerrarModal('modal-historia')">✕</button></div>
+    <div class="modal-cuerpo">
+      <label>Título
+        <input type="text" id="nh-titulo" placeholder="Qué hay que lograr" maxlength="140">
+      </label>
+      <label>Fase (épica)
+        <select id="nh-epica"><option value="">Sin fase</option></select>
+      </label>
+      <label>Responsable
+        <select id="nh-resp"></select>
+      </label>
+      <label>Prioridad
+        <select id="nh-prio">
+          <option value="baja">Baja</option>
+          <option value="media" selected>Media</option>
+          <option value="alta">Alta</option>
+          <option value="critica">Crítica</option>
+        </select>
+      </label>
+      <div class="modal-acciones">
+        <button class="btn" onclick="cerrarModal('modal-historia')">Cancelar</button>
+        <button class="btn primario" onclick="crearHistoria()">Crear historia</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: fases (épicas) -->
+<div class="modal-fondo" id="modal-epicas">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><h3>Fases del proyecto</h3><button class="drawer-x" onclick="cerrarModal('modal-epicas')">✕</button></div>
+    <div class="modal-cuerpo">
+      <div class="checklist" id="lista-epicas"></div>
+      <div class="check-add">
+        <input type="text" id="ne-titulo" placeholder="Nueva fase, p. ej. «Diseño»" maxlength="80"
+               onkeydown="if(event.key==='Enter')crearEpica()">
+        <button class="btn" onclick="crearEpica()">Añadir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: nuevo proyecto -->
+<div class="modal-fondo" id="modal-proyecto">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><h3>Nuevo proyecto</h3><button class="drawer-x" onclick="cerrarModal('modal-proyecto')">✕</button></div>
+    <div class="modal-cuerpo">
+      <label>Nombre
+        <input type="text" id="np-nombre" placeholder="Cómo se llama el proyecto" maxlength="80">
+      </label>
+      <label>Cliente / área
+        <select id="np-cliente"></select>
+      </label>
+      <label>Prioridad
+        <select id="np-prio">
+          <option value="baja">Baja</option>
+          <option value="media" selected>Media</option>
+          <option value="alta">Alta</option>
+        </select>
+      </label>
+      <label>Fecha límite (opcional)
+        <input type="date" id="np-deadline">
+      </label>
+      <div class="modal-acciones">
+        <button class="btn" onclick="cerrarModal('modal-proyecto')">Cancelar</button>
+        <button class="btn primario" onclick="crearProyecto()">Crear proyecto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════ ESTADO ═══════════════ */
+const COLS = [
+  { id: 'backlog',     tit: 'Backlog',     color: '#7A746B' },
+  { id: 'planeado',    tit: 'Planeado',    color: '#4A4D7A' },
+  { id: 'en_progreso', tit: 'En progreso', color: '#2563EB' },
+  { id: 'qa',          tit: 'Revisión',    color: '#B47B1E' },
+  { id: 'bloqueado',   tit: 'Bloqueado',   color: '#A8392F' },
+  { id: 'hecho',       tit: 'Hecho',       color: '#5C8A6F' },
+];
+const PRIO_COLOR = { baja: '#D5CFC2', media: '#B47B1E', alta: '#A8392F', critica: '#7A1F17' };
+
+const S = { clientes: [], proyectos: [], epicas: [], historias: [], personas: [] };
+const F = { proyecto: localStorage.getItem('dd_proyecto') || '', persona: 'todos', epica: '', q: '' };
+let drawerHistoria = null;   // historia abierta en el drawer
+let guardarTimer = null;
+
+/* ═══════════════ ARRANQUE ═══════════════ */
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+  try {
+    // token: DD.token() resuelve local automáticamente; en prod pide una vez
+    let t = await DD.token();
+    if (!t) {
+      t = prompt('Pegá tu token de acceso (ORGANIZADOR_TOKEN):') || '';
+      if (t) localStorage.setItem('organizador_token', t.trim());
+    }
+    const [cl, pr, ep, hi, pe] = await Promise.all([
+      DD.fetch('/clientes'), DD.fetch('/proyectos'), DD.fetch('/epicas'),
+      DD.fetch('/historias'), DD.fetch('/personas'),
+    ]);
+    S.clientes  = cl.clientes  || [];
+    S.proyectos = (pr.proyectos || []).filter(p => p.estado !== 'archivado');
+    S.epicas    = ep.epicas    || [];
+    S.historias = hi.historias || [];
+    S.personas  = (pe.personas || []).filter(p => p.activo !== false);
+    if (!S.proyectos.find(p => p.id === F.proyecto)) F.proyecto = S.proyectos[0]?.id || '';
+    pintarTodo();
+  } catch (e) {
+    toast('No pude cargar los datos: ' + e.message);
+  }
+}
+
+function pintarTodo() {
+  pintarStrip();
+  pintarSegPersona();
+  pintarFiltroEpicas();
+  pintarBoard();
+}
+
+/* ═══════════════ STRIP DE PROYECTOS ═══════════════ */
+function clienteDe(p) { return S.clientes.find(c => c.id === p.cliente_id); }
+
+function pintarStrip() {
+  const strip = document.getElementById('proy-strip');
+  const hay = S.proyectos.length > 0;
+  document.getElementById('vacio').style.display = hay ? 'none' : '';
+  document.getElementById('board').style.display = hay ? '' : 'none';
+  document.getElementById('filtros').style.display = hay ? '' : 'none';
+  strip.innerHTML = S.proyectos.map(p => {
+    const c = clienteDe(p);
+    return `<button class="proy-chip ${p.id === F.proyecto ? 'activo' : ''}" onclick="elegirProyecto('${p.id}')">
+      <span class="proy-dot" style="background:${c?.color || '#A8A29A'}"></span>
+      ${esc(p.nombre)}
+      ${c ? `<span class="proy-cliente">· ${esc(c.nombre)}</span>` : ''}
+    </button>`;
+  }).join('') + `<button class="proy-chip mas" onclick="abrirModalProyecto()">+ Proyecto</button>`;
+}
+
+function elegirProyecto(id) {
+  F.proyecto = id; F.epica = '';
+  localStorage.setItem('dd_proyecto', id);
+  document.getElementById('filtro-q').value = ''; F.q = '';
+  pintarTodo();
+}
+
+/* ═══════════════ FILTROS ═══════════════ */
+function pintarSegPersona() {
+  const seg = document.getElementById('seg-persona');
+  seg.innerHTML = `<button class="${F.persona === 'todos' ? 'activo' : ''}" onclick="F.persona='todos';pintarSegPersona();pintarBoard()">Los dos</button>` +
+    S.personas.map(p => `
+      <button class="${F.persona === p.id ? 'activo' : ''}" onclick="F.persona='${p.id}';pintarSegPersona();pintarBoard()">
+        <span class="mini-avatar" style="--pc:${p.color}">${p.emoji || iniciales(p)}</span>${esc(p.nombre)}
+      </button>`).join('');
+}
+
+function pintarFiltroEpicas() {
+  const sel = document.getElementById('filtro-epica');
+  const eps = S.epicas.filter(e => e.proyecto_id === F.proyecto);
+  sel.innerHTML = '<option value="">Todas las fases</option>' +
+    eps.map(e => `<option value="${e.id}" ${F.epica === e.id ? 'selected' : ''}>${esc(e.titulo)}</option>`).join('');
+}
+
+/* ═══════════════ BOARD ═══════════════ */
+function historiasVisibles() {
+  return S.historias.filter(h =>
+    h.proyecto_id === F.proyecto &&
+    (F.persona === 'todos' || h.responsable_id === F.persona) &&
+    (!F.epica || h.epica_id === F.epica) &&
+    (!F.q || (h.titulo || '').toLowerCase().includes(F.q))
+  );
+}
+
+function pintarBoard() {
+  const board = document.getElementById('board');
+  const visibles = historiasVisibles();
+  board.innerHTML = COLS.map(col => {
+    const items = visibles.filter(h => h.estado === col.id)
+                          .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+    return `
+    <div class="col" style="--cc:${col.color}" data-estado="${col.id}">
+      <div class="col-head">
+        <span class="col-dot"></span>
+        <span class="col-tit">${col.tit}</span>
+        <span class="col-count">${items.length}</span>
+      </div>
+      ${items.map(cardHTML).join('') || `<div class="col-vacia">Arrastra aquí</div>`}
+    </div>`;
+  }).join('');
+}
+
+function cardHTML(h) {
+  const p = S.personas.find(x => x.id === h.responsable_id);
+  const e = S.epicas.find(x => x.id === h.epica_id);
+  const subs = h.subtareas || [];
+  const subsHechas = subs.filter(s => s.hecho).length;
+  const crits = h.criterios || [];
+  const vencida = h.fecha_objetivo && h.estado !== 'hecho' && h.fecha_objetivo < hoyISO();
+  return `
+  <div class="card ${h.estado === 'hecho' ? 'hecha' : ''}" data-id="${h.id}"
+       style="border-left-color:${PRIO_COLOR[h.prioridad] || PRIO_COLOR.media}"
+       onclick="clickTarjeta('${h.id}')">
+    <div class="card-tit">${esc(h.titulo)}</div>
+    ${e ? `<div class="card-epica">▸<span>${esc(e.titulo)}</span></div>` : ''}
+    ${(h.etiquetas || []).length ? `<div class="card-tags">${h.etiquetas.map(t => `<span class="card-tag">${esc(t)}</span>`).join('')}</div>` : ''}
+    ${h.estado === 'bloqueado' && h.motivo_bloqueo ? `<div class="card-bloqueo">⛔ ${esc(h.motivo_bloqueo)}</div>` : ''}
+    <div class="card-foot">
+      ${p ? `<span class="avatar" style="--pc:${p.color}" title="${esc(p.nombre)}">${p.emoji || iniciales(p)}</span>` : ''}
+      <span class="der">
+        ${subs.length ? `<span class="card-meta" title="Subtareas"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m9 12 2 2 4-4"/></svg>${subsHechas}/${subs.length}</span>` : ''}
+        ${crits.length ? `<span class="card-meta" title="Criterios de aceptación">✓ ${crits.filter(c => c.hecho).length}/${crits.length}</span>` : ''}
+        ${h.fecha_objetivo ? `<span class="card-meta ${vencida ? 'vencida' : ''}" title="Fecha objetivo"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>${fechaCorta(h.fecha_objetivo)}</span>` : ''}
+      </span>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════ DRAG & DROP (Pointer Events: mouse + táctil) ═══════════════
+   En escritorio: agarrar y mover.
+   En el celular: mantener presionada la tarjeta un instante (330 ms) y mover;
+   un deslizamiento rápido sigue haciendo scroll normal. */
+let drag = null;          // gesto en curso
+let suprimirClick = false; // evita que el drop abra el drawer
+
+function clickTarjeta(id) {
+  if (suprimirClick) { suprimirClick = false; return; }
+  abrirDrawer(id);
+}
+
+document.getElementById('board').addEventListener('pointerdown', (e) => {
+  const card = e.target.closest('.card');
+  if (!card || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  drag = {
+    card, id: card.dataset.id,
+    sx: e.clientX, sy: e.clientY,
+    esTactil: e.pointerType === 'touch',
+    started: false, ghost: null, dx: 0, dy: 0, longTimer: null,
+  };
+  if (drag.esTactil) drag.longTimer = setTimeout(() => drag && levantarTarjeta(), 330);
+  window.addEventListener('pointermove', dragMove, { passive: false });
+  window.addEventListener('pointerup', dragUp);
+  window.addEventListener('pointercancel', dragCancel);
+});
+
+// mientras hay una tarjeta levantada, bloquear el scroll táctil
+document.getElementById('board').addEventListener('touchmove', (e) => {
+  if (drag && drag.started) e.preventDefault();
+}, { passive: false });
+
+function levantarTarjeta() {
+  const r = drag.card.getBoundingClientRect();
+  drag.dx = drag.sx - r.left; drag.dy = drag.sy - r.top;
+  const g = drag.card.cloneNode(true);
+  g.classList.add('ghost');
+  g.style.width = r.width + 'px';
+  g.style.left = (r.left) + 'px'; g.style.top = (r.top) + 'px';
+  g.style.borderLeftColor = drag.card.style.borderLeftColor;
+  document.body.appendChild(g);
+  drag.ghost = g;
+  drag.started = true;
+  drag.card.classList.add('arrastrando');
+  document.body.classList.add('dd-arrastrando');
+  if (navigator.vibrate) navigator.vibrate(12);
+}
+
+function dragMove(e) {
+  if (!drag) return;
+  const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+  if (!drag.started) {
+    if (drag.esTactil) {
+      // se movió antes del long-press → era un scroll
+      if (Math.hypot(dx, dy) > 10) dragCancel();
+      return;
+    }
+    if (Math.hypot(dx, dy) > 5) levantarTarjeta();
+    else return;
+  }
+  e.preventDefault();
+  drag.ghost.style.left = (e.clientX - drag.dx) + 'px';
+  drag.ghost.style.top  = (e.clientY - drag.dy) + 'px';
+  const col = document.elementFromPoint(e.clientX, e.clientY)?.closest('.col');
+  document.querySelectorAll('.col.dragover').forEach(c => { if (c !== col) c.classList.remove('dragover'); });
+  if (col) col.classList.add('dragover');
+}
+
+async function dragUp(e) {
+  if (!drag) return;
+  const estaba = drag.started;
+  const id = drag.id;
+  const col = estaba ? document.elementFromPoint(e.clientX, e.clientY)?.closest('.col') : null;
+  dragCancel();
+  if (!estaba) return;          // fue un simple clic/tap → clickTarjeta lo maneja
+  suprimirClick = true;
+  setTimeout(() => { suprimirClick = false; }, 350);
+  if (col) await soltarEn(id, col.dataset.estado);
+}
+
+function dragCancel() {
+  if (!drag) return;
+  clearTimeout(drag.longTimer);
+  if (drag.ghost) drag.ghost.remove();
+  drag.card.classList.remove('arrastrando');
+  document.body.classList.remove('dd-arrastrando');
+  document.querySelectorAll('.col.dragover').forEach(c => c.classList.remove('dragover'));
+  window.removeEventListener('pointermove', dragMove);
+  window.removeEventListener('pointerup', dragUp);
+  window.removeEventListener('pointercancel', dragCancel);
+  drag = null;
+}
+
+async function soltarEn(id, estado) {
+  const h = S.historias.find(x => x.id === id);
+  if (!h || h.estado === estado) return;
+  const antes = h.estado;
+  h.estado = estado;
+  if (estado === 'hecho') h.completada_en = new Date().toISOString();
+  pintarBoard();
+  try {
+    const upd = await DD.fetch('/historias/' + id, { method: 'PUT', body: JSON.stringify({ estado }) });
+    Object.assign(h, upd);
+    pintarBoard();
+    if (estado === 'bloqueado') abrirDrawer(id, true);   // pedir el motivo
+    if (estado === 'hecho') toast('Historia terminada 🎉');
+  } catch (e) {
+    h.estado = antes; pintarBoard();
+    toast('No se pudo mover: ' + e.message);
+  }
+}
+
+/* ═══════════════ DRAWER ═══════════════ */
+function abrirDrawer(id, enfocarBloqueo = false) {
+  const h = S.historias.find(x => x.id === id);
+  if (!h) return;
+  drawerHistoria = h;
+  pintarDrawer(enfocarBloqueo);
+  document.getElementById('drawer').classList.add('abierto');
+  document.getElementById('drawer-fondo').classList.add('abierto');
+}
+
+function cerrarDrawer() {
+  document.getElementById('drawer').classList.remove('abierto');
+  document.getElementById('drawer-fondo').classList.remove('abierto');
+  drawerHistoria = null;
+}
+
+function pintarDrawer(enfocarBloqueo = false) {
+  const h = drawerHistoria;
+  const col = COLS.find(c => c.id === h.estado) || COLS[0];
+  const proy = S.proyectos.find(p => p.id === h.proyecto_id);
+  const eps = S.epicas.filter(e => e.proyecto_id === h.proyecto_id);
+  document.getElementById('d-dot').style.background = col.color;
+  document.getElementById('d-crumb').textContent = `${proy?.nombre || 'Proyecto'} · ${col.tit}`;
+
+  const subs = h.subtareas || [];
+  const subsHechas = subs.filter(s => s.hecho).length;
+  const pct = subs.length ? Math.round(subsHechas / subs.length * 100) : 0;
+
+  document.getElementById('drawer-cuerpo').innerHTML = `
+    <textarea class="d-titulo" id="d-titulo" rows="2" maxlength="140"
+              oninput="autoAlto(this); cambiarCampo('titulo', this.value)">${esc(h.titulo)}</textarea>
+
+    <div class="d-fila">
+      <div class="d-campo">
+        <span class="d-etq">Estado</span>
+        <select onchange="cambiarEstado(this.value)">
+          ${COLS.map(c => `<option value="${c.id}" ${h.estado === c.id ? 'selected' : ''}>${c.tit}</option>`).join('')}
+        </select>
+      </div>
+      <div class="d-campo">
+        <span class="d-etq">Fase</span>
+        <select onchange="cambiarCampo('epica_id', this.value || null)">
+          <option value="">Sin fase</option>
+          ${eps.map(e => `<option value="${e.id}" ${h.epica_id === e.id ? 'selected' : ''}>${esc(e.titulo)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    ${h.estado === 'bloqueado' ? `
+    <div class="d-bloqueo">
+      <div class="d-campo">
+        <span class="d-etq">⛔ ¿Qué lo tiene bloqueado?</span>
+        <textarea id="d-motivo" placeholder="Escribe el motivo — se verá en la tarjeta"
+                  oninput="cambiarCampo('motivo_bloqueo', this.value)">${esc(h.motivo_bloqueo || '')}</textarea>
+      </div>
+    </div>` : ''}
+
+    <div class="d-campo">
+      <span class="d-etq">Responsable</span>
+      <div class="d-avatars">
+        ${S.personas.map(p => `
+          <button class="d-avatar-btn ${h.responsable_id === p.id ? 'activo' : ''}" style="--pc:${p.color}"
+                  onclick="cambiarCampo('responsable_id', '${p.id}', true)">
+            <span class="avatar">${p.emoji || iniciales(p)}</span><span class="nom">${esc(p.nombre)}</span>
+          </button>`).join('')}
+        <button class="d-avatar-btn ${!h.responsable_id ? 'activo' : ''}" style="--pc:#A8A29A"
+                onclick="cambiarCampo('responsable_id', null, true)">
+          <span class="avatar">—</span><span class="nom">Nadie</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="d-campo">
+      <span class="d-etq">Prioridad</span>
+      <div class="d-pills">
+        ${['baja','media','alta','critica'].map(pr => `
+          <button class="d-pill ${pr} ${h.prioridad === pr ? 'activo' : ''}"
+                  onclick="cambiarCampo('prioridad', '${pr}', true)">${pr === 'critica' ? 'Crítica' : pr[0].toUpperCase() + pr.slice(1)}</button>`).join('')}
+      </div>
+    </div>
+
+    <div class="d-fila">
+      <div class="d-campo">
+        <span class="d-etq">Fecha objetivo</span>
+        <input type="date" value="${h.fecha_objetivo || ''}" onchange="cambiarCampo('fecha_objetivo', this.value || null)">
+      </div>
+      <div class="d-campo">
+        <span class="d-etq">Estimación (horas)</span>
+        <input type="number" min="0" step="0.5" value="${h.estimacion_horas ?? ''}" placeholder="—"
+               onchange="cambiarCampo('estimacion_horas', this.value ? parseFloat(this.value) : null)">
+      </div>
+    </div>
+
+    <div class="d-campo">
+      <span class="d-etq">Etiquetas <small style="text-transform:none;letter-spacing:0;font-weight:400;">(separadas por coma)</small></span>
+      <input type="text" value="${esc((h.etiquetas || []).join(', '))}" placeholder="ej. casa, papeles, urgente"
+             onchange="cambiarCampo('etiquetas', this.value.split(',').map(s => s.trim()).filter(Boolean))">
+    </div>
+
+    <div class="d-campo">
+      <span class="d-etq">Descripción</span>
+      <textarea placeholder="Contexto, enlaces, lo que haga falta…"
+                oninput="cambiarCampo('descripcion', this.value)">${esc(h.descripcion || '')}</textarea>
+    </div>
+
+    <div class="d-campo">
+      <span class="d-etq">Subtareas</span>
+      ${subs.length ? `<div class="d-progreso">${subsHechas}/${subs.length} listas<div class="d-barra"><i style="width:${pct}%"></i></div></div>` : ''}
+      <div class="checklist">
+        ${subs.map((s, i) => `
+          <div class="check-item ${s.hecho ? 'hecho' : ''}">
+            <input type="checkbox" ${s.hecho ? 'checked' : ''} onchange="toggleSub(${i}, this.checked)">
+            <span class="txt">${esc(s.titulo)}</span>
+            <button class="del" onclick="borrarSub(${i})" aria-label="Quitar subtarea">✕</button>
+          </div>`).join('')}
+      </div>
+      <div class="check-add">
+        <input type="text" id="d-nueva-sub" placeholder="Añadir subtarea…" maxlength="120"
+               onkeydown="if(event.key==='Enter')agregarSub()">
+        <button class="btn" onclick="agregarSub()">＋</button>
+      </div>
+    </div>
+
+    <div class="d-campo">
+      <span class="d-etq">Criterios de aceptación <small style="text-transform:none;letter-spacing:0;font-weight:400;">(cuándo está bien hecho)</small></span>
+      <div class="checklist">
+        ${(h.criterios || []).map((c, i) => `
+          <div class="check-item ${c.hecho ? 'hecho' : ''}">
+            <input type="checkbox" ${c.hecho ? 'checked' : ''} onchange="toggleCrit(${i}, this.checked)">
+            <span class="txt">${esc(c.texto)}</span>
+            <button class="del" onclick="borrarCrit(${i})" aria-label="Quitar criterio">✕</button>
+          </div>`).join('')}
+      </div>
+      <div class="check-add">
+        <input type="text" id="d-nuevo-crit" placeholder="Añadir criterio…" maxlength="160"
+               onkeydown="if(event.key==='Enter')agregarCrit()">
+        <button class="btn" onclick="agregarCrit()">＋</button>
+      </div>
+    </div>
+
+    <div class="d-zona-peligro">
+      <button class="btn peligro" onclick="borrarHistoria()">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+        Eliminar historia
+      </button>
+    </div>`;
+
+  autoAlto(document.getElementById('d-titulo'));
+  if (enfocarBloqueo) setTimeout(() => document.getElementById('d-motivo')?.focus(), 260);
+}
+
+/* guardado con debounce + indicador */
+function cambiarCampo(campo, valor, repintarDrawer = false) {
+  if (!drawerHistoria) return;
+  drawerHistoria[campo] = valor;
+  clearTimeout(guardarTimer);
+  guardarTimer = setTimeout(async () => {
+    try {
+      const upd = await DD.fetch('/historias/' + drawerHistoria.id, {
+        method: 'PUT', body: JSON.stringify({ [campo]: valor }),
+      });
+      Object.assign(drawerHistoria, upd);
+      mostrarGuardado();
+      pintarBoard();
+      if (repintarDrawer && drawerHistoria) pintarDrawer();
+    } catch (e) { toast('No se pudo guardar: ' + e.message); }
+  }, repintarDrawer ? 0 : 450);
+  if (repintarDrawer) pintarDrawer();
+}
+
+function cambiarEstado(estado) {
+  if (!drawerHistoria) return;
+  cambiarCampo('estado', estado, true);
+}
+
+function toggleSub(i, hecho)  { const s = [...(drawerHistoria.subtareas || [])]; s[i] = { ...s[i], hecho }; cambiarCampo('subtareas', s, true); }
+function borrarSub(i)         { const s = [...(drawerHistoria.subtareas || [])]; s.splice(i, 1); cambiarCampo('subtareas', s, true); }
+function agregarSub() {
+  const inp = document.getElementById('d-nueva-sub');
+  const t = (inp.value || '').trim(); if (!t) return;
+  const s = [...(drawerHistoria.subtareas || []), { id: 'sub_' + Date.now(), titulo: t, hecho: false }];
+  cambiarCampo('subtareas', s, true);
+  setTimeout(() => document.getElementById('d-nueva-sub')?.focus(), 60);
+}
+function toggleCrit(i, hecho) { const c = [...(drawerHistoria.criterios || [])]; c[i] = { ...c[i], hecho }; cambiarCampo('criterios', c, true); }
+function borrarCrit(i)        { const c = [...(drawerHistoria.criterios || [])]; c.splice(i, 1); cambiarCampo('criterios', c, true); }
+function agregarCrit() {
+  const inp = document.getElementById('d-nuevo-crit');
+  const t = (inp.value || '').trim(); if (!t) return;
+  const c = [...(drawerHistoria.criterios || []), { texto: t, hecho: false }];
+  cambiarCampo('criterios', c, true);
+  setTimeout(() => document.getElementById('d-nuevo-crit')?.focus(), 60);
+}
+
+async function borrarHistoria() {
+  if (!drawerHistoria) return;
+  if (!confirm(`¿Eliminar «${drawerHistoria.titulo}»? No se puede deshacer.`)) return;
+  try {
+    await DD.fetch('/historias/' + drawerHistoria.id, { method: 'DELETE' });
+    S.historias = S.historias.filter(h => h.id !== drawerHistoria.id);
+    cerrarDrawer(); pintarBoard();
+    toast('Historia eliminada');
+  } catch (e) { toast('No se pudo eliminar: ' + e.message); }
+}
+
+function mostrarGuardado() {
+  const g = document.getElementById('d-guardado');
+  g.classList.add('visible');
+  setTimeout(() => g.classList.remove('visible'), 1400);
+}
+
+/* ═══════════════ MODAL: nueva historia ═══════════════ */
+function abrirModalHistoria() {
+  if (!F.proyecto) { toast('Primero crea un proyecto'); return; }
+  const eps = S.epicas.filter(e => e.proyecto_id === F.proyecto);
+  document.getElementById('nh-epica').innerHTML =
+    '<option value="">Sin fase</option>' + eps.map(e => `<option value="${e.id}">${esc(e.titulo)}</option>`).join('');
+  document.getElementById('nh-resp').innerHTML =
+    S.personas.map(p => `<option value="${p.id}" ${DD.personaId() === p.id ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('') +
+    '<option value="">Sin responsable</option>';
+  document.getElementById('nh-titulo').value = '';
+  abrirModal('modal-historia');
+  setTimeout(() => document.getElementById('nh-titulo').focus(), 80);
+}
+
+async function crearHistoria() {
+  const titulo = document.getElementById('nh-titulo').value.trim();
+  if (!titulo) { toast('Ponle un título'); return; }
+  try {
+    const nueva = await DD.fetch('/historias', {
+      method: 'POST',
+      body: JSON.stringify({
+        proyecto_id: F.proyecto,
+        titulo,
+        epica_id: document.getElementById('nh-epica').value || null,
+        responsable_id: document.getElementById('nh-resp').value || null,
+        prioridad: document.getElementById('nh-prio').value,
+      }),
+    });
+    S.historias.push(nueva);
+    cerrarModal('modal-historia');
+    pintarBoard();
+    toast('Historia creada en Backlog');
+  } catch (e) { toast('No se pudo crear: ' + e.message); }
+}
+
+/* ═══════════════ MODAL: épicas ═══════════════ */
+function abrirModalEpicas() {
+  if (!F.proyecto) { toast('Primero crea un proyecto'); return; }
+  pintarListaEpicas();
+  abrirModal('modal-epicas');
+}
+
+function pintarListaEpicas() {
+  const eps = S.epicas.filter(e => e.proyecto_id === F.proyecto);
+  const cont = document.getElementById('lista-epicas');
+  cont.innerHTML = eps.length ? eps.map(e => {
+    const n = S.historias.filter(h => h.epica_id === e.id).length;
+    return `<div class="epica-item">
+      <span class="tit">${esc(e.titulo)}</span>
+      <span class="cnt">${n} historia${n === 1 ? '' : 's'}</span>
+      <select onchange="cambiarEstadoEpica('${e.id}', this.value)">
+        <option value="abierta" ${e.estado === 'abierta' ? 'selected' : ''}>Abierta</option>
+        <option value="en_progreso" ${e.estado === 'en_progreso' ? 'selected' : ''}>En progreso</option>
+        <option value="hecha" ${e.estado === 'hecha' ? 'selected' : ''}>Hecha</option>
+      </select>
+      <button class="del" onclick="borrarEpica('${e.id}')" aria-label="Eliminar fase">✕</button>
+    </div>`;
+  }).join('') : '<div class="col-vacia">Sin fases todavía. Las fases agrupan historias (p. ej. «Investigar», «Ejecutar», «Cerrar»).</div>';
+}
+
+async function crearEpica() {
+  const inp = document.getElementById('ne-titulo');
+  const titulo = (inp.value || '').trim(); if (!titulo) return;
+  try {
+    const nueva = await DD.fetch('/epicas', {
+      method: 'POST', body: JSON.stringify({ proyecto_id: F.proyecto, titulo }),
+    });
+    S.epicas.push(nueva); inp.value = '';
+    pintarListaEpicas(); pintarFiltroEpicas();
+  } catch (e) { toast('No se pudo crear la fase: ' + e.message); }
+}
+
+async function cambiarEstadoEpica(id, estado) {
+  try {
+    const upd = await DD.fetch('/epicas/' + id, { method: 'PUT', body: JSON.stringify({ estado }) });
+    Object.assign(S.epicas.find(e => e.id === id), upd);
+  } catch (e) { toast('No se pudo guardar: ' + e.message); }
+}
+
+async function borrarEpica(id) {
+  const n = S.historias.filter(h => h.epica_id === id).length;
+  if (!confirm(n ? `Esta fase tiene ${n} historia(s); quedarán sin fase. ¿Eliminar?` : '¿Eliminar esta fase?')) return;
+  try {
+    await DD.fetch('/epicas/' + id, { method: 'DELETE' });
+    S.epicas = S.epicas.filter(e => e.id !== id);
+    S.historias.forEach(h => { if (h.epica_id === id) h.epica_id = null; });
+    pintarListaEpicas(); pintarFiltroEpicas(); pintarBoard();
+  } catch (e) { toast('No se pudo eliminar: ' + e.message); }
+}
+
+/* ═══════════════ MODAL: nuevo proyecto ═══════════════ */
+function abrirModalProyecto() {
+  document.getElementById('np-cliente').innerHTML =
+    S.clientes.filter(c => c.activo !== false).map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+  document.getElementById('np-nombre').value = '';
+  abrirModal('modal-proyecto');
+  setTimeout(() => document.getElementById('np-nombre').focus(), 80);
+}
+
+async function crearProyecto() {
+  const nombre = document.getElementById('np-nombre').value.trim();
+  if (!nombre) { toast('Ponle un nombre'); return; }
+  try {
+    const nuevo = await DD.fetch('/proyectos', {
+      method: 'POST',
+      body: JSON.stringify({
+        nombre,
+        cliente_id: document.getElementById('np-cliente').value,
+        prioridad: document.getElementById('np-prio').value,
+        deadline: document.getElementById('np-deadline').value || null,
+      }),
+    });
+    S.proyectos.push(nuevo);
+    cerrarModal('modal-proyecto');
+    elegirProyecto(nuevo.id);
+    toast('Proyecto creado — ahora ármale sus fases');
+  } catch (e) { toast('No se pudo crear: ' + e.message); }
+}
+
+/* ═══════════════ UTILIDADES ═══════════════ */
+function abrirModal(id)  { document.getElementById(id).classList.add('abierto'); }
+function cerrarModal(id) { document.getElementById(id).classList.remove('abierto'); }
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    cerrarDrawer();
+    document.querySelectorAll('.modal-fondo.abierto').forEach(m => m.classList.remove('abierto'));
+  }
+});
+document.querySelectorAll('.modal-fondo').forEach(m =>
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('abierto'); }));
+
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function iniciales(p) { return (p.nombre || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase(); }
+function hoyISO() { return new Date().toISOString().slice(0, 10); }
+function fechaCorta(f) {
+  const d = new Date(f + 'T12:00:00');
+  return d.toLocaleDateString('es', { day: 'numeric', month: 'short' });
+}
+function autoAlto(el) { if (!el) return; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('visible'), 2600);
+}
+
+/* al cambiar de persona desde el chip del sidebar, refrescar el filtro */
+document.addEventListener('dd:persona', () => pintarSegPersona());
+</script>
+</body>
+</html>

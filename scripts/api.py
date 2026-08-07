@@ -194,7 +194,264 @@ def delete_proyecto(pid):
     data = cargar("proyectos.json")
     data["proyectos"] = [p for p in data["proyectos"] if p["id"] != pid]
     guardar("proyectos.json", data)
+    # Cascada: limpiar épicas e historias del proyecto (JSON es la fuente de verdad)
+    ep = cargar("epicas.json")
+    if ep.get("epicas"):
+        ep["epicas"] = [e for e in ep["epicas"] if e.get("proyecto_id") != pid]
+        guardar("epicas.json", ep)
+    hi = cargar("historias.json")
+    if hi.get("historias"):
+        hi["historias"] = [h for h in hi["historias"] if h.get("proyecto_id") != pid]
+        guardar("historias.json", hi)
     return jsonify({"ok": True})
+
+
+# ============ PERSONAS (Fase 0 — pareja) ============
+
+PERSONAS_SEMILLA = [
+    {"id": "persona_diego",  "nombre": "Diego",  "color": "#2563EB", "emoji": "🧭",
+     "activo": True, "telegram_chat_id": "", "push_subscriptions": [], "orden": 0},
+    {"id": "persona_esposa", "nombre": "Esposa", "color": "#B0578D", "emoji": "🌸",
+     "activo": True, "telegram_chat_id": "", "push_subscriptions": [], "orden": 1},
+]
+
+
+def _asegurar_personas() -> dict:
+    """Devuelve personas.json; si está vacío, siembra a Diego + Esposa (renombrables)."""
+    data = cargar("personas.json")
+    if not data.get("personas"):
+        data = {"personas": [dict(p) for p in PERSONAS_SEMILLA]}
+        guardar("personas.json", data)
+    return data
+
+
+@app.route("/api/personas", methods=["GET"])
+@requiere_auth
+def get_personas():
+    return jsonify(_asegurar_personas())
+
+
+@app.route("/api/personas", methods=["POST"])
+@requiere_auth
+def post_persona():
+    body = request.get_json()
+    data = _asegurar_personas()
+    nueva = {
+        "id": body.get("id") or nuevo_id("persona"),
+        "nombre": body["nombre"],
+        "color": body.get("color", "#2563EB"),
+        "emoji": body.get("emoji", ""),
+        "activo": True,
+        "telegram_chat_id": body.get("telegram_chat_id", ""),
+        "push_subscriptions": [],
+        "orden": len(data["personas"]),
+    }
+    data["personas"].append(nueva)
+    guardar("personas.json", data)
+    return jsonify(nueva), 201
+
+
+@app.route("/api/personas/<pid>", methods=["PUT"])
+@requiere_auth
+def put_persona(pid):
+    body = request.get_json()
+    data = _asegurar_personas()
+    for p in data["personas"]:
+        if p["id"] == pid:
+            p.update({k: v for k, v in body.items() if k != "id"})
+            guardar("personas.json", data)
+            return jsonify(p)
+    return jsonify({"error": "Persona no encontrada"}), 404
+
+
+# ============ ÉPICAS (Fase 1 — fases de un proyecto) ============
+
+@app.route("/api/epicas", methods=["GET"])
+@requiere_auth
+def get_epicas():
+    proyecto_id = request.args.get("proyecto_id")
+    data = cargar("epicas.json")
+    items = data.get("epicas", [])
+    if proyecto_id:
+        items = [e for e in items if e.get("proyecto_id") == proyecto_id]
+    return jsonify({"epicas": items})
+
+
+@app.route("/api/epicas", methods=["POST"])
+@requiere_auth
+def post_epica():
+    body = request.get_json()
+    data = cargar("epicas.json")
+    data.setdefault("epicas", [])
+    nueva = {
+        "id": body.get("id") or nuevo_id("epica"),
+        "proyecto_id": body["proyecto_id"],
+        "titulo": body["titulo"],
+        "descripcion": body.get("descripcion", ""),
+        "prioridad": body.get("prioridad", "media"),
+        "estado": body.get("estado", "abierta"),
+        "orden": len(data["epicas"]),
+    }
+    data["epicas"].append(nueva)
+    guardar("epicas.json", data)
+    return jsonify(nueva), 201
+
+
+@app.route("/api/epicas/<eid>", methods=["PUT"])
+@requiere_auth
+def put_epica(eid):
+    body = request.get_json()
+    data = cargar("epicas.json")
+    for e in data.get("epicas", []):
+        if e["id"] == eid:
+            e.update({k: v for k, v in body.items() if k != "id"})
+            guardar("epicas.json", data)
+            return jsonify(e)
+    return jsonify({"error": "Épica no encontrada"}), 404
+
+
+@app.route("/api/epicas/<eid>", methods=["DELETE"])
+@requiere_auth
+def delete_epica(eid):
+    data = cargar("epicas.json")
+    data["epicas"] = [e for e in data.get("epicas", []) if e["id"] != eid]
+    guardar("epicas.json", data)
+    # Las historias de esa épica quedan sin épica (no se borran)
+    hi = cargar("historias.json")
+    cambio = False
+    for h in hi.get("historias", []):
+        if h.get("epica_id") == eid:
+            h["epica_id"] = None
+            cambio = True
+    if cambio:
+        guardar("historias.json", hi)
+    return jsonify({"ok": True})
+
+
+# ============ HISTORIAS (Fase 1 — tarjetas del canvas) ============
+
+ESTADOS_HISTORIA = ["backlog", "planeado", "en_progreso", "qa", "bloqueado", "hecho"]
+
+
+@app.route("/api/historias", methods=["GET"])
+@requiere_auth
+def get_historias():
+    proyecto_id = request.args.get("proyecto_id")
+    data = cargar("historias.json")
+    items = data.get("historias", [])
+    if proyecto_id:
+        items = [h for h in items if h.get("proyecto_id") == proyecto_id]
+    return jsonify({"historias": items})
+
+
+@app.route("/api/historias", methods=["POST"])
+@requiere_auth
+def post_historia():
+    body = request.get_json()
+    data = cargar("historias.json")
+    data.setdefault("historias", [])
+    nueva = {
+        "id": body.get("id") or nuevo_id("hist"),
+        "proyecto_id": body["proyecto_id"],
+        "epica_id": body.get("epica_id"),
+        "titulo": body["titulo"],
+        "descripcion": body.get("descripcion", ""),
+        "responsable_id": body.get("responsable_id"),
+        "prioridad": body.get("prioridad", "media"),
+        "estado": body.get("estado", "backlog"),
+        "etiquetas": body.get("etiquetas", []),
+        "estimacion_horas": body.get("estimacion_horas"),
+        "fecha_objetivo": body.get("fecha_objetivo"),
+        "motivo_bloqueo": "",
+        "criterios": body.get("criterios", []),
+        "subtareas": body.get("subtareas", []),
+        "origen": body.get("origen", ""),
+        "orden": len(data["historias"]),
+        "creada": datetime.now().isoformat(),
+        "completada_en": None,
+    }
+    if nueva["estado"] not in ESTADOS_HISTORIA:
+        nueva["estado"] = "backlog"
+    data["historias"].append(nueva)
+    guardar("historias.json", data)
+    return jsonify(nueva), 201
+
+
+@app.route("/api/historias/<hid>", methods=["PUT"])
+@requiere_auth
+def put_historia(hid):
+    body = request.get_json()
+    data = cargar("historias.json")
+    for h in data.get("historias", []):
+        if h["id"] == hid:
+            estado_antes = h.get("estado")
+            h.update({k: v for k, v in body.items() if k != "id"})
+            if h.get("estado") not in ESTADOS_HISTORIA:
+                h["estado"] = estado_antes or "backlog"
+            # Reglas de transición automáticas
+            if h["estado"] == "hecho" and estado_antes != "hecho":
+                h["completada_en"] = datetime.now().isoformat()
+            elif h["estado"] != "hecho":
+                h["completada_en"] = None
+            if h["estado"] != "bloqueado":
+                h["motivo_bloqueo"] = ""
+            guardar("historias.json", data)
+            return jsonify(h)
+    return jsonify({"error": "Historia no encontrada"}), 404
+
+
+@app.route("/api/historias/<hid>", methods=["DELETE"])
+@requiere_auth
+def delete_historia(hid):
+    data = cargar("historias.json")
+    data["historias"] = [h for h in data.get("historias", []) if h["id"] != hid]
+    guardar("historias.json", data)
+    return jsonify({"ok": True})
+
+
+def _migrar_actividades_a_historias():
+    """Semilla única: convierte las actividades existentes en historias del canvas.
+    Idempotente (marca origen 'actividad:<id>'). No borra las actividades:
+    el plan diario las sigue usando hasta la Fase 5."""
+    hi = cargar("historias.json")
+    hi.setdefault("historias", [])
+    ya_migradas = {h.get("origen") for h in hi["historias"] if h.get("origen")}
+    acts = cargar("actividades.json").get("actividades", [])
+    mapa_estado = {"pendiente": "backlog", "en_progreso": "en_progreso",
+                   "completada": "hecho", "descartada": None}
+    nuevas = 0
+    for a in acts:
+        origen = f"actividad:{a['id']}"
+        if origen in ya_migradas:
+            continue
+        estado = mapa_estado.get(a.get("estado", "pendiente"), "backlog")
+        if estado is None:
+            continue
+        hi["historias"].append({
+            "id": nuevo_id("hist"),
+            "proyecto_id": a.get("proyecto_id"),
+            "epica_id": None,
+            "titulo": a.get("titulo", "Sin título"),
+            "descripcion": a.get("notas", ""),
+            "responsable_id": "persona_diego",
+            "prioridad": a.get("prioridad", "media"),
+            "estado": estado,
+            "etiquetas": [],
+            "estimacion_horas": round((a.get("duracion_min") or 30) / 60, 2),
+            "fecha_objetivo": a.get("deadline"),
+            "motivo_bloqueo": "",
+            "criterios": [],
+            "subtareas": [],
+            "origen": origen,
+            "orden": len(hi["historias"]),
+            "creada": a.get("creada") or datetime.now().isoformat(),
+            "completada_en": a.get("completada_en"),
+        })
+        nuevas += 1
+    if nuevas:
+        guardar("historias.json", hi)
+        print(f"✓ Migración SCRUM: {nuevas} actividad(es) convertidas en historias")
+    return nuevas
 
 
 # ============ ACTIVIDADES (tareas) ============
@@ -2289,6 +2546,15 @@ def local_token():
 @app.route("/")
 def root():
     return send_from_directory(str(RAIZ / "tablero"), "index.html")
+
+
+# ============ SEMILLA PRO (Fase 0+1): personas + migración de actividades ============
+# Idempotente; corre en cada boot (local y gunicorn) sin efectos si ya está hecho.
+try:
+    _asegurar_personas()
+    _migrar_actividades_a_historias()
+except Exception as _e:
+    print(f"⚠️  Semilla SCRUM no aplicada: {_e}")
 
 
 if __name__ == "__main__":
