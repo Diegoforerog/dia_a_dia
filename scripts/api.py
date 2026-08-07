@@ -2540,6 +2540,38 @@ def scheduler_diag():
     return jsonify(out)
 
 
+# ============ DIAGNÓSTICO DE BASE DE DATOS ============
+
+@app.route("/api/db/diag", methods=["GET"])
+@requiere_auth
+def db_diag():
+    """Estado real de la conexión a Postgres: qué tablas ve y cuántas filas.
+    Para diagnosticar cuándo la app está sirviendo JSON de respaldo."""
+    out = {
+        "db_disponible": _db.db_disponible(),
+        "db_host": os.getenv("DB_HOST", ""),
+        "db_name": os.getenv("DB_NAME", ""),
+        "tablas": {},
+        "errores": [],
+    }
+    if out["db_disponible"]:
+        for tabla in ["clientes", "proyectos", "actividades", "habitos", "habito_categorias",
+                      "calendarios", "personas", "epicas", "historias", "recordatorios",
+                      "configuracion", "eventos_conocidos"]:
+            try:
+                rows = _db.query(f"SELECT COUNT(*)::int AS n FROM organizador.{tabla}")
+                out["tablas"][tabla] = rows[0]["n"]
+            except Exception as e:
+                out["errores"].append(f"{tabla}: {str(e).splitlines()[0]}")
+    # ¿cargar() está usando DB o JSON?
+    try:
+        import comun as _comun
+        out["usar_db_flag"] = getattr(_comun, "_USAR_DB", None)
+    except Exception as e:
+        out["errores"].append(f"comun: {e}")
+    return jsonify(out)
+
+
 # ============ TOKEN AUTO (solo localhost) ============
 
 @app.route("/api/local-token", methods=["GET"])
