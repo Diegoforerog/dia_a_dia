@@ -21,6 +21,16 @@ from comun import (
 )
 import db as _db
 
+# Aprovisionamiento automático de la BD (activar con BOOTSTRAP_DB=1).
+# Crea la base + esquema si no existen e importa datos de un PG viejo
+# (MIGRAR_DESDE_HOST) la primera vez. Idempotente. DEBE correr antes
+# del scheduler para que las tablas ya existan.
+try:
+    import bootstrap_db as _bootstrap
+    _bootstrap.ejecutar()
+except Exception as _e:
+    print(f"⚠️  Bootstrap DB: {_e}")
+
 # Scheduler interno (reemplaza polling crons de n8n)
 try:
     import scheduler as _sched
