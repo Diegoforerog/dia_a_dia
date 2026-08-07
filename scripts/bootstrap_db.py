@@ -19,6 +19,14 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 
+# Traza del último bootstrap (la expone /api/db/diag para diagnóstico remoto)
+TRAZA = []
+
+
+def _t(msg):
+    TRAZA.append(str(msg)[:300])
+    print(f"[bootstrap] {msg}")
+
 
 def _conn(host, port, user, password, dbname):
     import psycopg2
@@ -68,13 +76,13 @@ def ejecutar():
         except Exception:
             continue
     if base_admin is None:
-        print(f"⚠️  Bootstrap: no pude conectar a {host}:{port} — omito")
+        _t(f"⚠️  Bootstrap: no pude conectar a {host}:{port} — omito")
         return
     cur = base_admin.cursor()
     cur.execute("SELECT 1 FROM pg_database WHERE datname=%s", (dbname,))
     if not cur.fetchone():
         cur.execute(f'CREATE DATABASE "{dbname}"')
-        print(f"✓ Bootstrap: base «{dbname}» creada en {host}")
+        _t(f"✓ Bootstrap: base «{dbname}» creada en {host}")
     cur.close(); base_admin.close()
 
     conn = _conn(host, port, user, pwd, dbname)
@@ -82,21 +90,30 @@ def ejecutar():
     # Lock consultivo: si hay varios workers, solo uno hace el bootstrap
     cur.execute("SELECT pg_try_advisory_lock(772026)")
     if not cur.fetchone()[0]:
-        print("⏭️  Bootstrap: otro proceso lo está haciendo")
+        _t("⏭️  Bootstrap: otro proceso lo está haciendo")
         conn.close(); return
 
     try:
-        # ── 2. Esquema (solo en BD fresca) ──
-        cur.execute("SELECT 1 FROM information_schema.schemata WHERE schema_name='organizador'")
-        if not cur.fetchone():
+        # ── 2. Esquema (si falta la tabla ancla, correr TODO de nuevo —
+        # auto-sanador si un intento anterior quedó a medias) ──
+        cur.execute("""SELECT 1 FROM information_schema.tables
+                       WHERE table_schema='organizador' AND table_name='clientes'""")
+        if cur.fetchone():
+            _t("⏭️  Bootstrap: esquema ya completo")
+        else:
             archivos = [RAIZ / "db" / "schema.sql"] + sorted((RAIZ / "db").glob("migracion_*.sql"))
+            _t(f"Bootstrap: creando esquema con {len(archivos)} archivos…")
             for f in archivos:
-                for stmt in _split_sql(f.read_text()):
+                stmts = _split_sql(f.read_text())
+                errs = 0
+                for stmt in stmts:
                     try:
                         cur.execute(stmt)
                     except Exception as e:
-                        print(f"⚠️  Bootstrap {f.name}: {str(e).splitlines()[0]}")
-            print(f"✓ Bootstrap: esquema creado ({len(archivos)} archivos SQL)")
+                        errs += 1
+                        _t(f"⚠️  {f.name}: {str(e).splitlines()[0]}")
+                _t(f"  {f.name}: {len(stmts)} sentencias, {errs} errores")
+            _t("✓ Bootstrap: esquema creado")
 
         # ── 2b. Tablas de runtime del scheduler (las crea él también, pero
         # las necesitamos ANTES de importar para no perder su historial) ──
@@ -126,7 +143,11 @@ def ejecutar():
             if cur.fetchone()[0] == 0:
                 _importar_datos(cur, viejo_host)
             else:
-                print("⏭️  Bootstrap: ya hay datos — no importo de nuevo")
+                _t("⏭️  Bootstrap: ya hay datos — no importo de nuevo")
+    except Exception as e:
+        import traceback
+        _t(f"💥 Bootstrap: {type(e).__name__}: {e}")
+        _t(traceback.format_exc()[-280:])
     finally:
         cur.execute("SELECT pg_advisory_unlock(772026)")
         cur.close(); conn.close()
@@ -183,10 +204,10 @@ def _importar_datos(cur_destino, viejo_host):
                         f'INSERT INTO organizador."{t}" ({collist}) VALUES ({ph}) ON CONFLICT DO NOTHING',
                         fila)
                 except Exception as e:
-                    print(f"⚠️  fila en {t}: {str(e).splitlines()[0]}")
+                    _t(f"⚠️  fila en {t}: {str(e).splitlines()[0]}")
             total += len(filas)
-            print(f"  ↳ {t}: {len(filas)} filas")
+            _t(f"  ↳ {t}: {len(filas)} filas")
         except Exception as e:
-            print(f"⚠️  tabla {t}: {str(e).splitlines()[0]}")
+            _t(f"⚠️  tabla {t}: {str(e).splitlines()[0]}")
     vc.close(); viejo.close()
-    print(f"✓ Bootstrap: importadas ~{total} filas desde {viejo_host}")
+    _t(f"✓ Bootstrap: importadas ~{total} filas desde {viejo_host}")

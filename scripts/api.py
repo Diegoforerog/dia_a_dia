@@ -2569,6 +2569,11 @@ def db_diag():
         out["usar_db_flag"] = getattr(_comun, "_USAR_DB", None)
     except Exception as e:
         out["errores"].append(f"comun: {e}")
+    # Traza del bootstrap de este boot
+    try:
+        out["bootstrap_traza"] = getattr(_bootstrap, "TRAZA", [])
+    except Exception:
+        out["bootstrap_traza"] = ["(módulo bootstrap no cargado)"]
     return jsonify(out)
 
 
