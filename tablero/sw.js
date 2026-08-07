@@ -5,13 +5,14 @@
    - API: siempre red (nunca cachear datos).
    - Push: listo para la Fase 2 (avisos por persona). */
 
-const VERSION = 'dd-v2';
+const VERSION = 'dd-v3';
 const SHELL = [
   '/',
   '/tablero/index.html',
   '/tablero/agenda.html',
   '/tablero/admin.html',
   '/tablero/proyectos.html',
+  '/tablero/comidas.html',
   '/tablero/dd.js',
   '/tablero/manifest.webmanifest',
   '/tablero/iconos/icono-192.png',

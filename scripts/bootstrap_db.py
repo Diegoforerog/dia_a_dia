@@ -134,6 +134,30 @@ def ejecutar():
             except Exception as e:
                 _t(f"⚠️  columna: {str(e).splitlines()[0]}")
 
+        # ── 2d. Tablas de módulos nuevos (Fase 4 comidas), idempotente ──
+        for ddl in [
+            """CREATE TABLE IF NOT EXISTS recetas (
+                id TEXT PRIMARY KEY, nombre TEXT NOT NULL, tipo TEXT DEFAULT 'almuerzo',
+                gustos JSONB DEFAULT '[]'::jsonb, ingredientes JSONB DEFAULT '[]'::jsonb,
+                pasos TEXT DEFAULT '', favorita BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMPTZ DEFAULT NOW())""",
+            """CREATE TABLE IF NOT EXISTS menus (
+                semana TEXT PRIMARY KEY, dias JSONB DEFAULT '{}'::jsonb,
+                updated_at TIMESTAMPTZ DEFAULT NOW())""",
+            """CREATE TABLE IF NOT EXISTS despensa (
+                id TEXT PRIMARY KEY, item TEXT NOT NULL, unidad TEXT DEFAULT '',
+                estado TEXT DEFAULT 'hay', categoria TEXT DEFAULT '',
+                updated_at TIMESTAMPTZ DEFAULT NOW())""",
+            """CREATE TABLE IF NOT EXISTS lista_mercado (
+                id TEXT PRIMARY KEY, item TEXT NOT NULL, cantidad TEXT DEFAULT '',
+                unidad TEXT DEFAULT '', origen TEXT DEFAULT 'manual',
+                comprado BOOLEAN DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW())""",
+        ]:
+            try:
+                cur.execute(ddl)
+            except Exception as e:
+                _t(f"⚠️  tabla módulo: {str(e).splitlines()[0]}")
+
         # ── 3. Importar datos del Postgres viejo (por tabla: solo si está vacía) ──
         viejo_host = os.environ.get("MIGRAR_DESDE_HOST", "")
         if viejo_host:

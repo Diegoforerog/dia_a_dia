@@ -2661,6 +2661,334 @@ def local_token():
     return jsonify({"token": API_TOKEN})
 
 
+# ============ COMIDAS + DESPENSA (Fase 4 — módulo compartido) ============
+
+def _semana_iso(fecha=None):
+    d = fecha or date.today()
+    y, w, _ = d.isocalendar()
+    return f"{y}-W{w:02d}"
+
+
+# ---- Gustos (preferencias para la IA) ----
+@app.route("/api/gustos", methods=["GET"])
+@requiere_auth
+def get_gustos():
+    cfg = cargar("config.json")
+    return jsonify(cfg.get("gustos") or {
+        "le_gusta": [], "no_come": [], "restricciones": [], "preferencias_texto": ""
+    })
+
+
+@app.route("/api/gustos", methods=["PUT"])
+@requiere_auth
+def put_gustos():
+    body = request.get_json() or {}
+    cfg = cargar("config.json")
+    cfg["gustos"] = {
+        "le_gusta": body.get("le_gusta", []),
+        "no_come": body.get("no_come", []),
+        "restricciones": body.get("restricciones", []),
+        "preferencias_texto": body.get("preferencias_texto", ""),
+    }
+    guardar("config.json", cfg)
+    return jsonify(cfg["gustos"])
+
+
+# ---- Recetas ----
+@app.route("/api/recetas", methods=["GET"])
+@requiere_auth
+def get_recetas():
+    return jsonify(cargar("recetas.json"))
+
+
+@app.route("/api/recetas", methods=["POST"])
+@requiere_auth
+def post_receta():
+    body = request.get_json() or {}
+    data = cargar("recetas.json"); data.setdefault("recetas", [])
+    nueva = {
+        "id": body.get("id") or nuevo_id("rec"),
+        "nombre": body["nombre"],
+        "tipo": body.get("tipo", "almuerzo"),
+        "gustos": body.get("gustos", []),
+        "ingredientes": body.get("ingredientes", []),
+        "pasos": body.get("pasos", ""),
+        "favorita": bool(body.get("favorita", False)),
+    }
+    data["recetas"].append(nueva)
+    guardar("recetas.json", data)
+    return jsonify(nueva), 201
+
+
+@app.route("/api/recetas/<rid>", methods=["PUT"])
+@requiere_auth
+def put_receta(rid):
+    body = request.get_json() or {}
+    data = cargar("recetas.json")
+    for r in data.get("recetas", []):
+        if r["id"] == rid:
+            r.update({k: v for k, v in body.items() if k != "id"})
+            guardar("recetas.json", data)
+            return jsonify(r)
+    return jsonify({"error": "Receta no encontrada"}), 404
+
+
+@app.route("/api/recetas/<rid>", methods=["DELETE"])
+@requiere_auth
+def delete_receta(rid):
+    data = cargar("recetas.json")
+    data["recetas"] = [r for r in data.get("recetas", []) if r["id"] != rid]
+    guardar("recetas.json", data)
+    return jsonify({"ok": True})
+
+
+# ---- Despensa ----
+@app.route("/api/despensa", methods=["GET"])
+@requiere_auth
+def get_despensa():
+    return jsonify(cargar("despensa.json"))
+
+
+@app.route("/api/despensa", methods=["POST"])
+@requiere_auth
+def post_despensa():
+    body = request.get_json() or {}
+    data = cargar("despensa.json"); data.setdefault("despensa", [])
+    item = {
+        "id": body.get("id") or nuevo_id("desp"),
+        "item": body["item"],
+        "unidad": body.get("unidad", ""),
+        "estado": body.get("estado", "hay"),
+        "categoria": body.get("categoria", ""),
+    }
+    data["despensa"].append(item)
+    guardar("despensa.json", data)
+    return jsonify(item), 201
+
+
+@app.route("/api/despensa/<did>", methods=["PUT"])
+@requiere_auth
+def put_despensa(did):
+    body = request.get_json() or {}
+    data = cargar("despensa.json")
+    for it in data.get("despensa", []):
+        if it["id"] == did:
+            it.update({k: v for k, v in body.items() if k != "id"})
+            guardar("despensa.json", data)
+            return jsonify(it)
+    return jsonify({"error": "Item no encontrado"}), 404
+
+
+@app.route("/api/despensa/<did>", methods=["DELETE"])
+@requiere_auth
+def delete_despensa(did):
+    data = cargar("despensa.json")
+    data["despensa"] = [i for i in data.get("despensa", []) if i["id"] != did]
+    guardar("despensa.json", data)
+    return jsonify({"ok": True})
+
+
+# ---- Menú semanal ----
+@app.route("/api/menu", methods=["GET"])
+@requiere_auth
+def get_menu():
+    semana = request.args.get("semana") or _semana_iso()
+    data = cargar("menus.json")
+    fila = next((m for m in data.get("menus", []) if m.get("semana") == semana), None)
+    return jsonify({"semana": semana, "dias": (fila or {}).get("dias", {})})
+
+
+@app.route("/api/menu", methods=["PUT"])
+@requiere_auth
+def put_menu():
+    """Asigna un plato: body {semana?, dia, momento, plato}. plato='' borra."""
+    body = request.get_json() or {}
+    semana = body.get("semana") or _semana_iso()
+    dia = body["dia"]; momento = body["momento"]; plato = body.get("plato", "")
+    data = cargar("menus.json"); data.setdefault("menus", [])
+    fila = next((m for m in data["menus"] if m.get("semana") == semana), None)
+    if not fila:
+        fila = {"semana": semana, "dias": {}}
+        data["menus"].append(fila)
+    fila["dias"].setdefault(dia, {})
+    if plato:
+        fila["dias"][dia][momento] = plato
+    else:
+        fila["dias"][dia].pop(momento, None)
+    guardar("menus.json", data)
+    return jsonify({"semana": semana, "dias": fila["dias"]})
+
+
+# ---- Lista de mercado ----
+@app.route("/api/lista-mercado", methods=["GET"])
+@requiere_auth
+def get_lista_mercado():
+    return jsonify(cargar("lista_mercado.json"))
+
+
+@app.route("/api/lista-mercado", methods=["POST"])
+@requiere_auth
+def post_lista_item():
+    body = request.get_json() or {}
+    data = cargar("lista_mercado.json"); data.setdefault("lista_mercado", [])
+    item = {
+        "id": body.get("id") or nuevo_id("merc"),
+        "item": body["item"],
+        "cantidad": body.get("cantidad", ""),
+        "unidad": body.get("unidad", ""),
+        "origen": body.get("origen", "manual"),
+        "comprado": False,
+    }
+    data["lista_mercado"].append(item)
+    guardar("lista_mercado.json", data)
+    return jsonify(item), 201
+
+
+@app.route("/api/lista-mercado/<mid>", methods=["PUT"])
+@requiere_auth
+def put_lista_item(mid):
+    body = request.get_json() or {}
+    data = cargar("lista_mercado.json")
+    for it in data.get("lista_mercado", []):
+        if it["id"] == mid:
+            it.update({k: v for k, v in body.items() if k != "id"})
+            guardar("lista_mercado.json", data)
+            return jsonify(it)
+    return jsonify({"error": "Item no encontrado"}), 404
+
+
+@app.route("/api/lista-mercado/<mid>", methods=["DELETE"])
+@requiere_auth
+def delete_lista_item(mid):
+    data = cargar("lista_mercado.json")
+    data["lista_mercado"] = [i for i in data.get("lista_mercado", []) if i["id"] != mid]
+    guardar("lista_mercado.json", data)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/lista-mercado/generar", methods=["POST"])
+@requiere_auth
+def generar_lista_mercado():
+    """Arma la lista = ingredientes del menú de la semana − lo que hay en despensa
+    + lo que está 'poco'/'agotado'. Conserva los items manuales y el 'comprado'."""
+    body = request.get_json() or {}
+    semana = body.get("semana") or _semana_iso()
+
+    recetas = {r["nombre"].strip().lower(): r for r in cargar("recetas.json").get("recetas", [])}
+    menus = cargar("menus.json").get("menus", [])
+    fila = next((m for m in menus if m.get("semana") == semana), None)
+    dias = (fila or {}).get("dias", {})
+
+    despensa = cargar("despensa.json").get("despensa", [])
+    hay = {d["item"].strip().lower() for d in despensa if d.get("estado") == "hay"}
+    faltan = [d for d in despensa if d.get("estado") in ("poco", "agotado")]
+
+    # 1) Ingredientes de los platos del menú que existen como receta
+    necesarios = {}   # clave item.lower() → {item, cantidad(acum texto), unidad}
+    for dia, momentos in dias.items():
+        for momento, plato in (momentos or {}).items():
+            rec = recetas.get(str(plato).strip().lower())
+            if not rec:
+                continue
+            for ing in rec.get("ingredientes", []):
+                key = str(ing.get("item", "")).strip().lower()
+                if not key or key in hay:
+                    continue
+                if key not in necesarios:
+                    necesarios[key] = {"item": ing.get("item"), "cantidad": [], "unidad": ing.get("unidad", "")}
+                if ing.get("cantidad"):
+                    necesarios[key]["cantidad"].append(str(ing["cantidad"]))
+
+    # 2) Conservar lo actual: items manuales + estado comprado por nombre
+    actual = cargar("lista_mercado.json").get("lista_mercado", [])
+    comprado_por_item = {i["item"].strip().lower(): i.get("comprado", False) for i in actual}
+    manuales = [i for i in actual if i.get("origen") == "manual"]
+
+    nueva = list(manuales)
+    vistos = {i["item"].strip().lower() for i in manuales}
+
+    for key, info in necesarios.items():
+        if key in vistos:
+            continue
+        vistos.add(key)
+        nueva.append({
+            "id": nuevo_id("merc"), "item": info["item"],
+            "cantidad": " + ".join(info["cantidad"]), "unidad": info["unidad"],
+            "origen": "menu", "comprado": comprado_por_item.get(key, False),
+        })
+    for d in faltan:
+        key = d["item"].strip().lower()
+        if key in vistos:
+            continue
+        vistos.add(key)
+        nueva.append({
+            "id": nuevo_id("merc"), "item": d["item"], "cantidad": "",
+            "unidad": d.get("unidad", ""), "origen": "despensa",
+            "comprado": comprado_por_item.get(key, False),
+        })
+
+    guardar("lista_mercado.json", {"lista_mercado": nueva})
+    return jsonify({"lista_mercado": nueva, "semana": semana,
+                    "resumen": {"del_menu": len(necesarios), "faltan_despensa": len(faltan),
+                                "manuales": len(manuales), "total": len(nueva)}})
+
+
+@app.route("/api/menu/sugerir", methods=["POST"])
+@requiere_auth
+def sugerir_menu():
+    """La IA propone el menú de la semana según gustos + despensa + recetas."""
+    try:
+        from openai import OpenAI
+    except ImportError:
+        return jsonify({"error": "Falta instalar openai"}), 500
+    if not os.getenv("OPENAI_API_KEY"):
+        return jsonify({"error": "Falta OPENAI_API_KEY"}), 500
+
+    body = request.get_json() or {}
+    semana = body.get("semana") or _semana_iso()
+    momentos = body.get("momentos") or ["desayuno", "almuerzo", "cena"]
+
+    gustos = cargar("config.json").get("gustos") or {}
+    recetas = [{"nombre": r["nombre"], "tipo": r.get("tipo")} for r in cargar("recetas.json").get("recetas", [])]
+    despensa = [d["item"] for d in cargar("despensa.json").get("despensa", []) if d.get("estado") in ("hay", "poco")]
+
+    sistema = ("Eres un asistente de cocina para una pareja. Propones un menú semanal "
+               "variado, realista y saludable. Respondes SOLO JSON válido.")
+    usuario = f"""Arma el menú de la semana (lunes a domingo) para estos momentos: {momentos}.
+
+GUSTOS Y RESTRICCIONES:
+{json.dumps(gustos, ensure_ascii=False)}
+
+RECETAS QUE YA TIENEN (prioriza usarlas por su nombre exacto cuando encajen):
+{json.dumps(recetas, ensure_ascii=False)}
+
+EN LA DESPENSA HAY (aprovéchalo):
+{json.dumps(despensa, ensure_ascii=False)}
+
+Devuelve EXACTAMENTE este formato JSON:
+{{"dias": {{"lunes": {{{", ".join(f'"{m}": "nombre del plato"' for m in momentos)}}}, "martes": {{...}}, "miércoles": {{...}}, "jueves": {{...}}, "viernes": {{...}}, "sábado": {{...}}, "domingo": {{...}}}}}}
+No repitas el mismo plato más de 2 veces en la semana. Platos concretos y sencillos."""
+
+    cliente = OpenAI()
+    resp = cliente.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "system", "content": sistema}, {"role": "user", "content": usuario}],
+        response_format={"type": "json_object"},
+        temperature=0.7,
+    )
+    propuesta = json.loads(resp.choices[0].message.content)
+    dias = propuesta.get("dias", propuesta)
+
+    data = cargar("menus.json"); data.setdefault("menus", [])
+    fila = next((m for m in data["menus"] if m.get("semana") == semana), None)
+    if not fila:
+        fila = {"semana": semana, "dias": {}}
+        data["menus"].append(fila)
+    fila["dias"] = dias
+    guardar("menus.json", data)
+    return jsonify({"semana": semana, "dias": dias})
+
+
 # ============ TABLERO ESTÁTICO ============
 
 @app.route("/")

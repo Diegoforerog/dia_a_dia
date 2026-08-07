@@ -148,6 +148,25 @@ def cargar(nombre_archivo: str) -> Dict:
                         FROM historias ORDER BY orden, creada""")
         return {"historias": [_row_to_dict(r) for r in rows]}
 
+    if nombre_archivo == "recetas.json":
+        rows = query("""SELECT id, nombre, tipo, gustos, ingredientes, pasos, favorita
+                        FROM recetas ORDER BY nombre""")
+        return {"recetas": [_row_to_dict(r) for r in rows]}
+
+    if nombre_archivo == "menus.json":
+        rows = query("SELECT semana, dias FROM menus")
+        return {"menus": [_row_to_dict(r) for r in rows]}
+
+    if nombre_archivo == "despensa.json":
+        rows = query("""SELECT id, item, unidad, estado, categoria
+                        FROM despensa ORDER BY item""")
+        return {"despensa": [_row_to_dict(r) for r in rows]}
+
+    if nombre_archivo == "lista_mercado.json":
+        rows = query("""SELECT id, item, cantidad, unidad, origen, comprado
+                        FROM lista_mercado ORDER BY comprado, item""")
+        return {"lista_mercado": [_row_to_dict(r) for r in rows]}
+
     return {}
 
 
@@ -246,6 +265,27 @@ def guardar(nombre_archivo: str, datos: Dict) -> None:
                      "motivo_bloqueo","criterios","subtareas","origen","orden",
                      "creada","completada_en"],
                     json_cols={"etiquetas","criterios","subtareas"})
+        return
+
+    if nombre_archivo == "recetas.json":
+        _sync_lista("recetas", datos.get("recetas", []),
+                    ["id","nombre","tipo","gustos","ingredientes","pasos","favorita"],
+                    json_cols={"gustos","ingredientes"})
+        return
+
+    if nombre_archivo == "menus.json":
+        _sync_lista("menus", datos.get("menus", []),
+                    ["semana","dias"], pk="semana", json_cols={"dias"})
+        return
+
+    if nombre_archivo == "despensa.json":
+        _sync_lista("despensa", datos.get("despensa", []),
+                    ["id","item","unidad","estado","categoria"])
+        return
+
+    if nombre_archivo == "lista_mercado.json":
+        _sync_lista("lista_mercado", datos.get("lista_mercado", []),
+                    ["id","item","cantidad","unidad","origen","comprado"])
         return
 
 
