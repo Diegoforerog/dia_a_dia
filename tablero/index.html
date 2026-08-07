@@ -395,6 +395,22 @@
   }
   @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
 
+  /* Fase 5 — Comida de hoy + Trabajo de hoy */
+  .comida-fila { display: flex; align-items: baseline; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line-soft); }
+  .comida-fila:last-child { border-bottom: none; }
+  .comida-momento { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; font-weight: 700; color: var(--stone); flex: 0 0 108px; }
+  .comida-plato { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .trabajo-fila { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line-soft); text-decoration: none; color: inherit; }
+  .trabajo-fila:last-child { border-bottom: none; }
+  .trabajo-fila:hover .trabajo-tit { color: var(--burnt); }
+  .trabajo-estado { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--mist); }
+  .trabajo-estado.est-en_progreso { background: var(--burnt); }
+  .trabajo-estado.est-qa { background: var(--amber); }
+  .trabajo-estado.est-bloqueado { background: var(--crimson); }
+  .trabajo-estado.est-planeado { background: var(--indigo); }
+  .trabajo-tit { font-size: 13.5px; font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .trabajo-meta { font-size: 11.5px; color: var(--stone); flex-shrink: 0; }
+
   /* ───── CARDS ───── */
   .card {
     background: var(--surface);
@@ -1680,6 +1696,28 @@
           <div id="leyenda-calendarios" class="leyenda-calendarios"></div>
         </div>
 
+        <div class="card" id="card-comida">
+          <div class="card-head">
+            <div>
+              <div class="card-eyebrow">La cocina</div>
+              <h2>Comida de hoy</h2>
+            </div>
+            <a href="/tablero/comidas.html" style="font-size:12px;color:var(--burnt);text-decoration:none;border-bottom:1px solid var(--burnt-line);">ver menú →</a>
+          </div>
+          <div id="comida-hoy"><div class="empty">Cargando…</div></div>
+        </div>
+
+        <div class="card" id="card-trabajo">
+          <div class="card-head">
+            <div>
+              <div class="card-eyebrow">Tus proyectos</div>
+              <h2>Tu trabajo de hoy</h2>
+            </div>
+            <a href="/tablero/proyectos.html" style="font-size:12px;color:var(--burnt);text-decoration:none;border-bottom:1px solid var(--burnt-line);">ver tablero →</a>
+          </div>
+          <div id="trabajo-hoy"><div class="empty">Cargando…</div></div>
+        </div>
+
         <div class="card">
           <div class="card-head">
             <div>
@@ -2185,7 +2223,54 @@ function pintarStatus(registro) {
     habitos: habitosData || {habitos:[], categorias:[]},
     registro: registro
   };
+
+  /* Plan unificado (Fase 5): comida de hoy + trabajo del canvas */
+  pintarComidaHoy();
+  pintarTrabajoHoy();
 })();
+
+function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function semanaISOHoy(){ const n=new Date(); const dt=new Date(Date.UTC(n.getFullYear(),n.getMonth(),n.getDate())); const day=dt.getUTCDay()||7; dt.setUTCDate(dt.getUTCDate()+4-day); const y=new Date(Date.UTC(dt.getUTCFullYear(),0,1)); const wk=Math.ceil((((dt-y)/86400000)+1)/7); return `${dt.getUTCFullYear()}-W${String(wk).padStart(2,'0')}`; }
+
+async function pintarComidaHoy(){
+  const cont=document.getElementById('comida-hoy'); if(!cont) return;
+  try{
+    const sem=semanaISOHoy();
+    const d=await apiGet('/menu?semana='+sem) || {dias:{}};
+    const diasNom=['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
+    const dow=(new Date().getDay()||7)-1;
+    const hoy=(d.dias||{})[diasNom[dow]]||{};
+    const etq={desayuno:['🍳','Desayuno'],almuerzo:['🍽️','Almuerzo'],cena:['🌙','Cena'],snack:['🍎','Snack']};
+    const filas=['desayuno','almuerzo','cena'].filter(m=>hoy[m]).map(m=>
+      `<div class="comida-fila"><span class="comida-momento">${etq[m][0]} ${etq[m][1]}</span><span class="comida-plato">${escapeHtml(hoy[m])}</span></div>`).join('');
+    cont.innerHTML = filas || '<div class="empty">Sin menú para hoy. <a href="/tablero/comidas.html" style="color:var(--burnt)">Planéalo →</a></div>';
+  }catch(e){ cont.innerHTML='<div class="empty">No se pudo cargar el menú.</div>'; }
+}
+
+async function pintarTrabajoHoy(){
+  const cont=document.getElementById('trabajo-hoy'); if(!cont) return;
+  try{
+    const yo=(window.DD && DD.personaId && DD.personaId())||'';
+    const hoyStr=new Date().toISOString().slice(0,10);
+    const data=await apiGet('/historias') || {historias:[]};
+    const proyectos=(window.__DATA__&&window.__DATA__.proyectos)||[];
+    const proyMap={}; proyectos.forEach(p=>proyMap[p.id]=p.nombre);
+    let hs=(data.historias||[]).filter(h=>h.estado!=='hecho' &&
+      (h.estado==='en_progreso' || (h.fecha_objetivo && h.fecha_objetivo<=hoyStr)));
+    if(yo) hs=hs.filter(h=>!h.responsable_id || h.responsable_id===yo);
+    const COL={backlog:'Backlog',planeado:'Planeado',en_progreso:'En progreso',qa:'Revisión',bloqueado:'Bloqueado'};
+    if(!hs.length){ cont.innerHTML='<div class="empty">Nada urgente en el tablero. ✨</div>'; return; }
+    cont.innerHTML=hs.slice(0,8).map(h=>{
+      const venc = h.fecha_objetivo && h.fecha_objetivo<hoyStr;
+      return `<a class="trabajo-fila" href="/tablero/proyectos.html">
+        <span class="trabajo-estado est-${h.estado}"></span>
+        <span class="trabajo-tit">${escapeHtml(h.titulo)}</span>
+        <span class="trabajo-meta">${proyMap[h.proyecto_id]?escapeHtml(proyMap[h.proyecto_id]):''}${venc?' · <b style="color:var(--crimson)">vencida</b>':''}</span>
+      </a>`;
+    }).join('') + (hs.length>8?`<div class="empty" style="padding:8px">+ ${hs.length-8} más en el tablero</div>`:'');
+  }catch(e){ cont.innerHTML='<div class="empty">No se pudo cargar el tablero.</div>'; }
+}
+document.addEventListener('dd:persona', ()=>pintarTrabajoHoy());
 
 /* Al cambiar de persona (chip del sidebar), repintar hábitos y KPI del día */
 document.addEventListener('dd:persona', () => {

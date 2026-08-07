@@ -608,6 +608,21 @@ def _habitos_de_hoy(ahora, persona_id=None):
         return []
 
 
+def _comida_de_hoy(ahora):
+    """Devuelve {desayuno, almuerzo, cena} del menú de la semana para hoy (o {})."""
+    from comun import cargar
+    try:
+        y, w, dow = ahora.isocalendar()   # dow: 1=lunes..7=domingo
+        semana = f"{y}-W{w:02d}"
+        dias_nom = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+        nombre_dia = dias_nom[dow - 1]
+        fila = next((m for m in cargar("menus.json").get("menus", []) if m.get("semana") == semana), None)
+        return ((fila or {}).get("dias", {}) or {}).get(nombre_dia, {}) or {}
+    except Exception as e:
+        print(f"⚠️  Resumen: comida: {e}")
+        return {}
+
+
 def _leer_eventos_google(cals, inicio_dia, fin_dia):
     """[{hora,titulo,calendario}] de eventos OAuth para los calendarios dados (hoy)."""
     eventos = []
@@ -678,6 +693,7 @@ def enviar_resumen_matutino(forzar: bool = False):
     fin_dia = datetime.combine(hoy, datetime.max.time()).replace(tzinfo=TZ)
     cals_all = [c for c in cargar("calendarios.json").get("calendarios_gmail", []) if c.get("activo")]
     historias = cargar("historias.json").get("historias", [])
+    comida = _comida_de_hoy(ahora)
     _asegurar_tabla_resumen_persona()
 
     import avisos
@@ -712,9 +728,18 @@ def enviar_resumen_matutino(forzar: bool = False):
         if habs_hoy:
             partes.append(f"\n*━━ Hábitos del día ({len(habs_hoy)}) ━━*")
             partes += [f"{h['icono']} {h['nombre']}" for h in habs_hoy[:8]]
+        if comida:
+            partes.append("\n*━━ Comida de hoy ━━*")
+            etiquetas = {"desayuno": "🍳 Desayuno", "almuerzo": "🍽️ Almuerzo",
+                         "cena": "🌙 Cena", "snack": "🍎 Snack"}
+            for momento in ("desayuno", "almuerzo", "cena", "snack"):
+                if comida.get(momento):
+                    partes.append(f"{etiquetas[momento]}: {comida[momento]}")
         partes.append("\n_Buen día. Que tu energía rinda._ 💪")
         texto = "\n".join(partes)
         cuerpo_push = f"{len(eventos)} reunión(es) · {len(his_p)} del tablero · {len(habs_hoy)} hábitos"
+        if comida.get("almuerzo"):
+            cuerpo_push += f" · 🍽️ {comida['almuerzo']}"
 
         try:
             res = avisos.avisar_persona(p["id"], "Tu plan de hoy", cuerpo_push,
@@ -878,6 +903,19 @@ def _resumen_global(forzar: bool = False):
                     partes.append(f"_+ {len(habs_hoy)-8} más_")
         except Exception as e:
             print(f"⚠️  Resumen: error leyendo hábitos: {e}")
+
+        # ─── COMIDA DE HOY (del menú de la semana) ───
+        try:
+            comida = _comida_de_hoy(ahora)
+            if comida:
+                partes.append("\n*━━ Comida de hoy ━━*")
+                etq = {"desayuno": "🍳 Desayuno", "almuerzo": "🍽️ Almuerzo",
+                       "cena": "🌙 Cena", "snack": "🍎 Snack"}
+                for momento in ("desayuno", "almuerzo", "cena", "snack"):
+                    if comida.get(momento):
+                        partes.append(f"{etq[momento]}: {comida[momento]}")
+        except Exception as e:
+            print(f"⚠️  Resumen: error leyendo comida: {e}")
 
         partes.append("\n_Buen día. Que tu energía rinda._ 💪")
 
