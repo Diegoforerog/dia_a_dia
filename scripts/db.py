@@ -171,7 +171,11 @@ def _sync_lista(tabla: str, items: List[Dict], columnas: List[str], pk: str = "i
         valores = [Json(it.get(c)) if c in json_cols else it.get(c) for c in columnas]
         sql = f"""INSERT INTO {tabla} ({cols}) VALUES ({vals_placeholder})
                   ON CONFLICT ({pk}) DO UPDATE SET {update_set}"""
-        execute(sql, valores)
+        try:
+            execute(sql, valores)
+        except Exception as e:
+            # Una fila mala no debe tumbar el espejo completo a DB
+            print(f"⚠️  _sync_lista {tabla} fila {it.get(pk)}: {str(e).splitlines()[0]}")
 
 
 def guardar(nombre_archivo: str, datos: Dict) -> None:

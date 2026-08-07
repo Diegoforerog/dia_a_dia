@@ -434,6 +434,8 @@ def _migrar_actividades_a_historias():
         origen = f"actividad:{a['id']}"
         if origen in ya_migradas:
             continue
+        if not a.get("proyecto_id"):
+            continue  # el canvas exige proyecto; queda como tarea del día
         estado = mapa_estado.get(a.get("estado", "pendiente"), "backlog")
         if estado is None:
             continue

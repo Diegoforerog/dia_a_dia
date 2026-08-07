@@ -121,14 +121,10 @@ def ejecutar():
                 avisado_at TIMESTAMPTZ DEFAULT NOW(),
                 UNIQUE (evento_uid, inicio, tipo_aviso))""")
 
-        # ── 3. Importar datos del Postgres viejo (una sola vez) ──
+        # ── 3. Importar datos del Postgres viejo (por tabla: solo si está vacía) ──
         viejo_host = os.environ.get("MIGRAR_DESDE_HOST", "")
         if viejo_host:
-            cur.execute("SELECT COUNT(*) FROM organizador.clientes")
-            if cur.fetchone()[0] == 0:
-                _importar_datos(cur, viejo_host)
-            else:
-                _t("⏭️  Bootstrap: ya hay datos — no importo de nuevo")
+            _importar_datos(cur, viejo_host)
     except Exception as e:
         import traceback
         _t(f"💥 Bootstrap: {type(e).__name__}: {e}")
@@ -166,13 +162,19 @@ def _importar_datos(cur_destino, viejo_host):
                   "resumen_diario_enviado"]
     tablas.sort(key=lambda t: orden_pref.index(t) if t in orden_pref else 99)
 
+    from psycopg2.extras import Json
+
     total = 0
     for t in tablas:
         try:
             cols_v = set(columnas(vc, t))
             cols_d = columnas(cur_destino, t)
             if not cols_d:
-                # La tabla no existe en destino (la crea el scheduler después) → crear copia
+                # La tabla no existe en destino (la crea el scheduler después)
+                continue
+            # Gate por tabla: si ya tiene filas, no re-importar
+            cur_destino.execute(f'SELECT COUNT(*) FROM organizador."{t}"')
+            if cur_destino.fetchone()[0] > 0:
                 continue
             comunes = [c for c in cols_d if c in cols_v]
             if not comunes:
@@ -183,15 +185,19 @@ def _importar_datos(cur_destino, viejo_host):
             if not filas:
                 continue
             ph = ",".join(["%s"] * len(comunes))
+            copiadas = 0
             for fila in filas:
+                # dict/list (columnas json/jsonb) necesitan el adaptador Json
+                valores = [Json(v) if isinstance(v, (dict, list)) else v for v in fila]
                 try:
                     cur_destino.execute(
                         f'INSERT INTO organizador."{t}" ({collist}) VALUES ({ph}) ON CONFLICT DO NOTHING',
-                        fila)
+                        valores)
+                    copiadas += 1
                 except Exception as e:
                     _t(f"⚠️  fila en {t}: {str(e).splitlines()[0]}")
-            total += len(filas)
-            _t(f"  ↳ {t}: {len(filas)} filas")
+            total += copiadas
+            _t(f"  ↳ {t}: {copiadas}/{len(filas)} filas")
         except Exception as e:
             _t(f"⚠️  tabla {t}: {str(e).splitlines()[0]}")
     vc.close(); viejo.close()
