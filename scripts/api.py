@@ -334,20 +334,36 @@ def auth_definir():
     return jsonify({"error": "Persona no encontrada"}), 404
 
 
+def _match_persona(personas, pid, usuario):
+    """Encuentra la persona por id o por nombre de usuario escrito (flexible:
+    nombre completo, primer nombre o nombre.apellido, sin importar mayúsculas)."""
+    u = (usuario or "").strip().lower()
+    for p in personas:
+        if pid and p["id"] == pid:
+            return p
+        if u:
+            n = (p.get("nombre") or "").strip().lower()
+            handles = {n, n.split(" ")[0], n.replace(" ", "."), n.replace(" ", "")}
+            if u in handles:
+                return p
+    return None
+
+
 @app.route("/api/auth/login", methods=["POST"])
 def auth_login():
     body = request.get_json() or {}
-    pid = body.get("persona_id"); pw = (body.get("password") or "")
+    pw = (body.get("password") or "")
     data = _asegurar_personas()
-    for p in data["personas"]:
-        if p["id"] == pid:
-            if not p.get("pass_hash"):
-                return jsonify({"error": "Aún no has creado tu contraseña", "definir": True}), 409
-            if _verify_pw(pw, p["pass_hash"]):
-                return jsonify({"token": API_TOKEN, "persona_id": pid})
-            _time.sleep(1.0)  # frena fuerza bruta
-            return jsonify({"error": "Contraseña incorrecta"}), 401
-    return jsonify({"error": "Persona no encontrada"}), 404
+    p = _match_persona(data["personas"], body.get("persona_id"), body.get("usuario"))
+    if not p:
+        _time.sleep(0.6)
+        return jsonify({"error": "Usuario o contraseña incorrectos"}), 401
+    if not p.get("pass_hash"):
+        return jsonify({"error": "Aún no tienes contraseña", "definir": True, "persona_id": p["id"]}), 409
+    if _verify_pw(pw, p["pass_hash"]):
+        return jsonify({"token": API_TOKEN, "persona_id": p["id"], "nombre": p.get("nombre")})
+    _time.sleep(1.0)  # frena fuerza bruta
+    return jsonify({"error": "Usuario o contraseña incorrectos"}), 401
 
 
 @app.route("/api/auth/cambiar", methods=["POST"])

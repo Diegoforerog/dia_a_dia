@@ -25,22 +25,9 @@
   .logo-full{width:230px;max-width:82%;margin:0 auto 22px;display:block;}
   h2{font-family:var(--font-brand);font-weight:500;font-size:22px;margin:0 0 4px;}
   .sub{font-size:13px;color:var(--stone);margin:0 0 22px;}
-  .personas{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  .p-card{display:flex;flex-direction:column;align-items:center;gap:9px;padding:20px 12px;background:var(--surface);
-    border:1.5px solid var(--line);border-radius:16px;cursor:pointer;font-family:inherit;transition:transform .15s,border-color .15s,box-shadow .15s;}
-  .p-card:hover{transform:translateY(-3px);border-color:var(--pc);box-shadow:0 12px 26px rgba(15,10,25,.12);}
-  .p-avatar{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font-size:25px;font-weight:700;color:#fff;background:var(--pc);box-shadow:inset 0 -8px 14px rgba(0,0,0,.12);}
-  .p-nombre{font-size:15px;font-weight:600;}
-  .p-estado{font-size:10.5px;color:var(--pc);font-weight:600;letter-spacing:.02em;}
-  form{display:none;text-align:left;}
-  form.activo{display:block;}
-  .volver{background:none;border:none;color:var(--stone);font-family:inherit;font-size:12.5px;cursor:pointer;padding:6px 0;margin-bottom:6px;}
-  .quien{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
-  .quien .p-avatar{width:46px;height:46px;font-size:19px;}
-  .quien .n{font-family:var(--font-brand);font-size:20px;font-weight:500;}
+  form{text-align:left;}
   label{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--stone);margin:0 0 6px;}
-  input[type=password]{width:100%;font-family:inherit;font-size:15px;border:1.5px solid var(--line);border-radius:11px;
+  input[type=password],input[type=text]{width:100%;font-family:inherit;font-size:15px;border:1.5px solid var(--line);border-radius:11px;
     padding:12px 14px;background:var(--surface);color:var(--ink);margin-bottom:14px;}
   input:focus{outline:none;border-color:var(--love);box-shadow:0 0 0 3px rgba(236,72,153,.15);}
   .btn{width:100%;border:none;border-radius:12px;padding:13px;font-family:inherit;font-size:15px;font-weight:600;color:#fff;cursor:pointer;
@@ -57,19 +44,14 @@
   <div class="caja">
     <img src="/tablero/lovesprint-logo.png" alt="LoveSprint" class="logo-full">
 
-    <div id="paso-personas">
-      <h2>¿Quién entra?</h2>
-      <p class="sub">Elige tu perfil para continuar.</p>
-      <div class="personas" id="personas"><p class="sub">Cargando…</p></div>
-    </div>
+    <h2>Iniciar sesión</h2>
+    <p class="sub">Entra con tu usuario y contraseña.</p>
 
-    <form id="paso-clave" autocomplete="off">
-      <button type="button" class="volver" onclick="volver()">← Cambiar de persona</button>
-      <div class="quien">
-        <span class="p-avatar" id="q-avatar"></span>
-        <div><div class="n" id="q-nombre"></div><div class="sub" id="q-modo" style="margin:0"></div></div>
-      </div>
-      <div id="campos"></div>
+    <form id="form-login" autocomplete="on">
+      <label for="usuario">Usuario</label>
+      <input type="text" id="usuario" name="usuario" autocomplete="username" placeholder="Tu nombre" autocapitalize="words">
+      <label for="password">Contraseña</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" placeholder="••••••••">
       <button class="btn" id="btn-entrar" type="submit">Entrar</button>
       <div class="msg" id="msg"></div>
     </form>
@@ -78,77 +60,27 @@
 <script>
 const API_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? 'http://localhost:5050/api' : '/api';
 const next = new URLSearchParams(location.search).get('next') || '/';
-let sel = null;
-
-function iniciales(n){ return (n||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
-function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-async function cargar(){
-  try{
-    const r = await fetch(API_BASE+'/auth/estado');
-    const d = await r.json();
-    const cont = document.getElementById('personas');
-    if(!d.personas || !d.personas.length){ cont.innerHTML='<p class="sub">No hay perfiles todavía.</p>'; return; }
-    cont.innerHTML = d.personas.map(p=>`
-      <button type="button" class="p-card" style="--pc:${p.color}" onclick='elegir(${JSON.stringify(p).replace(/'/g,"&apos;")})'>
-        <span class="p-avatar">${p.emoji || iniciales(p.nombre)}</span>
-        <span class="p-nombre">${esc(p.nombre)}</span>
-        <span class="p-estado">${p.tiene_clave ? 'entrar →' : 'crear clave →'}</span>
-      </button>`).join('');
-  }catch(e){ document.getElementById('personas').innerHTML='<p class="sub">No pude conectar. Reintenta.</p>'; }
-}
-
-function elegir(p){
-  sel = p;
-  document.getElementById('paso-personas').style.display='none';
-  const form = document.getElementById('paso-clave'); form.classList.add('activo');
-  const av = document.getElementById('q-avatar'); av.textContent = p.emoji || iniciales(p.nombre); av.style.background = p.color;
-  document.getElementById('q-nombre').textContent = p.nombre;
-  document.getElementById('q-modo').textContent = p.tiene_clave ? 'Ingresa tu contraseña' : 'Crea tu contraseña';
-  document.getElementById('campos').innerHTML = p.tiene_clave
-    ? `<label>Contraseña</label><input type="password" id="pw" autofocus>`
-    : `<label>Nueva contraseña</label><input type="password" id="pw" autofocus>
-       <label>Repite la contraseña</label><input type="password" id="pw2">
-       <div class="nota">Mínimo 4 caracteres. La eliges tú; nadie más la ve.</div>`;
-  document.getElementById('btn-entrar').textContent = p.tiene_clave ? 'Entrar' : 'Crear y entrar';
-  setTimeout(()=>document.getElementById('pw')?.focus(), 60);
-}
-
-function volver(){
-  sel=null;
-  document.getElementById('paso-clave').classList.remove('activo');
-  document.getElementById('paso-personas').style.display='';
-  document.getElementById('msg').textContent='';
-}
-
 function msg(t, ok){ const m=document.getElementById('msg'); m.textContent=t; m.className='msg '+(ok?'ok':'err'); }
 
-document.getElementById('paso-clave').addEventListener('submit', async (e)=>{
+document.getElementById('form-login').addEventListener('submit', async (e)=>{
   e.preventDefault();
-  if(!sel) return;
-  const pw = document.getElementById('pw').value;
+  const usuario = document.getElementById('usuario').value.trim();
+  const password = document.getElementById('password').value;
   const btn = document.getElementById('btn-entrar');
-  if(!sel.tiene_clave){
-    const pw2 = document.getElementById('pw2').value;
-    if(pw.length<4){ msg('La contraseña debe tener al menos 4 caracteres'); return; }
-    if(pw!==pw2){ msg('Las contraseñas no coinciden'); return; }
-  } else if(!pw){ msg('Escribe tu contraseña'); return; }
-
+  if(!usuario || !password){ msg('Escribe tu usuario y tu contraseña'); return; }
   btn.disabled=true; btn.textContent='Entrando…';
   try{
-    const ruta = sel.tiene_clave ? '/auth/login' : '/auth/definir';
-    const body = sel.tiene_clave ? {persona_id:sel.id, password:pw} : {persona_id:sel.id, password:pw};
-    const r = await fetch(API_BASE+ruta, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const r = await fetch(API_BASE+'/auth/login', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({usuario, password})});
     const d = await r.json();
-    if(!r.ok){ msg(d.error || 'No se pudo entrar'); btn.disabled=false; btn.textContent = sel.tiene_clave?'Entrar':'Crear y entrar'; return; }
+    if(!r.ok){ msg(d.error || 'No se pudo entrar'); btn.disabled=false; btn.textContent='Entrar'; return; }
     localStorage.setItem('organizador_token', d.token);
     localStorage.setItem('dd_persona_id', d.persona_id);
-    msg('¡Listo! 💗', true);
+    msg('¡Bienvenido! 💗', true);
     location.href = next.startsWith('/') ? next : '/';
-  }catch(err){ msg('Error de conexión'); btn.disabled=false; btn.textContent = sel.tiene_clave?'Entrar':'Crear y entrar'; }
+  }catch(err){ msg('Error de conexión'); btn.disabled=false; btn.textContent='Entrar'; }
 });
-
-cargar();
+document.getElementById('usuario').focus();
 </script>
 </body>
 </html>
