@@ -842,7 +842,21 @@
     margin-bottom: 24px;
   }
   @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 600px)  { .kpi-grid { grid-template-columns: 1fr; } }
+  /* Móvil: dashboard compacto 2×2 — el plan ocupa el ancho completo */
+  @media (max-width: 600px)  {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
+    .kpi-card { padding: 14px; border-radius: 14px; }
+    .kpi-card.kpi-plan { grid-column: 1 / -1; }
+    .kpi-sub { display: none; }
+    .kpi-num { font-size: 26px; }
+    .kpi-label { font-size: 10px; }
+    .kpi-foot { font-size: 11px; }
+    /* hero compacto tipo app */
+    #hero-sub { display: none; }
+    .hero { margin-bottom: 4px; }
+    .hero h1 { font-size: 30px; margin: 2px 0 4px; }
+    .hero-status { display: none; }
+  }
 
   .kpi-card {
     background: var(--surface);

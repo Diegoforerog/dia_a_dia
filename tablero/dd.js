@@ -323,6 +323,135 @@
       if (ov) { ov.classList.remove('visible'); setTimeout(() => ov.remove(), 220); }
     },
 
+    /* ── Shell móvil: appbar + drawer (hamburguesa) + tab bar inferior ──
+       Solo visible ≤920px (CSS). El sidebar clásico se oculta en móvil. */
+    _ICONOS: {
+      hoy: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
+      nosotros: '<path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>',
+      sprint: '<path d="M4 22V4l13 4-13 4"/><path d="M4 13h9"/>',
+      agenda: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+      proyectos: '<rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="8" rx="1"/>',
+      comidas: '<path d="M4 3v7a3 3 0 0 0 3 3v8M7 3v7M10 3v7M17 3s-2 2-2 5 2 4 2 4v6"/>',
+      mercado: '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
+      gastos: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+      clientes: '<circle cx="9" cy="8" r="4"/><path d="M3 21c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 11a4 4 0 0 0 0-8"/><path d="M22 21c0-2.5-1.9-4.6-4.3-4.9"/>',
+      habitos: '<path d="M3 12a9 9 0 1 0 4-7.5"/><path d="M3 4v5h5"/>',
+      tareas: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m9 12 2 2 4-4"/>',
+      recordatorios: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+      progreso: '<path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-7"/>',
+      config: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4"/>',
+      mas: '<circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/>',
+    },
+    _RUTAS: [
+      { grupo: 'Tablero', items: [
+        { href: '/', ic: 'hoy', txt: 'Hoy' },
+        { href: '/tablero/nosotros.html', ic: 'nosotros', txt: 'Nosotros' },
+        { href: '/tablero/sprint.html', ic: 'sprint', txt: 'Sprint' },
+        { href: '/tablero/agenda.html', ic: 'agenda', txt: 'Agenda' },
+        { href: '/tablero/proyectos.html', ic: 'proyectos', txt: 'Proyectos' },
+      ]},
+      { grupo: 'Casa', items: [
+        { href: '/tablero/comidas.html', ic: 'comidas', txt: 'Comidas' },
+        { href: '/tablero/mercado.html', ic: 'mercado', txt: 'Mercado' },
+        { href: '/tablero/gastos.html', ic: 'gastos', txt: 'Gastos' },
+      ]},
+      { grupo: 'Configurar', items: [
+        { href: '/tablero/admin.html#clientes', ic: 'clientes', txt: 'Clientes' },
+        { href: '/tablero/admin.html#habitos', ic: 'habitos', txt: 'Hábitos' },
+        { href: '/tablero/admin.html#tareas', ic: 'tareas', txt: 'Tareas' },
+        { href: '/tablero/admin.html#recordatorios', ic: 'recordatorios', txt: 'Recordatorios' },
+        { href: '/tablero/admin.html#calendarios', ic: 'calendarios', txt: 'Calendarios' },
+        { href: '/tablero/admin.html#progreso', ic: 'progreso', txt: 'Progreso' },
+        { href: '/tablero/admin.html#config', ic: 'config', txt: 'Configuración' },
+      ]},
+    ],
+    _svg(ic, cls) { return `<svg class="${cls || ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${DD._ICONOS[ic] || ''}</svg>`; },
+    _esActiva(href) {
+      const p = location.pathname;
+      const base = href.split('#')[0];
+      if (base === '/') return p === '/' || p.endsWith('/index.html');
+      if (!p.endsWith(base.split('/').pop())) return false;
+      if (href.includes('#')) return (location.hash || '#') === '#' + href.split('#')[1];
+      return true;
+    },
+    _montarShell() {
+      if (document.getElementById('dd-appbar')) return;
+
+      // ── Appbar superior ──
+      const ab = document.createElement('header');
+      ab.id = 'dd-appbar'; ab.className = 'dd-appbar';
+      ab.innerHTML = `
+        <button class="dd-ham" id="dd-ham" aria-label="Abrir menú">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <a class="dd-ab-brand" href="/"><img src="/tablero/lovesprint-mark.png" alt="">Love<em>Sprint</em></a>
+        <button class="dd-ab-avatar" id="dd-ab-avatar" aria-label="Cambiar de persona">?</button>`;
+      document.body.appendChild(ab);
+
+      // ── Drawer (hamburguesa) ──
+      const ov = document.createElement('div');
+      ov.id = 'dd-drawer-ov'; ov.className = 'dd-drawer-ov';
+      ov.innerHTML = `<aside class="dd-drawer" role="navigation" aria-label="Menú">
+        <div class="dd-dr-head">
+          <span class="dd-dr-brand"><img src="/tablero/lovesprint-mark.png" alt="">Love<em>Sprint</em></span>
+          <button class="dd-dr-x" id="dd-dr-x" aria-label="Cerrar">✕</button>
+        </div>
+        ${DD._RUTAS.map(g => `
+          <div class="dd-dr-label">${g.grupo}</div>
+          ${g.items.map(it => `
+            <a class="dd-dr-item ${DD._esActiva(it.href) ? 'active' : ''}" href="${it.href}">
+              ${DD._svg(it.ic, 'dd-dr-ic')}<span>${it.txt}</span>
+            </a>`).join('')}`).join('')}
+        <button class="dd-dr-persona" id="dd-dr-persona">
+          <span class="dd-dr-p-av" id="dd-dr-p-av">?</span>
+          <span class="dd-dr-p-tx"><b id="dd-dr-p-nom">¿Quién eres?</b><small>tocar para cambiar</small></span>
+        </button>`;
+      document.body.appendChild(ov);
+
+      // ── Tab bar inferior (lo esencial + Más) ──
+      const tb = document.createElement('nav');
+      tb.id = 'dd-tabbar'; tb.className = 'dd-tabbar';
+      const tabs = [
+        { href: '/', ic: 'hoy', txt: 'Hoy' },
+        { href: '/tablero/nosotros.html', ic: 'nosotros', txt: 'Nosotros' },
+        { href: '/tablero/agenda.html', ic: 'agenda', txt: 'Agenda' },
+        { href: '/tablero/mercado.html', ic: 'mercado', txt: 'Mercado' },
+      ];
+      tb.innerHTML = tabs.map(t =>
+        `<a class="dd-tab ${DD._esActiva(t.href) ? 'active' : ''}" href="${t.href}">${DD._svg(t.ic)}<span>${t.txt}</span></a>`
+      ).join('') + `<button class="dd-tab" id="dd-tab-mas">${DD._svg('mas')}<span>Más</span></button>`;
+      document.body.appendChild(tb);
+
+      // ── Comportamiento ──
+      const abrir = () => { ov.classList.add('abierto'); document.body.style.overflow = 'hidden'; };
+      const cerrar = () => { ov.classList.remove('abierto'); document.body.style.overflow = ''; };
+      document.getElementById('dd-ham').addEventListener('click', abrir);
+      document.getElementById('dd-tab-mas').addEventListener('click', abrir);
+      document.getElementById('dd-dr-x').addEventListener('click', cerrar);
+      ov.addEventListener('click', e => { if (e.target === ov) cerrar(); });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrar(); });
+      ov.querySelectorAll('.dd-dr-item').forEach(a => a.addEventListener('click', () => cerrar()));
+      const abrirPerfil = () => { cerrar(); DD.abrirSelector(true); };
+      document.getElementById('dd-ab-avatar').addEventListener('click', abrirPerfil);
+      document.getElementById('dd-dr-persona').addEventListener('click', abrirPerfil);
+      window.addEventListener('hashchange', () => {
+        ov.querySelectorAll('.dd-dr-item').forEach(a =>
+          a.classList.toggle('active', DD._esActiva(a.getAttribute('href'))));
+      });
+      DD._pintarShellPersona();
+    },
+    _pintarShellPersona() {
+      const p = DD.persona();
+      const av = document.getElementById('dd-ab-avatar');
+      const dav = document.getElementById('dd-dr-p-av');
+      const nom = document.getElementById('dd-dr-p-nom');
+      const cont = p ? (p.emoji || DD.iniciales(p)) : '?';
+      const col = p ? p.color : '#7A746B';
+      if (av) { av.textContent = cont; av.style.background = col; }
+      if (dav) { dav.textContent = cont; dav.style.background = col; }
+      if (nom) nom.textContent = p ? p.nombre : '¿Quién eres?';
+    },
+
     /* ── Chip en el sidebar ── */
     _pintarChip() {
       const nav = document.querySelector('.sidebar .nav-section');
@@ -436,7 +565,71 @@
   .dd-clave-btn{width:100%;margin-top:16px;border:none;border-radius:11px;padding:12px;font-family:inherit;font-size:15px;font-weight:600;
     color:#fff;cursor:pointer;background:linear-gradient(135deg,#EC4899,#9B5DE5);box-shadow:0 6px 18px rgba(155,93,229,.3);}
   .dd-clave-msg{font-size:12.5px;margin-top:10px;min-height:16px;text-align:center;}
-  .dd-clave-msg.err{color:#C0392B;} .dd-clave-msg.ok{color:#2E7D32;}`;
+  .dd-clave-msg.err{color:#C0392B;} .dd-clave-msg.ok{color:#2E7D32;}
+
+  /* ═══ Shell móvil (appbar + drawer + tab bar) — solo ≤920px ═══ */
+  .dd-appbar,.dd-tabbar{display:none;}
+  .dd-drawer-ov{position:fixed;inset:0;z-index:8600;background:rgba(20,12,35,.55);backdrop-filter:blur(4px);
+    opacity:0;pointer-events:none;transition:opacity .22s ease;}
+  .dd-drawer-ov.abierto{opacity:1;pointer-events:auto;}
+  .dd-drawer{position:absolute;top:0;bottom:0;left:0;width:min(82vw,330px);overflow-y:auto;
+    background:linear-gradient(180deg,#3B2D52 0%,#241A38 100%);color:#E2E8F0;
+    padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px));
+    display:flex;flex-direction:column;gap:3px;
+    transform:translateX(-103%);transition:transform .26s cubic-bezier(.4,0,.2,1);
+    box-shadow:14px 0 44px rgba(10,6,20,.45);}
+  .dd-drawer-ov.abierto .dd-drawer{transform:none;}
+  .dd-dr-head{display:flex;align-items:center;justify-content:space-between;padding:2px 6px 14px;}
+  .dd-dr-brand{font-family:"Fraunces","Times New Roman",serif;font-style:italic;font-size:22px;color:#fff;
+    display:inline-flex;align-items:center;gap:8px;}
+  .dd-dr-brand img{width:24px;height:24px;}
+  .dd-dr-brand em{color:#F472B6;font-style:italic;}
+  .dd-dr-x{background:rgba(255,255,255,.08);border:none;color:#CBD5E1;font-size:14px;cursor:pointer;
+    width:32px;height:32px;border-radius:9px;}
+  .dd-dr-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#94A3B8;
+    font-weight:700;padding:12px 10px 5px;}
+  .dd-dr-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:11px;
+    color:#E2E8F0;font-size:14.5px;font-weight:500;text-decoration:none;}
+  .dd-dr-item:active{background:rgba(255,255,255,.10);}
+  .dd-dr-item.active{background:#fff;color:#241A38;font-weight:700;}
+  .dd-dr-ic{width:18px;height:18px;flex-shrink:0;}
+  .dd-dr-persona{margin-top:auto;display:flex;align-items:center;gap:11px;width:100%;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:13px;
+    padding:11px 12px;cursor:pointer;font-family:inherit;text-align:left;margin-top:18px;}
+  .dd-dr-p-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:14px;font-weight:700;flex-shrink:0;background:#7A746B;}
+  .dd-dr-p-tx{display:flex;flex-direction:column;line-height:1.3;min-width:0;}
+  .dd-dr-p-tx b{font-size:13.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dd-dr-p-tx small{font-size:10.5px;color:#94A3B8;}
+  @media (max-width:920px){
+    .sidebar{display:none !important;}
+    body{padding-top:56px;padding-bottom:calc(60px + env(safe-area-inset-bottom,0px));}
+    .dd-appbar{display:flex;position:fixed;top:0;left:0;right:0;height:56px;z-index:8000;
+      align-items:center;gap:10px;padding:0 10px 0 6px;
+      background:linear-gradient(180deg,#3B2D52 0%,#2C2142 100%);
+      border-bottom:1px solid rgba(255,255,255,.09);}
+    .dd-ham{background:none;border:none;color:#E2E8F0;cursor:pointer;width:42px;height:42px;
+      display:flex;align-items:center;justify-content:center;border-radius:10px;}
+    .dd-ham svg{width:22px;height:22px;}
+    .dd-ham:active{background:rgba(255,255,255,.10);}
+    .dd-ab-brand{flex:1;display:inline-flex;align-items:center;gap:8px;text-decoration:none;
+      font-family:"Fraunces","Times New Roman",serif;font-style:italic;font-size:21px;color:#fff;}
+    .dd-ab-brand img{width:24px;height:24px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25));}
+    .dd-ab-brand em{color:#F472B6;font-style:italic;}
+    .dd-ab-avatar{width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,255,255,.25);
+      color:#fff;font-size:14px;font-weight:700;cursor:pointer;background:#7A746B;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .dd-tabbar{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:8000;
+      background:rgba(251,250,246,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+      border-top:1px solid #E8E4DA;padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));}
+    .dd-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:3px 0 1px;
+      color:#7A746B;text-decoration:none;font-size:10px;font-weight:600;background:none;border:none;
+      cursor:pointer;font-family:inherit;}
+    .dd-tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;
+      stroke-linecap:round;stroke-linejoin:round;}
+    .dd-tab.active{color:#EC4899;}
+    .dd-banner-avisos{margin-top:4px;}
+  }`;
   document.head.appendChild(css);
 
   /* ── PWA: manifest + service worker ── */
@@ -464,11 +657,13 @@
   /* ── arranque ── */
   window.DD = DD;
   document.addEventListener('DOMContentLoaded', async () => {
+    DD._montarShell();
     await DD.cargarPersonas();
     DD._pintarChip();
+    DD._pintarShellPersona();
     DD._aplicarRol();
     if (!DD.persona() && DD.personas.length) DD.abrirSelector();
     else DD._bannerAvisos();
   });
-  document.addEventListener('dd:persona', () => { DD._aplicarRol(); });
+  document.addEventListener('dd:persona', () => { DD._aplicarRol(); DD._pintarShellPersona(); });
 })();
