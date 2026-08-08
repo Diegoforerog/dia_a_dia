@@ -1782,11 +1782,21 @@
         <div class="card">
           <div class="card-head">
             <div>
-              <div class="card-eyebrow">Estructura</div>
-              <h2>Clientes y proyectos</h2>
+              <div class="card-eyebrow">De un vistazo</div>
+              <h2>Nuestra casa</h2>
             </div>
           </div>
-          <div id="empresas-proyectos"></div>
+          <style>
+            .casa-item{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line-soft);text-decoration:none;color:inherit;}
+            .casa-item:last-child{border-bottom:none;}
+            .casa-item .ci-ico{width:36px;height:36px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+            .casa-item .ci-tx{flex:1;min-width:0;}
+            .casa-item .ci-tit{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--stone);}
+            .casa-item .ci-val{font-size:13.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+            .casa-item .ci-val small{color:var(--mist);font-weight:500;}
+            .casa-item .ci-arrow{color:var(--mist);font-size:13px;}
+          </style>
+          <div id="casa-rapida"><div style="color:var(--mist);font-size:12.5px;">Cargando…</div></div>
         </div>
       </div>
 
@@ -2197,6 +2207,37 @@ function pintarClientes(clientes, proyectos) {
   document.getElementById('empresas-proyectos').innerHTML = html;
 }
 
+/* "Nuestra casa" — vistazo rápido: comida, mercado, gastos y sprint */
+async function pintarCasaRapida() {
+  const cont = document.getElementById('casa-rapida');
+  if (!cont) return;
+  let d = null;
+  try { d = await apiGet('/nosotros'); } catch (_) {}
+  if (!d) { cont.innerHTML = '<div style="color:var(--mist);font-size:12.5px;">Sin datos por ahora.</div>'; return; }
+  const fmtCOP = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(n||0);
+  const c = d.comida_hoy || {};
+  const platos = ['desayuno','almuerzo','comida','cena'].map(k=>c[k]).filter(Boolean);
+  const merc = d.mercado || {};
+  const g = d.gastos || {};
+  const sp = d.sprint || {};
+  let gastoTxt;
+  if (!g.cantidad && !g.cantidad_ingresos) gastoTxt = '<small>Sin movimientos este mes</small>';
+  else if (g.quien_debe) gastoTxt = `${escapeHtml((g.quien_debe.de_nombre||'').split(' ')[0])} debe ${fmtCOP(g.quien_debe.monto)}`;
+  else gastoTxt = `A mano 🤝 · gastado ${fmtCOP(g.total_gastos)}`;
+  const filas = [
+    ['🍽️','Comida de hoy', platos.length ? escapeHtml(platos.join(' · ')) : '<small>Sin menú — planéalo</small>', '/tablero/comidas.html'],
+    ['🛒','Mercado', merc.pendientes ? `${merc.pendientes} por comprar` : '<small>Nada pendiente</small>', '/tablero/mercado.html'],
+    ['💸','Gastos del mes', gastoTxt, '/tablero/gastos.html'],
+    ['🎯','Sprint', sp.total ? `${sp.hechas}/${sp.total} metas · racha ${sp.racha||0}🔥` : '<small>Sin metas esta semana</small>', '/tablero/sprint.html'],
+  ];
+  cont.innerHTML = filas.map(([ico,tit,val,href]) => `
+    <a class="casa-item" href="${href}">
+      <span class="ci-ico">${ico}</span>
+      <span class="ci-tx"><span class="ci-tit">${tit}</span><br><span class="ci-val">${val}</span></span>
+      <span class="ci-arrow">→</span>
+    </a>`).join('');
+}
+
 function pintarStatus(registro) {
   const dot = document.querySelector('#status .status-dot');
   const txt = document.getElementById('status-text');
@@ -2242,7 +2283,7 @@ function pintarStatus(registro) {
   pintarSaludo(registro && registro.plan_generado);
   pintarPlan(registro && registro.plan_generado, listaClientes);
   pintarHabitos(habitosData || {habitos:[], categorias:[]}, registro);
-  pintarClientes(listaClientes, (proyectosData || {}).proyectos || []);
+  pintarCasaRapida();
   pintarStatus(registro);
   pintarEventosHoy();
   /* auto-sync silencioso: detecta calendarios nuevos compartidos en Google */

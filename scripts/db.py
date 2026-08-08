@@ -132,7 +132,7 @@ def cargar(nombre_archivo: str) -> Dict:
 
     if nombre_archivo == "personas.json":
         rows = query("""SELECT id, nombre, color, emoji, activo, telegram_chat_id,
-                               push_subscriptions, pass_hash, orden
+                               push_subscriptions, pass_hash, orden, email, foto
                         FROM personas ORDER BY orden, created_at""")
         return {"personas": [_row_to_dict(r) for r in rows]}
 
@@ -261,7 +261,7 @@ def guardar(nombre_archivo: str, datos: Dict) -> None:
     if nombre_archivo == "personas.json":
         _sync_lista("personas", datos.get("personas", []),
                     ["id","nombre","color","emoji","activo","telegram_chat_id",
-                     "push_subscriptions","pass_hash","orden"],
+                     "push_subscriptions","pass_hash","orden","email","foto"],
                     json_cols={"push_subscriptions"})
         return
 

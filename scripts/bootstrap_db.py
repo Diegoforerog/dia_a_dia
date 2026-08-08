@@ -129,6 +129,8 @@ def ejecutar():
             "ALTER TABLE habitos ADD COLUMN IF NOT EXISTS alcance TEXT DEFAULT 'personal'",
             "ALTER TABLE habitos ADD COLUMN IF NOT EXISTS persona_id TEXT",
             "ALTER TABLE personas ADD COLUMN IF NOT EXISTS pass_hash TEXT",
+            "ALTER TABLE personas ADD COLUMN IF NOT EXISTS email TEXT",
+            "ALTER TABLE personas ADD COLUMN IF NOT EXISTS foto TEXT",
             "ALTER TABLE proyectos ADD COLUMN IF NOT EXISTS responsable_id TEXT",
             "ALTER TABLE gastos ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'gasto'",
         ]:

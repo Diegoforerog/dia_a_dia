@@ -278,9 +278,8 @@ def put_persona(pid):
             # push_subscriptions se maneja solo por los endpoints de push
             p.update({k: v for k, v in body.items() if k not in ("id", "push_subscriptions")})
             guardar("personas.json", data)
-            # No devolver las suscripciones (ruido/privacidad)
-            salida = {k: v for k, v in p.items() if k != "push_subscriptions"}
-            return jsonify(salida)
+            # Sin campos sensibles (hash de clave, suscripciones)
+            return jsonify(_persona_publica(p))
     return jsonify({"error": "Persona no encontrada"}), 404
 
 
@@ -3447,7 +3446,8 @@ def get_nosotros():
 
 # ============ AVISOS INTELIGENTES (toggles de pareja) ============
 
-_AVISOS_INTEL_DEFECTO = {"cocinar": True, "habitos": True, "sprint": True, "mercado": True}
+_AVISOS_INTEL_DEFECTO = {"cocinar": True, "habitos": True, "sprint": True, "mercado": True,
+                         "despensa": True, "vencimientos": True}
 
 
 @app.route("/api/avisos-inteligentes", methods=["GET"])

@@ -78,6 +78,31 @@
       return (p.nombre || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
     },
 
+    /* Contenido de un avatar: foto si la hay, si no emoji o iniciales */
+    avatarInner(p) {
+      if (p && p.foto) return `<img class="dd-avatar-img" src="${p.foto}" alt="">`;
+      return p ? (p.emoji || DD.iniciales(p)) : '?';
+    },
+
+    /* Comprime una foto a un circulito liviano (dataURL jpeg) */
+    _comprimirFoto(file, dim = 144) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const lado = Math.min(img.width, img.height);
+          const sx = (img.width - lado) / 2, sy = (img.height - lado) / 2;
+          const c = document.createElement('canvas');
+          c.width = dim; c.height = dim;
+          c.getContext('2d').drawImage(img, sx, sy, lado, lado, 0, 0, dim, dim);
+          resolve(c.toDataURL('image/jpeg', 0.82));
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('imagen inválida')); };
+        img.src = url;
+      });
+    },
+
     /* ── Selector (overlay de bienvenida) ── */
     abrirSelector(forzar = false) {
       if (!forzar && DD.persona()) return;
@@ -94,7 +119,7 @@
           <div class="dd-persona-cards">
             ${DD.personas.map(p => `
               <button class="dd-persona-card" data-id="${p.id}" style="--pc:${p.color}">
-                <span class="dd-persona-avatar">${p.emoji || DD.iniciales(p)}</span>
+                <span class="dd-persona-avatar">${DD.avatarInner(p)}</span>
                 <span class="dd-persona-nombre">${p.nombre}</span>
                 <span class="dd-persona-hola">soy yo →</span>
               </button>`).join('')}
@@ -124,9 +149,15 @@
       cont.innerHTML = DD.personas.map(p => `
         <div class="dd-persona-fila" style="--pc:${p.color}">
           <div class="dd-fila-top">
+            <button type="button" class="dd-edit-av" data-id="${p.id}" title="Cambiar foto">${DD.avatarInner(p)}<span class="dd-edit-av-cam">📷</span></button>
+            <input type="file" class="dd-foto-file" data-id="${p.id}" accept="image/*" style="display:none">
             <input type="color" class="dd-persona-color" data-id="${p.id}" value="${p.color}" aria-label="Color">
             <input class="dd-persona-input" data-id="${p.id}" value="${p.nombre}" maxlength="20" aria-label="Nombre" placeholder="Nombre">
           </div>
+          <label class="dd-fila-tg">
+            <span>Correo <small>(para tu cuenta y calendario)</small></span>
+            <input class="dd-persona-email" data-id="${p.id}" type="email" value="${p.email || ''}" placeholder="ej. nombre@gmail.com">
+          </label>
           <label class="dd-fila-tg">
             <span>Telegram chat ID <small>(opcional)</small></span>
             <input class="dd-persona-tg" data-id="${p.id}" value="${p.telegram_chat_id || ''}" inputmode="numeric" placeholder="ej. 5654764212">
@@ -137,6 +168,22 @@
 
       cont.querySelectorAll('.dd-btn-push').forEach(b =>
         b.addEventListener('click', () => DD.activarPush(b.dataset.id, ov)));
+
+      // Foto de perfil: tocar el avatar abre la galería/cámara y se guarda al confirmar
+      const fotosNuevas = DD._fotosNuevas = {};
+      cont.querySelectorAll('.dd-edit-av').forEach(btn =>
+        btn.addEventListener('click', () =>
+          cont.querySelector(`.dd-foto-file[data-id="${btn.dataset.id}"]`).click()));
+      cont.querySelectorAll('.dd-foto-file').forEach(inp =>
+        inp.addEventListener('change', async () => {
+          const f = inp.files && inp.files[0]; if (!f) return;
+          try {
+            const dataUrl = await DD._comprimirFoto(f);
+            fotosNuevas[inp.dataset.id] = dataUrl;
+            const av = cont.querySelector(`.dd-edit-av[data-id="${inp.dataset.id}"]`);
+            av.innerHTML = `<img class="dd-avatar-img" src="${dataUrl}" alt=""><span class="dd-edit-av-cam">📷</span>`;
+          } catch (e) { DD.toast('No se pudo leer la foto', false); }
+        }));
 
       if (!cont.querySelector('.dd-cambiar-clave')) {
         const cc = document.createElement('button');
@@ -161,17 +208,25 @@
           const inp = cont.querySelector(`.dd-persona-input[data-id="${p.id}"]`);
           const col = cont.querySelector(`.dd-persona-color[data-id="${p.id}"]`);
           const tg = cont.querySelector(`.dd-persona-tg[data-id="${p.id}"]`);
+          const em = cont.querySelector(`.dd-persona-email[data-id="${p.id}"]`);
           const nombre = (inp?.value || '').trim() || p.nombre;
           const color = col?.value || p.color;
           const chat = (tg?.value || '').trim();
-          if (nombre !== p.nombre || color !== p.color || chat !== (p.telegram_chat_id || '')) {
+          const email = (em?.value || '').trim();
+          const fotoNueva = (DD._fotosNuevas || {})[p.id];
+          if (nombre !== p.nombre || color !== p.color || chat !== (p.telegram_chat_id || '')
+              || email !== (p.email || '') || fotoNueva) {
             try {
-              await DD.fetch('/personas/' + p.id, { method: 'PUT',
-                body: JSON.stringify({ nombre, color, telegram_chat_id: chat }) });
-              p.nombre = nombre; p.color = color; p.telegram_chat_id = chat;
+              const body = { nombre, color, telegram_chat_id: chat, email };
+              if (fotoNueva) body.foto = fotoNueva;
+              await DD.fetch('/personas/' + p.id, { method: 'PUT', body: JSON.stringify(body) });
+              p.nombre = nombre; p.color = color; p.telegram_chat_id = chat; p.email = email;
+              if (fotoNueva) p.foto = fotoNueva;
             } catch (e) { console.warn('DD guardar persona:', e.message); }
           }
         }
+        DD._fotosNuevas = {};
+        DD._pintarChip(); DD._pintarShellPersona();
         DD._cerrarSelector();
         DD.abrirSelector(true);
       };
@@ -445,10 +500,10 @@
       const av = document.getElementById('dd-ab-avatar');
       const dav = document.getElementById('dd-dr-p-av');
       const nom = document.getElementById('dd-dr-p-nom');
-      const cont = p ? (p.emoji || DD.iniciales(p)) : '?';
+      const cont = DD.avatarInner(p);
       const col = p ? p.color : '#7A746B';
-      if (av) { av.textContent = cont; av.style.background = col; }
-      if (dav) { dav.textContent = cont; dav.style.background = col; }
+      if (av) { av.innerHTML = cont; av.style.background = col; }
+      if (dav) { dav.innerHTML = cont; dav.style.background = col; }
       if (nom) nom.textContent = p ? p.nombre : '¿Quién eres?';
     },
 
@@ -459,7 +514,7 @@
       let chip = document.getElementById('dd-chip-persona');
       const p = DD.persona();
       const contenido = p
-        ? `<span class="dd-chip-avatar" style="--pc:${p.color}">${p.emoji || DD.iniciales(p)}</span>
+        ? `<span class="dd-chip-avatar" style="--pc:${p.color}">${DD.avatarInner(p)}</span>
            <span class="dd-chip-textos"><span class="dd-chip-quien">${p.nombre}</span><span class="dd-chip-cambiar">cambiar</span></span>`
         : `<span class="dd-chip-avatar" style="--pc:#7A746B">?</span>
            <span class="dd-chip-textos"><span class="dd-chip-quien">¿Quién eres?</span><span class="dd-chip-cambiar">elegir</span></span>`;
@@ -546,6 +601,15 @@
   @media (prefers-reduced-motion: reduce){
     .dd-persona-overlay,.dd-persona-caja,.dd-persona-card{transition:none;}
   }
+  .dd-avatar-img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}
+  .dd-edit-av{position:relative;width:44px;height:44px;border-radius:50%;border:2px solid var(--pc,#E8E4DA);
+    background:var(--pc,#7A746B);color:#fff;font-size:17px;font-weight:700;cursor:pointer;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;padding:0;overflow:visible;}
+  .dd-edit-av .dd-avatar-img{position:absolute;inset:0;}
+  .dd-edit-av-cam{position:absolute;right:-4px;bottom:-4px;background:#fff;border:1px solid #E8E4DA;
+    border-radius:50%;width:20px;height:20px;font-size:10px;display:flex;align-items:center;justify-content:center;z-index:2;}
+  .dd-persona-email{font-family:inherit;font-size:13px;border:1px solid #E8E4DA;border-radius:8px;padding:7px 10px;background:#FBFAF6;color:#0E0D0B;}
+  .dd-persona-email:focus{outline:none;border-color:var(--pc);}
   .dd-cambiar-clave{background:none;border:none;color:#7A746B;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:8px;border-radius:8px;}
   .dd-cambiar-clave:hover{background:#F0ECE2;color:#3A3733;}
   .dd-toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#241A38;color:#fff;

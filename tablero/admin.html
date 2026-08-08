@@ -2546,6 +2546,8 @@
           <label class="ai-toggle"><span><b>✅ Hábito sin marcar</b><small>En la noche, si a alguien le falta marcar hábitos del día.</small></span><input type="checkbox" id="ai-habitos" checked></label>
           <label class="ai-toggle"><span><b>🎯 Meta de sprint sin avance</b><small>A mitad de semana si aún no han cumplido ninguna meta.</small></span><input type="checkbox" id="ai-sprint" checked></label>
           <label class="ai-toggle"><span><b>🛒 Faltan cosas en el mercado</b><small>El sábado en la mañana, si la lista tiene pendientes.</small></span><input type="checkbox" id="ai-mercado" checked></label>
+          <label class="ai-toggle"><span><b>🧺 Se acabó algo de la despensa</b><small>En la mañana, si hay cosas marcadas como agotadas.</small></span><input type="checkbox" id="ai-despensa" checked></label>
+          <label class="ai-toggle"><span><b>⏰ Tareas por vencer</b><small>En la mañana, si tienes tareas que vencen hoy o mañana.</small></span><input type="checkbox" id="ai-vencimientos" checked></label>
         </div>
         <div class="form-actions" style="margin-top:14px;">
           <button class="primary" onclick="guardarAvisosIntel()">Guardar avisos</button>
@@ -3283,6 +3285,7 @@ async function cargarAvisosIntel() {
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val !== false; };
     set('ai-cocinar', v.cocinar); set('ai-habitos', v.habitos);
     set('ai-sprint', v.sprint);   set('ai-mercado', v.mercado);
+    set('ai-despensa', v.despensa); set('ai-vencimientos', v.vencimientos);
   } catch (e) { console.error(e); }
 }
 
@@ -3292,6 +3295,8 @@ async function guardarAvisosIntel() {
     habitos: document.getElementById('ai-habitos').checked,
     sprint:  document.getElementById('ai-sprint').checked,
     mercado: document.getElementById('ai-mercado').checked,
+    despensa: document.getElementById('ai-despensa').checked,
+    vencimientos: document.getElementById('ai-vencimientos').checked,
   };
   try { await api('/avisos-inteligentes', { method: 'PUT', body: JSON.stringify(body) });
     toast('🔔 Avisos guardados'); }

@@ -5,7 +5,7 @@
    - API: siempre red (nunca cachear datos).
    - Push: listo para la Fase 2 (avisos por persona). */
 
-const VERSION = 'ls-v16';
+const VERSION = 'ls-v17';
 const SHELL = [
   '/',
   '/tablero/login.html',
@@ -45,8 +45,9 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   if (url.pathname.startsWith('/api/')) return; // API: siempre red
 
-  // HTML → red primero, caché de respaldo
-  if (e.request.mode === 'navigate' || url.pathname.endsWith('.html')) {
+  // HTML y dd.js (runtime compartido) → red primero, caché de respaldo.
+  // dd.js va red-primero para que el shell móvil nunca se quede viejo en el celular.
+  if (e.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/dd.js')) {
     e.respondWith(
       fetch(e.request)
         .then((r) => {

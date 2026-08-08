@@ -708,7 +708,35 @@ def revisar_avisos_inteligentes():
                     f"Mitad de semana y aún ninguna de sus {len(metas)} meta(s) está cumplida. ¡Ánimo, juntos! 🔥",
                     url="/tablero/sprint.html", tag="sprint")
 
-        # 4) Hábito sin marcar — noche 20:00–22:00, por persona
+        # 4) Se acabó algo de la despensa — media mañana 9:30–12:00
+        if on("despensa") and 9*60+30 <= hm < 12*60:
+            agotados = [d.get("item") for d in cargar("despensa.json").get("despensa", [])
+                        if d.get("estado") == "agotado" and d.get("item")]
+            if agotados and _marcar_aviso_intel(hoy, "_todos", "despensa"):
+                lista = ", ".join(agotados[:5]) + ("…" if len(agotados) > 5 else "")
+                avisos.avisar_todos(
+                    "🧺 Se acabó en la despensa",
+                    f"Sin: {lista}. Dale a «Armar de esta semana» en el mercado para reponerlo.",
+                    url="/tablero/mercado.html", tag="despensa")
+
+        # 5) Actividades por vencer — mañana 8:00–11:00, por persona
+        if on("vencimientos") and 8*60 <= hm < 11*60:
+            historias = cargar("historias.json").get("historias", [])
+            manana = (hoy + timedelta(days=1)).isoformat()
+            hoy_iso = hoy.isoformat()
+            for p in configuradas:
+                por_vencer = [h for h in historias
+                              if h.get("estado") not in ("hecho",)
+                              and h.get("responsable_id") in (p["id"], "ambos")
+                              and h.get("fecha_objetivo") in (hoy_iso, manana)]
+                if por_vencer and _marcar_aviso_intel(hoy, p["id"], "vencimientos"):
+                    lista = ", ".join(h.get("titulo", "") for h in por_vencer[:3])
+                    _enrutar(p["id"], "⏰ Por vencer",
+                             f"{len(por_vencer)} tarea(s) vencen hoy o mañana: {lista}"
+                             f"{'…' if len(por_vencer) > 3 else ''}",
+                             url="/tablero/proyectos.html", tag="vencimientos")
+
+        # 6) Hábito sin marcar — noche 20:00–22:00, por persona
         if on("habitos") and 20*60 <= hm < 22*60:
             cumplidos = set(cargar_registro_dia().get("habitos_cumplidos", []))
             for p in configuradas:
