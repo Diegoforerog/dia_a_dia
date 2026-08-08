@@ -168,6 +168,10 @@ def cargar(nombre_archivo: str) -> Dict:
                         FROM lista_mercado ORDER BY comprado, item""")
         return {"lista_mercado": [_row_to_dict(r) for r in rows]}
 
+    if nombre_archivo == "sprints.json":
+        rows = query("SELECT semana, lema, metas, cerrado FROM sprints ORDER BY semana")
+        return {"sprints": [_row_to_dict(r) for r in rows]}
+
     return {}
 
 
@@ -288,6 +292,11 @@ def guardar(nombre_archivo: str, datos: Dict) -> None:
     if nombre_archivo == "lista_mercado.json":
         _sync_lista("lista_mercado", datos.get("lista_mercado", []),
                     ["id","item","cantidad","unidad","origen","comprado"])
+        return
+
+    if nombre_archivo == "sprints.json":
+        _sync_lista("sprints", datos.get("sprints", []),
+                    ["semana","lema","metas","cerrado"], pk="semana", json_cols={"metas"})
         return
 
 

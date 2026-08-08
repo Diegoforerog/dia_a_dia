@@ -3097,6 +3097,60 @@ No repitas el mismo plato más de 2 veces en la semana. Platos concretos y senci
     return jsonify({"semana": semana, "dias": dias})
 
 
+# ============ SPRINT DE LA SEMANA (ritual de pareja) ============
+
+def _racha_sprints() -> int:
+    """Semanas cerradas consecutivas (racha), terminando en la más reciente."""
+    from datetime import timedelta
+    cerradas = {s["semana"] for s in cargar("sprints.json").get("sprints", []) if s.get("cerrado")}
+    if not cerradas:
+        return 0
+
+    def wk(d):
+        y, w, _ = d.isocalendar()
+        return f"{y}-W{w:02d}"
+
+    probe = date.today()
+    if wk(probe) not in cerradas:
+        probe = probe - timedelta(days=7)   # si la semana en curso no está cerrada, arranca en la anterior
+    racha = 0
+    while wk(probe) in cerradas:
+        racha += 1
+        probe = probe - timedelta(days=7)
+    return racha
+
+
+@app.route("/api/sprint", methods=["GET"])
+@requiere_auth
+def get_sprint():
+    semana = request.args.get("semana") or _semana_iso()
+    fila = next((s for s in cargar("sprints.json").get("sprints", []) if s.get("semana") == semana), None)
+    return jsonify({
+        "semana": semana,
+        "lema": (fila or {}).get("lema", ""),
+        "metas": (fila or {}).get("metas", []),
+        "cerrado": (fila or {}).get("cerrado", False),
+        "racha": _racha_sprints(),
+    })
+
+
+@app.route("/api/sprint", methods=["PUT"])
+@requiere_auth
+def put_sprint():
+    body = request.get_json() or {}
+    semana = body.get("semana") or _semana_iso()
+    data = cargar("sprints.json"); data.setdefault("sprints", [])
+    fila = next((s for s in data["sprints"] if s.get("semana") == semana), None)
+    if not fila:
+        fila = {"semana": semana, "lema": "", "metas": [], "cerrado": False}
+        data["sprints"].append(fila)
+    if "lema" in body:    fila["lema"] = body["lema"]
+    if "metas" in body:   fila["metas"] = body["metas"]
+    if "cerrado" in body: fila["cerrado"] = bool(body["cerrado"])
+    guardar("sprints.json", data)
+    return jsonify({**fila, "racha": _racha_sprints()})
+
+
 # ============ TABLERO ESTÁTICO ============
 
 @app.route("/")

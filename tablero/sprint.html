@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<script>(function(){try{var u=new URL(location.href);var k=u.searchParams.get("k");if(k){localStorage.setItem("organizador_token",k);u.searchParams.delete("k");history.replaceState({},"",u.pathname+u.search+u.hash);}}catch(e){}})();</script>
+<title>LoveSprint — Sprint de la semana</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..600,0..100&family=Inter:wght@400..700&display=swap" rel="stylesheet">
+<script src="/tablero/dd.js" defer></script>
+<style>
+  :root{
+    --paper:#FBFAF6;--paper-deep:#F5F2EA;--surface:#FFFFFF;--surface-2:#F8F6F0;
+    --ink:#0E0D0B;--charcoal:#3A3733;--stone:#7A746B;--mist:#A8A29A;
+    --line:#E8E4DA;--line-soft:#F0ECE2;--line-strong:#D5CFC2;
+    --burnt:#EC4899;--burnt-hover:#DB2777;--burnt-soft:#FCE7F3;--burnt-line:#F9A8D4;
+    --sage:#5C8A6F;--sage-soft:#E8F0EA;--crimson:#A8392F;--crimson-soft:#F4E5E3;
+    --amber:#B47B1E;--amber-soft:#F8EFDB;--indigo:#8B5CF6;--indigo-soft:#F3E8FF;
+    --font-brand:"Fraunces","Times New Roman",serif;--font-body:"Inter",-apple-system,sans-serif;
+    --ease:cubic-bezier(.4,0,.2,1);
+  }
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased;}
+  html,body{margin:0;padding:0;}
+  body{font-family:var(--font-body);font-size:14px;line-height:1.55;color:var(--ink);background:var(--paper);
+    background-image:radial-gradient(circle at 15% 10%,rgba(236,72,153,.03)0%,transparent 45%),radial-gradient(circle at 85% 90%,rgba(155,93,229,.03)0%,transparent 50%);}
+  .app{display:grid;grid-template-columns:264px 1fr;min-height:100vh;}
+  .sidebar{position:sticky;top:0;height:100vh;padding:24px 18px;border-right:1px solid #241A38;
+    background:linear-gradient(180deg,#3B2D52 0%,#241A38 100%);display:flex;flex-direction:column;gap:22px;color:#E2E8F0;
+    --sb-muted:#94A3B8;--sb-text:#E2E8F0;--sb-hover:rgba(255,255,255,.08);}
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand-mark{font-family:var(--font-brand);font-style:italic;font-size:26px;line-height:1;letter-spacing:-.02em;color:#fff;}
+  .brand-tag{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--sb-muted);font-weight:500;}
+  .nav-section{display:flex;flex-direction:column;gap:2px;}
+  .nav-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sb-muted);padding:0 10px 6px;font-weight:600;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--sb-text);font-size:13.5px;
+    text-decoration:none;transition:background .15s;background:transparent;border:none;cursor:pointer;font-family:inherit;text-align:left;width:100%;font-weight:500;position:relative;}
+  .nav-item:hover{background:var(--sb-hover);color:#fff;}
+  .nav-item.active{background:#fff;color:#241A38;font-weight:600;}
+  .nav-item.active::before{content:"";position:absolute;left:-18px;top:50%;transform:translateY(-50%);width:3px;height:18px;background:#F472B6;border-radius:0 2px 2px 0;}
+  .nav-icon{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+
+  main{padding:34px 34px 80px;min-width:0;max-width:820px;}
+  .hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:8px;}
+  .greeting{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--stone);font-weight:600;}
+  h1{font-family:var(--font-brand);font-weight:500;font-size:44px;line-height:1.04;letter-spacing:-.025em;margin:4px 0 6px;}
+  h1 em{font-style:italic;color:var(--burnt);}
+  .racha{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#FCE7F3,#F3E8FF);border:1px solid #F9A8D4;
+    border-radius:999px;padding:8px 16px;font-weight:700;color:#3A3733;white-space:nowrap;}
+  .racha .n{font-size:20px;color:var(--burnt);font-variant-numeric:tabular-nums;}
+
+  .sem-nav{display:flex;align-items:center;gap:12px;margin:18px 0 20px;}
+  .sem-nav .titulo{font-family:var(--font-brand);font-size:19px;font-weight:500;}
+  .sem-nav .spacer{flex:1;}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:10px;font-family:inherit;font-size:13px;font-weight:600;
+    cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--charcoal);transition:all .15s;}
+  .btn:hover{border-color:var(--line-strong);background:var(--surface-2);}
+  .btn.primario{background:var(--burnt);border-color:var(--burnt);color:#fff;}
+  .btn.grande{width:100%;justify-content:center;padding:14px;font-size:15px;border-radius:12px;}
+  .btn.cerrar{background:linear-gradient(135deg,var(--burnt),var(--indigo));border:none;color:#fff;box-shadow:0 6px 18px rgba(155,93,229,.28);}
+  .btn.reabrir{background:var(--surface-2);color:var(--stone);}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:18px;}
+  .card-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--burnt);margin-bottom:6px;}
+  .lema-input{width:100%;font-family:var(--font-brand);font-size:26px;font-weight:500;color:var(--ink);border:none;border-bottom:2px dashed var(--line-strong);
+    background:transparent;padding:6px 2px;letter-spacing:-.01em;}
+  .lema-input::placeholder{color:var(--mist);font-style:italic;}
+  .lema-input:focus{outline:none;border-bottom-color:var(--burnt);}
+
+  .prog{display:flex;align-items:center;gap:14px;margin:4px 0 18px;}
+  .prog-ring{--pct:0;width:54px;height:54px;border-radius:50%;flex-shrink:0;
+    background:conic-gradient(var(--burnt) calc(var(--pct)*1%), var(--line-soft) 0);display:flex;align-items:center;justify-content:center;}
+  .prog-ring::after{content:"";position:absolute;}
+  .prog-ring span{width:40px;height:40px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;}
+  .prog-txt{font-size:13.5px;color:var(--stone);}
+  .prog-txt strong{color:var(--ink);font-size:15px;}
+
+  .metas{display:flex;flex-direction:column;gap:8px;}
+  .meta{display:flex;align-items:center;gap:11px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;}
+  .meta.hecha{background:var(--sage-soft);border-color:transparent;}
+  .meta.hecha .meta-txt{text-decoration:line-through;color:var(--stone);}
+  .meta input[type=checkbox]{width:20px;height:20px;accent-color:var(--sage);cursor:pointer;flex-shrink:0;}
+  .meta-txt{flex:1;font-size:14.5px;font-weight:500;}
+  .meta-resp{border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:12px;padding:5px 8px;background:var(--surface-2);color:var(--charcoal);cursor:pointer;}
+  .meta-del{background:none;border:none;color:var(--mist);cursor:pointer;font-size:14px;padding:4px 7px;border-radius:6px;}
+  .meta-del:hover{color:var(--crimson);background:var(--crimson-soft);}
+  .add-meta{display:flex;gap:8px;margin-top:12px;}
+  .add-meta input{flex:1;font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:var(--surface);}
+  .add-meta input:focus{outline:none;border-color:var(--burnt-line);box-shadow:0 0 0 3px var(--burnt-soft);}
+  .vacio{color:var(--mist);font-style:italic;padding:14px 2px;}
+
+  .cerrada-banner{display:flex;align-items:center;gap:12px;background:var(--sage-soft);border:1px solid color-mix(in srgb,var(--sage) 30%,transparent);
+    border-radius:14px;padding:14px 16px;margin-bottom:18px;color:var(--sage);font-weight:600;}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#241A38;color:#fff;border-radius:12px;padding:11px 20px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:999;}
+  .toast.visible{opacity:1;transform:translateX(-50%);}
+
+  @media(max-width:920px){
+    .app{grid-template-columns:1fr;}
+    .sidebar{position:relative;height:auto;flex-direction:row;flex-wrap:wrap;padding:18px 20px;}
+    .nav-section{flex-direction:row;flex-wrap:wrap;flex:1 1 100%;}
+    .nav-item{width:auto;}.nav-item.active::before{display:none;}.nav-label{display:none;}
+    main{padding:22px 16px 60px;}h1{font-size:32px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">Love<em>Sprint</em></div><div class="brand-tag">juntos · organizados · avanzando</div></div>
+    <div class="nav-section">
+      <div class="nav-label">Tablero</div>
+      <a href="/" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span>Hoy</span></a>
+      <a href="/tablero/sprint.html" class="nav-item active"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 22V4l13 4-13 4"/><path d="M4 13h9"/></svg><span>Sprint</span></a>
+      <a href="/tablero/agenda.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Agenda</span></a>
+      <a href="/tablero/proyectos.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="8" rx="1"/></svg><span>Proyectos</span></a>
+      <a href="/tablero/comidas.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 3v7a3 3 0 0 0 3 3v8M7 3v7M10 3v7M17 3s-2 2-2 5 2 4 2 4v6"/></svg><span>Comidas</span></a>
+      <div class="nav-label" style="margin-top:8px;">Configurar</div>
+      <a href="/tablero/admin.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4"/></svg><span>Configuración</span></a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <div>
+        <div class="greeting">El impulso de la semana</div>
+        <h1>Su <em>sprint</em></h1>
+      </div>
+      <div class="racha" id="racha" title="Semanas cerradas seguidas"><span class="n" id="racha-n">0</span> semanas 🔥</div>
+    </div>
+
+    <div class="sem-nav">
+      <button class="btn" onclick="cambiarSemana(-1)">←</button>
+      <span class="titulo" id="sem-titulo">Semana</span>
+      <button class="btn" onclick="cambiarSemana(1)">→</button>
+    </div>
+
+    <div id="cerrada-banner"></div>
+
+    <div class="card">
+      <div class="card-eyebrow">El foco de la semana</div>
+      <input class="lema-input" id="lema" placeholder="ej. Avanzar la página web y comer en casa" onchange="guardarLema()" maxlength="120">
+    </div>
+
+    <div class="card">
+      <div class="card-eyebrow">Metas de la semana</div>
+      <div class="prog">
+        <div class="prog-ring" id="ring" style="position:relative"><span id="ring-pct">0%</span></div>
+        <div class="prog-txt"><strong id="prog-n">0 de 0</strong> metas cumplidas<br><span id="prog-sub" style="color:var(--mist)">Agrega lo que quieren lograr juntos esta semana.</span></div>
+      </div>
+      <div class="metas" id="metas"></div>
+      <div class="add-meta">
+        <input id="nueva-meta" placeholder="Nueva meta de la semana…" maxlength="120" onkeydown="if(event.key==='Enter')agregarMeta()">
+        <button class="btn" onclick="agregarMeta()">＋ Meta</button>
+      </div>
+    </div>
+
+    <button class="btn grande cerrar" id="btn-cerrar" onclick="cerrarSemana()">✓ Cerrar la semana</button>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let semanaActual = null, sprint = { lema:'', metas:[], cerrado:false, racha:0 };
+const DIAS = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
+
+function isoSemana(d){ const dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const day=dt.getUTCDay()||7; dt.setUTCDate(dt.getUTCDate()+4-day); const y=new Date(Date.UTC(dt.getUTCFullYear(),0,1)); const wk=Math.ceil((((dt-y)/86400000)+1)/7); return `${dt.getUTCFullYear()}-W${String(wk).padStart(2,'0')}`; }
+function lunesDe(iso){ const [y,w]=iso.split('-W').map(Number); const s=new Date(Date.UTC(y,0,1+(w-1)*7)); const day=s.getUTCDay()||7; const l=new Date(s); l.setUTCDate(s.getUTCDate()-day+1); return l; }
+function tituloSemana(iso){ const l=lunesDe(iso); const d=new Date(l); d.setUTCDate(l.getUTCDate()+6); const f=x=>x.toLocaleDateString('es',{day:'numeric',month:'short',timeZone:'UTC'}); const hoy=isoSemana(new Date()); return (iso===hoy?'Esta semana · ':'')+`${f(l)} – ${f(d)}`; }
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function uid(){ return 'm'+Math.random().toString(36).slice(2,9); }
+let personas=[];
+
+document.addEventListener('DOMContentLoaded', init);
+async function init(){
+  const t = await DD.token(); if(!t) return;
+  personas = (await DD.fetch('/personas')).personas || [];
+  semanaActual = isoSemana(new Date());
+  await cargar();
+}
+async function cargar(){
+  const d = await DD.fetch('/sprint?semana='+semanaActual);
+  sprint = { lema:d.lema||'', metas:d.metas||[], cerrado:!!d.cerrado, racha:d.racha||0 };
+  pintar();
+}
+function cambiarSemana(delta){ const l=lunesDe(semanaActual); l.setUTCDate(l.getUTCDate()+delta*7); semanaActual=isoSemana(l); cargar(); }
+
+function respLabel(id){ if(id==='ambos') return '👫 Los dos'; const p=personas.find(x=>x.id===id); return p?p.nombre:'— ¿quién?'; }
+function respOpciones(sel){
+  return '<option value="">— ¿quién?</option>' +
+    personas.map(p=>`<option value="${p.id}" ${sel===p.id?'selected':''}>${esc(p.nombre)}</option>`).join('') +
+    `<option value="ambos" ${sel==='ambos'?'selected':''}>👫 Los dos</option>`;
+}
+
+function pintar(){
+  document.getElementById('sem-titulo').textContent = tituloSemana(semanaActual);
+  document.getElementById('racha-n').textContent = sprint.racha;
+  document.getElementById('lema').value = sprint.lema;
+
+  const total = sprint.metas.length, hechas = sprint.metas.filter(m=>m.hecha).length;
+  const pct = total ? Math.round(hechas/total*100) : 0;
+  document.getElementById('ring').style.setProperty('--pct', pct);
+  document.getElementById('ring-pct').textContent = pct+'%';
+  document.getElementById('prog-n').textContent = `${hechas} de ${total}`;
+  document.getElementById('prog-sub').textContent = total ? (hechas===total ? '¡Semana redonda! 🎉' : 'Vamos avanzando, juntos.') : 'Agrega lo que quieren lograr juntos esta semana.';
+
+  const cont = document.getElementById('metas');
+  cont.innerHTML = sprint.metas.length ? sprint.metas.map((m,i)=>`
+    <div class="meta ${m.hecha?'hecha':''}">
+      <input type="checkbox" ${m.hecha?'checked':''} onchange="toggleMeta(${i},this.checked)">
+      <span class="meta-txt">${esc(m.texto)}</span>
+      <select class="meta-resp" onchange="setResp(${i},this.value)">${respOpciones(m.responsable_id)}</select>
+      <button class="meta-del" onclick="borrarMeta(${i})" aria-label="Quitar">✕</button>
+    </div>`).join('') : '<div class="vacio">Sin metas todavía. ¿Qué quieren lograr esta semana?</div>';
+
+  // banner cerrada + botón
+  const banner = document.getElementById('cerrada-banner');
+  const btn = document.getElementById('btn-cerrar');
+  if(sprint.cerrado){
+    banner.innerHTML = `<div class="cerrada-banner">✓ Semana cerrada. ${hechas===total&&total?'¡La cumplieron completa! 🔥':'Bien por avanzar.'}</div>`;
+    btn.textContent = '↩ Reabrir la semana'; btn.className='btn grande reabrir';
+  } else {
+    banner.innerHTML='';
+    btn.textContent = '✓ Cerrar la semana'; btn.className='btn grande cerrar';
+  }
+}
+
+async function guardar(){ const d = await DD.fetch('/sprint',{method:'PUT',body:JSON.stringify({semana:semanaActual, lema:sprint.lema, metas:sprint.metas, cerrado:sprint.cerrado})}); sprint.racha=d.racha; document.getElementById('racha-n').textContent=d.racha; }
+function guardarLema(){ sprint.lema=document.getElementById('lema').value; guardar(); toast('Foco guardado'); }
+function agregarMeta(){ const inp=document.getElementById('nueva-meta'); const t=inp.value.trim(); if(!t)return; sprint.metas.push({id:uid(),texto:t,responsable_id:DD.personaId()||'ambos',hecha:false}); inp.value=''; pintar(); guardar(); setTimeout(()=>document.getElementById('nueva-meta').focus(),40); }
+function toggleMeta(i,v){ sprint.metas[i].hecha=v; pintar(); guardar(); }
+function setResp(i,v){ sprint.metas[i].responsable_id=v||null; guardar(); }
+function borrarMeta(i){ sprint.metas.splice(i,1); pintar(); guardar(); }
+async function cerrarSemana(){ sprint.cerrado=!sprint.cerrado; pintar(); await guardar(); toast(sprint.cerrado?'✓ Semana cerrada — ¡racha!':'Semana reabierta'); }
+
+let tt; function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('visible'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('visible'),2600); }
+</script>
+</body>
+</html>

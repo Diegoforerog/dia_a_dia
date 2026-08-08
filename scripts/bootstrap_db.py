@@ -154,6 +154,9 @@ def ejecutar():
                 id TEXT PRIMARY KEY, item TEXT NOT NULL, cantidad TEXT DEFAULT '',
                 unidad TEXT DEFAULT '', origen TEXT DEFAULT 'manual',
                 comprado BOOLEAN DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW())""",
+            """CREATE TABLE IF NOT EXISTS sprints (
+                semana TEXT PRIMARY KEY, lema TEXT DEFAULT '', metas JSONB DEFAULT '[]'::jsonb,
+                cerrado BOOLEAN DEFAULT FALSE, updated_at TIMESTAMPTZ DEFAULT NOW())""",
         ]:
             try:
                 cur.execute(ddl)
