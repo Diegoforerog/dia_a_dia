@@ -1852,18 +1852,14 @@ async function getToken() {
       }
     }
   } catch(e) {}
-  // 3. Si seguimos sin token, pedírselo al usuario UNA vez
-  const userToken = prompt(
-    '🔐 Token de acceso requerido\n\n' +
-    'Es la primera vez que abrís este tablero en este navegador.\n' +
-    'Pegá tu token de acceso (lo configuraste en easypanel como ORGANIZADOR_TOKEN):'
-  );
-  if (userToken && userToken.trim()) {
-    t = userToken.trim();
-    localStorage.setItem('organizador_token', t);
-    return t;
-  }
+  // 3. Sin token → a la pantalla de login de LoveSprint
+  irAlLogin();
   return '';
+}
+
+function irAlLogin() {
+  if (location.pathname.endsWith('/login.html')) return;
+  location.href = '/tablero/login.html?next=' + encodeURIComponent(location.pathname + location.search);
 }
 
 async function apiGet(ruta) {

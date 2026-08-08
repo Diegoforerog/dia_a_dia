@@ -301,7 +301,7 @@ function diaIsoHoy(){ const n=new Date(); return isoSemana(n)===semanaActual ? (
 document.addEventListener('DOMContentLoaded', init);
 async function init(){
   let t = await DD.token();
-  if(!t){ t = prompt('Pegá tu token (ORGANIZADOR_TOKEN):')||''; if(t) localStorage.setItem('organizador_token', t.trim()); }
+  if(!t) return;  // DD.token ya redirigió a /tablero/login.html
   semanaActual = isoSemana(new Date());
   document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>irPanel(b.dataset.panel)));
   await Promise.all([cargarRecetas(), cargarDespensa(), cargarMercado(), cargarGustos()]);

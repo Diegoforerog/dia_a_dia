@@ -235,10 +235,16 @@ def _asegurar_personas() -> dict:
     return data
 
 
+def _persona_publica(p: dict) -> dict:
+    """Sin campos sensibles (hash de clave, suscripciones push)."""
+    return {k: v for k, v in p.items() if k not in ("pass_hash", "push_subscriptions")}
+
+
 @app.route("/api/personas", methods=["GET"])
 @requiere_auth
 def get_personas():
-    return jsonify(_asegurar_personas())
+    data = _asegurar_personas()
+    return jsonify({"personas": [_persona_publica(p) for p in data.get("personas", [])]})
 
 
 @app.route("/api/personas", methods=["POST"])
@@ -274,6 +280,91 @@ def put_persona(pid):
             # No devolver las suscripciones (ruido/privacidad)
             salida = {k: v for k, v in p.items() if k != "push_subscriptions"}
             return jsonify(salida)
+    return jsonify({"error": "Persona no encontrada"}), 404
+
+
+# ============ LOGIN POR PERSONA ============
+
+import hashlib as _hashlib, base64 as _b64, hmac as _hmac, time as _time
+
+
+def _hash_pw(pw: str) -> str:
+    salt = os.urandom(16)
+    dk = _hashlib.pbkdf2_hmac("sha256", pw.encode(), salt, 120000)
+    return "pbkdf2$120000$" + _b64.b64encode(salt).decode() + "$" + _b64.b64encode(dk).decode()
+
+
+def _verify_pw(pw: str, guardado: str) -> bool:
+    try:
+        _algo, iters, salt_b64, hash_b64 = guardado.split("$")
+        salt = _b64.b64decode(salt_b64)
+        esperado = _b64.b64decode(hash_b64)
+        dk = _hashlib.pbkdf2_hmac("sha256", pw.encode(), salt, int(iters))
+        return _hmac.compare_digest(dk, esperado)
+    except Exception:
+        return False
+
+
+@app.route("/api/auth/estado", methods=["GET"])
+def auth_estado():
+    """Público: personas para la pantalla de login (sin secretos).
+    tiene_clave=False → esa persona aún debe CREAR su contraseña."""
+    data = _asegurar_personas()
+    out = [{"id": p["id"], "nombre": p["nombre"], "color": p.get("color", "#EC4899"),
+            "emoji": p.get("emoji", ""), "tiene_clave": bool(p.get("pass_hash"))}
+           for p in data.get("personas", []) if p.get("activo", True)]
+    return jsonify({"personas": out})
+
+
+@app.route("/api/auth/definir", methods=["POST"])
+def auth_definir():
+    """Crea la contraseña la PRIMERA vez (solo si la persona no tiene una)."""
+    body = request.get_json() or {}
+    pid = body.get("persona_id"); pw = (body.get("password") or "")
+    if len(pw) < 4:
+        return jsonify({"error": "La contraseña debe tener al menos 4 caracteres"}), 400
+    data = _asegurar_personas()
+    for p in data["personas"]:
+        if p["id"] == pid:
+            if p.get("pass_hash"):
+                return jsonify({"error": "Esta persona ya tiene contraseña. Inicia sesión."}), 409
+            p["pass_hash"] = _hash_pw(pw)
+            guardar("personas.json", data)
+            return jsonify({"token": API_TOKEN, "persona_id": pid})
+    return jsonify({"error": "Persona no encontrada"}), 404
+
+
+@app.route("/api/auth/login", methods=["POST"])
+def auth_login():
+    body = request.get_json() or {}
+    pid = body.get("persona_id"); pw = (body.get("password") or "")
+    data = _asegurar_personas()
+    for p in data["personas"]:
+        if p["id"] == pid:
+            if not p.get("pass_hash"):
+                return jsonify({"error": "Aún no has creado tu contraseña", "definir": True}), 409
+            if _verify_pw(pw, p["pass_hash"]):
+                return jsonify({"token": API_TOKEN, "persona_id": pid})
+            _time.sleep(1.0)  # frena fuerza bruta
+            return jsonify({"error": "Contraseña incorrecta"}), 401
+    return jsonify({"error": "Persona no encontrada"}), 404
+
+
+@app.route("/api/auth/cambiar", methods=["POST"])
+def auth_cambiar():
+    """Cambia la contraseña (requiere la actual)."""
+    body = request.get_json() or {}
+    pid = body.get("persona_id"); actual = body.get("actual") or ""; nueva = body.get("nueva") or ""
+    if len(nueva) < 4:
+        return jsonify({"error": "La nueva contraseña debe tener al menos 4 caracteres"}), 400
+    data = _asegurar_personas()
+    for p in data["personas"]:
+        if p["id"] == pid:
+            if p.get("pass_hash") and not _verify_pw(actual, p["pass_hash"]):
+                return jsonify({"error": "La contraseña actual no es correcta"}), 401
+            p["pass_hash"] = _hash_pw(nueva)
+            guardar("personas.json", data)
+            return jsonify({"ok": True})
     return jsonify({"error": "Persona no encontrada"}), 404
 
 

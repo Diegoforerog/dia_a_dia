@@ -128,6 +128,7 @@ def ejecutar():
             "ALTER TABLE recordatorios ADD COLUMN IF NOT EXISTS persona_id TEXT",
             "ALTER TABLE habitos ADD COLUMN IF NOT EXISTS alcance TEXT DEFAULT 'personal'",
             "ALTER TABLE habitos ADD COLUMN IF NOT EXISTS persona_id TEXT",
+            "ALTER TABLE personas ADD COLUMN IF NOT EXISTS pass_hash TEXT",
         ]:
             try:
                 cur.execute(alter)

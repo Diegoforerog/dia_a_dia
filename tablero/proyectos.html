@@ -529,12 +529,9 @@ document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
   try {
-    // token: DD.token() resuelve local automáticamente; en prod pide una vez
+    // token: DD.token() resuelve local o redirige al login si falta
     let t = await DD.token();
-    if (!t) {
-      t = prompt('Pegá tu token de acceso (ORGANIZADOR_TOKEN):') || '';
-      if (t) localStorage.setItem('organizador_token', t.trim());
-    }
+    if (!t) return;  // DD.token ya redirigió a /tablero/login.html
     const [cl, pr, ep, hi, pe] = await Promise.all([
       DD.fetch('/clientes'), DD.fetch('/proyectos'), DD.fetch('/epicas'),
       DD.fetch('/historias'), DD.fetch('/personas'),

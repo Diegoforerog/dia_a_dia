@@ -24,7 +24,19 @@
           if (d.token) { localStorage.setItem('organizador_token', d.token); return d.token; }
         }
       } catch (_) {}
+      DD._irLogin();
       return '';
+    },
+
+    _irLogin() {
+      if (location.pathname.endsWith('/login.html')) return;
+      location.href = '/tablero/login.html?next=' + encodeURIComponent(location.pathname + location.search);
+    },
+
+    salir() {
+      localStorage.removeItem('organizador_token');
+      localStorage.removeItem('dd_persona_id');
+      location.href = '/tablero/login.html';
     },
 
     async fetch(ruta, opts = {}) {
@@ -120,6 +132,14 @@
 
       cont.querySelectorAll('.dd-btn-push').forEach(b =>
         b.addEventListener('click', () => DD.activarPush(b.dataset.id, ov)));
+
+      if (!cont.querySelector('.dd-salir')) {
+        const salir = document.createElement('button');
+        salir.type = 'button'; salir.className = 'dd-salir';
+        salir.textContent = '↪ Salir / cambiar de persona';
+        salir.addEventListener('click', () => DD.salir());
+        cont.appendChild(salir);
+      }
 
       const btnEd = ov.querySelector('#dd-editar-nombres');
       btnEd.textContent = '✓ Guardar cambios';
@@ -264,6 +284,8 @@
   .dd-push-estado{font-size:11.5px;color:#7A746B;min-height:14px;}
   .dd-push-estado.ok{color:#5C8A6F;font-weight:600;}
   .dd-push-estado.err{color:#A8392F;}
+  .dd-salir{margin-top:6px;background:none;border:none;color:#A8392F;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:8px;border-radius:8px;}
+  .dd-salir:hover{background:#F4E5E3;}
 
   .dd-chip-persona{display:flex;align-items:center;gap:10px;width:100%;margin-top:10px;padding:9px 10px;
     background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;cursor:pointer;
