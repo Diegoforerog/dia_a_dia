@@ -99,7 +99,10 @@
                 <span class="dd-persona-hola">soy yo →</span>
               </button>`).join('')}
           </div>
-          <button class="dd-persona-editar" id="dd-editar-nombres">✎ Editar nombres y colores</button>
+          <div class="dd-persona-acciones">
+            <button class="dd-persona-editar" id="dd-editar-nombres">✎ Editar perfiles y avisos</button>
+            <button class="dd-persona-logout" id="dd-persona-logout">↪ Cerrar sesión</button>
+          </div>
           ${puedeCerrar ? '<button class="dd-persona-cerrar" id="dd-persona-cerrar" aria-label="Cerrar">✕</button>' : ''}
         </div>`;
       document.body.appendChild(ov);
@@ -109,6 +112,8 @@
         b.addEventListener('click', () => DD.elegir(b.dataset.id)));
       const btnEd = ov.querySelector('#dd-editar-nombres');
       if (btnEd) btnEd.addEventListener('click', () => DD._modoEdicion(ov));
+      const btnOut = ov.querySelector('#dd-persona-logout');
+      if (btnOut) btnOut.addEventListener('click', () => DD.salir());
       const btnX = ov.querySelector('#dd-persona-cerrar');
       if (btnX) btnX.addEventListener('click', () => DD._cerrarSelector());
     },
@@ -259,9 +264,13 @@
     box-shadow:inset 0 -8px 14px rgba(0,0,0,.12);}
   .dd-persona-nombre{font-size:15.5px;font-weight:600;color:#0E0D0B;}
   .dd-persona-hola{font-size:11.5px;color:var(--pc);font-weight:600;letter-spacing:.02em;}
-  .dd-persona-editar{margin-top:20px;background:none;border:none;color:#A8A29A;font-size:12px;cursor:pointer;
-    font-family:inherit;padding:6px 10px;border-radius:8px;}
+  .dd-persona-acciones{margin-top:20px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+  .dd-persona-editar{background:none;border:none;color:#A8A29A;font-size:12.5px;cursor:pointer;
+    font-family:inherit;padding:8px 12px;border-radius:8px;}
   .dd-persona-editar:hover{color:#3A3733;background:#F0ECE2;}
+  .dd-persona-logout{background:#F4E5E3;border:none;color:#A8392F;font-size:12.5px;font-weight:600;cursor:pointer;
+    font-family:inherit;padding:8px 14px;border-radius:8px;}
+  .dd-persona-logout:hover{background:#EBD3D0;}
   .dd-persona-cerrar{position:absolute;top:14px;right:14px;background:none;border:none;color:#A8A29A;
     font-size:15px;cursor:pointer;padding:6px 9px;border-radius:8px;}
   .dd-persona-cerrar:hover{background:#F0ECE2;color:#3A3733;}
