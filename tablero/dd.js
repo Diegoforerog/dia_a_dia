@@ -138,6 +138,13 @@
       cont.querySelectorAll('.dd-btn-push').forEach(b =>
         b.addEventListener('click', () => DD.activarPush(b.dataset.id, ov)));
 
+      if (!cont.querySelector('.dd-cambiar-clave')) {
+        const cc = document.createElement('button');
+        cc.type = 'button'; cc.className = 'dd-cambiar-clave';
+        cc.textContent = '🔒 Cambiar mi contraseña';
+        cc.addEventListener('click', () => { DD._cerrarSelector(); DD.cambiarClave(); });
+        cont.appendChild(cc);
+      }
       if (!cont.querySelector('.dd-salir')) {
         const salir = document.createElement('button');
         salir.type = 'button'; salir.className = 'dd-salir';
@@ -208,6 +215,107 @@
       const arr = new Uint8Array(raw.length);
       for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
       return arr;
+    },
+
+    /* ── Toast simple compartido ── */
+    toast(msg, ok) {
+      let t = document.getElementById('dd-toast');
+      if (!t) { t = document.createElement('div'); t.id = 'dd-toast'; t.className = 'dd-toast'; document.body.appendChild(t); }
+      t.textContent = msg; t.className = 'dd-toast visible' + (ok === false ? ' err' : ok === true ? ' ok' : '');
+      clearTimeout(DD._toastT); DD._toastT = setTimeout(() => t.classList.remove('visible'), 3000);
+    },
+
+    /* ── Rol: 'admin' = Diego (persona_diego). Oculta lo que no le sirve a la pareja ── */
+    esAdmin() { return DD.personaId() === 'persona_diego'; },
+    _aplicarRol() {
+      const admin = DD.esAdmin();
+      document.querySelectorAll('[data-solo-admin]').forEach(el => { el.style.display = admin ? '' : 'none'; });
+    },
+
+    /* ── Activar avisos para la persona actual en ESTE dispositivo ── */
+    async pushActivo() {
+      try {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+        const conLimite = Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise((_, rej) => setTimeout(() => rej(new Error('sw timeout')), 3000)),
+        ]);
+        const reg = await conLimite;
+        return !!(await reg.pushManager.getSubscription());
+      } catch (_) { return false; }
+    },
+    async activarPushActual() {
+      const pid = DD.personaId();
+      if (!pid) { DD.abrirSelector(true); return; }
+      try {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) { DD.toast('Este navegador no soporta avisos', false); return; }
+        const permiso = await Notification.requestPermission();
+        if (permiso !== 'granted') { DD.toast('Diste "no" al permiso de avisos', false); return; }
+        const reg = await navigator.serviceWorker.ready;
+        const { clave, disponible } = await DD.fetch('/push/clave-publica');
+        if (!disponible || !clave) { DD.toast('El servidor no tiene avisos configurados', false); return; }
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: DD._urlB64ToUint8(clave) });
+        await DD.fetch('/push/suscribir', { method: 'POST', body: JSON.stringify({ persona_id: pid, subscription: sub.toJSON() }) });
+        await DD.fetch('/push/prueba', { method: 'POST', body: JSON.stringify({ persona_id: pid }) });
+        DD.toast('✓ Avisos activados — te mandamos una prueba', true);
+        const b = document.getElementById('dd-banner-avisos'); if (b) b.remove();
+      } catch (e) { DD.toast('No se pudo: ' + e.message, false); }
+    },
+    async _bannerAvisos() {
+      const esHoy = location.pathname === '/' || location.pathname.endsWith('/index.html');
+      if (!esHoy || !DD.persona()) return;
+      if (await DD.pushActivo()) return;
+      if (document.getElementById('dd-banner-avisos')) return;
+      const main = document.querySelector('main'); if (!main) return;
+      const b = document.createElement('div');
+      b.id = 'dd-banner-avisos'; b.className = 'dd-banner-avisos';
+      b.innerHTML = `<span>🔔 Activa los avisos en este celular para no perderte reuniones, hábitos ni tu plan del día.</span>
+        <button id="dd-banner-btn">Activar avisos</button>
+        <button id="dd-banner-x" aria-label="Ahora no">✕</button>`;
+      main.insertBefore(b, main.firstChild);
+      b.querySelector('#dd-banner-btn').addEventListener('click', () => DD.activarPushActual());
+      b.querySelector('#dd-banner-x').addEventListener('click', () => b.remove());
+    },
+
+    /* ── Cambiar contraseña de la persona actual ── */
+    cambiarClave() {
+      const p = DD.persona();
+      if (!p) { DD.abrirSelector(true); return; }
+      const ov = document.createElement('div');
+      ov.className = 'dd-persona-overlay visible'; ov.id = 'dd-clave-overlay';
+      ov.innerHTML = `
+        <div class="dd-persona-caja" role="dialog" aria-modal="true" style="max-width:380px;text-align:left;">
+          <button class="dd-persona-cerrar" id="dd-clave-x" aria-label="Cerrar">✕</button>
+          <h2 class="dd-persona-titulo" style="font-size:24px;text-align:center;">Cambiar contraseña</h2>
+          <p class="dd-persona-sub" style="text-align:center;">De ${p.nombre}</p>
+          <label class="dd-clave-lbl">Contraseña actual</label>
+          <input type="password" id="dd-clave-actual" class="dd-clave-inp" autocomplete="current-password">
+          <label class="dd-clave-lbl">Nueva contraseña</label>
+          <input type="password" id="dd-clave-nueva" class="dd-clave-inp" autocomplete="new-password">
+          <label class="dd-clave-lbl">Repite la nueva</label>
+          <input type="password" id="dd-clave-rep" class="dd-clave-inp" autocomplete="new-password">
+          <button id="dd-clave-guardar" class="dd-clave-btn">Guardar</button>
+          <div id="dd-clave-msg" class="dd-clave-msg"></div>
+        </div>`;
+      document.body.appendChild(ov);
+      const cerrar = () => ov.remove();
+      ov.querySelector('#dd-clave-x').addEventListener('click', cerrar);
+      ov.addEventListener('click', e => { if (e.target === ov) cerrar(); });
+      const msg = (t, ok) => { const m = ov.querySelector('#dd-clave-msg'); m.textContent = t; m.className = 'dd-clave-msg ' + (ok ? 'ok' : 'err'); };
+      ov.querySelector('#dd-clave-guardar').addEventListener('click', async () => {
+        const actual = ov.querySelector('#dd-clave-actual').value;
+        const nueva = ov.querySelector('#dd-clave-nueva').value;
+        const rep = ov.querySelector('#dd-clave-rep').value;
+        if (nueva.length < 4) { msg('La nueva debe tener al menos 4 caracteres'); return; }
+        if (nueva !== rep) { msg('Las contraseñas no coinciden'); return; }
+        try {
+          await DD.fetch('/auth/cambiar', { method: 'POST', body: JSON.stringify({ persona_id: p.id, actual, nueva }) });
+          msg('✓ Contraseña actualizada', true);
+          setTimeout(cerrar, 1200);
+        } catch (e) { msg('La contraseña actual no es correcta'); }
+      });
+      setTimeout(() => ov.querySelector('#dd-clave-actual')?.focus(), 80);
     },
 
     _cerrarSelector() {
@@ -308,7 +416,27 @@
   @media (max-width:920px){ .dd-chip-persona{width:auto;margin-top:0;} .dd-chip-textos .dd-chip-cambiar{display:none;} }
   @media (prefers-reduced-motion: reduce){
     .dd-persona-overlay,.dd-persona-caja,.dd-persona-card{transition:none;}
-  }`;
+  }
+  .dd-cambiar-clave{background:none;border:none;color:#7A746B;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:8px;border-radius:8px;}
+  .dd-cambiar-clave:hover{background:#F0ECE2;color:#3A3733;}
+  .dd-toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#241A38;color:#fff;
+    border-radius:12px;padding:11px 20px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:all .25s;z-index:9999;box-shadow:0 10px 30px rgba(15,10,25,.35);max-width:90vw;text-align:center;}
+  .dd-toast.visible{opacity:1;transform:translateX(-50%);}
+  .dd-toast.ok{background:#2E7D32;} .dd-toast.err{background:#A8392F;}
+  .dd-banner-avisos{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:linear-gradient(135deg,#FCE7F3,#F3E8FF);
+    border:1px solid #F9A8D4;border-radius:14px;padding:14px 16px;margin-bottom:20px;font-size:13.5px;color:#3A3733;}
+  .dd-banner-avisos span{flex:1;min-width:180px;}
+  .dd-banner-avisos #dd-banner-btn{background:linear-gradient(135deg,#EC4899,#9B5DE5);color:#fff;border:none;border-radius:10px;
+    padding:9px 16px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+  .dd-banner-avisos #dd-banner-x{background:none;border:none;color:#A8A29A;font-size:15px;cursor:pointer;padding:4px 8px;border-radius:6px;}
+  .dd-banner-avisos #dd-banner-x:hover{background:rgba(0,0,0,.06);color:#3A3733;}
+  .dd-clave-lbl{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:#7A746B;margin:12px 0 5px;}
+  .dd-clave-inp{width:100%;font-family:inherit;font-size:15px;border:1.5px solid #E8E4DA;border-radius:10px;padding:11px 13px;background:#fff;color:#0E0D0B;}
+  .dd-clave-inp:focus{outline:none;border-color:#EC4899;box-shadow:0 0 0 3px rgba(236,72,153,.15);}
+  .dd-clave-btn{width:100%;margin-top:16px;border:none;border-radius:11px;padding:12px;font-family:inherit;font-size:15px;font-weight:600;
+    color:#fff;cursor:pointer;background:linear-gradient(135deg,#EC4899,#9B5DE5);box-shadow:0 6px 18px rgba(155,93,229,.3);}
+  .dd-clave-msg{font-size:12.5px;margin-top:10px;min-height:16px;text-align:center;}
+  .dd-clave-msg.err{color:#C0392B;} .dd-clave-msg.ok{color:#2E7D32;}`;
   document.head.appendChild(css);
 
   /* ── PWA: manifest + service worker ── */
@@ -338,6 +466,9 @@
   document.addEventListener('DOMContentLoaded', async () => {
     await DD.cargarPersonas();
     DD._pintarChip();
+    DD._aplicarRol();
     if (!DD.persona() && DD.personas.length) DD.abrirSelector();
+    else DD._bannerAvisos();
   });
+  document.addEventListener('dd:persona', () => { DD._aplicarRol(); });
 })();
