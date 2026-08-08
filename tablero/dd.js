@@ -88,7 +88,7 @@
       const puedeCerrar = !!DD.persona();
       ov.innerHTML = `
         <div class="dd-persona-caja" role="dialog" aria-modal="true" aria-label="Elegir persona">
-          <div class="dd-persona-marca"><img src="/tablero/logo.svg" alt="LoveSprint" class="brand-logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:8px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">Love<em>Sprint</em></div>
+          <div class="dd-persona-marca"><img src="/tablero/lovesprint-mark.png" alt="LoveSprint" class="brand-logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:8px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">Love<em>Sprint</em></div>
           <h2 class="dd-persona-titulo">¿Quién está aquí?</h2>
           <p class="dd-persona-sub">Elige tu perfil para ver tus proyectos, tus avisos y tu plan del día.</p>
           <div class="dd-persona-cards">
