@@ -124,6 +124,15 @@ def iniciar():
     _programar_resumen_matutino()
     # RECOVERY: si ya pasó la hora de despertar HOY y no se envió → enviar
     _intentar_resumen_si_falta()
+    # Avisos inteligentes (cocinar, hábitos, sprint, mercado): escaneo cada 15 min
+    _asegurar_tabla_avisos_intel()
+    s.add_job(
+        revisar_avisos_inteligentes,
+        "interval", minutes=15,
+        id="_avisos_inteligentes",
+        replace_existing=True,
+        next_run_time=datetime.now(TZ) + timedelta(seconds=90)
+    )
     # Re-programar recordatorios pendientes
     reprogramar_recordatorios_pendientes()
     print("⚙️  Scheduler iniciado · jobs:", len(s.get_jobs()))
@@ -600,7 +609,8 @@ def _habitos_de_hoy(ahora, persona_id=None):
                 if alcance == "personal" and h.get("persona_id") != persona_id:
                     continue
             cat = cats.get(h.get("categoria_id"), {})
-            salida.append({"nombre": h.get("nombre", "(sin nombre)"),
+            salida.append({"id": h.get("id"),
+                           "nombre": h.get("nombre", "(sin nombre)"),
                            "icono": cat.get("icono") or h.get("icono") or "•"})
         return salida
     except Exception as e:
@@ -621,6 +631,95 @@ def _comida_de_hoy(ahora):
     except Exception as e:
         print(f"⚠️  Resumen: comida: {e}")
         return {}
+
+
+# ─────────────────────────────────────────────────────────
+# Avisos inteligentes (Fase 5): cocinar, hábitos, sprint, mercado
+# ─────────────────────────────────────────────────────────
+def _asegurar_tabla_avisos_intel():
+    try:
+        _db.execute("""
+            CREATE TABLE IF NOT EXISTS avisos_intel_enviados (
+                fecha DATE NOT NULL, persona_id TEXT NOT NULL, tipo TEXT NOT NULL,
+                enviado_at TIMESTAMPTZ DEFAULT NOW(),
+                PRIMARY KEY (fecha, persona_id, tipo))""")
+    except Exception as e:
+        print(f"⚠️  tabla avisos_intel_enviados: {e}")
+
+
+def _marcar_aviso_intel(fecha, persona_id, tipo) -> bool:
+    """Registra el envío de hoy; devuelve True SOLO la primera vez (dedup atómico)."""
+    try:
+        res = _db.query(
+            "INSERT INTO avisos_intel_enviados (fecha, persona_id, tipo) "
+            "VALUES (%s,%s,%s) ON CONFLICT DO NOTHING RETURNING 1",
+            (fecha, persona_id, tipo))
+        return bool(res)
+    except Exception as e:
+        print(f"⚠️  marcar aviso intel: {e}")
+        return False
+
+
+def revisar_avisos_inteligentes():
+    """Escaneo periódico (~15 min). Cada aviso se manda una sola vez al día
+    gracias al marcador. Respeta los toggles en config.avisos_inteligentes."""
+    from comun import cargar, cargar_registro_dia
+    try:
+        cfg = cargar("config.json")
+        tog = (cfg.get("avisos_inteligentes") or {}) if isinstance(cfg, dict) else {}
+        def on(k):
+            return tog.get(k, True)   # por defecto: encendidos
+        ahora = datetime.now(TZ)
+        hoy = ahora.date()
+        hm = ahora.hour * 60 + ahora.minute
+        dow = ahora.isoweekday()   # 1=lunes .. 7=domingo
+        personas = [p for p in cargar("personas.json").get("personas", []) if p.get("activo", True)]
+        configuradas = [p for p in personas if p.get("telegram_chat_id") or p.get("push_subscriptions")]
+        import avisos
+
+        # 1) Hora de cocinar — almuerzo 11:00–12:30, cena 18:00–19:30
+        if on("cocinar"):
+            comida = _comida_de_hoy(ahora)
+            for momento, ini, fin in [("almuerzo", 11*60, 12*60+30), ("cena", 18*60, 19*60+30)]:
+                plato = (comida or {}).get(momento)
+                if plato and ini <= hm < fin and _marcar_aviso_intel(hoy, "_todos", f"cocinar_{momento}"):
+                    avisos.avisar_todos(
+                        "🍳 Hora de cocinar",
+                        f"Toca preparar {plato} ({momento}). ¡Buen provecho! 💛",
+                        url="/tablero/comidas.html", tag="cocinar")
+
+        # 2) Faltan cosas en el mercado — sábado 8:00–12:00
+        if on("mercado") and dow == 6 and 8*60 <= hm < 12*60:
+            pend = [m for m in cargar("lista_mercado.json").get("lista_mercado", []) if not m.get("comprado")]
+            if pend and _marcar_aviso_intel(hoy, "_todos", "mercado"):
+                avisos.avisar_todos(
+                    "🛒 Lista de mercado",
+                    f"Tienen {len(pend)} cosa(s) por comprar este fin. ¿Van al mercado?",
+                    url="/tablero/mercado.html", tag="mercado")
+
+        # 3) Meta de sprint sin avance — miércoles 9:00–21:00
+        if on("sprint") and dow == 3 and 9*60 <= hm < 21*60:
+            y, w, _ = ahora.isocalendar(); semana = f"{y}-W{w:02d}"
+            fila = next((s for s in cargar("sprints.json").get("sprints", []) if s.get("semana") == semana), None)
+            metas = (fila or {}).get("metas", []) if fila else []
+            if metas and sum(1 for m in metas if m.get("hecha")) == 0 and _marcar_aviso_intel(hoy, "_todos", "sprint"):
+                avisos.avisar_todos(
+                    "🎯 Su sprint de la semana",
+                    f"Mitad de semana y aún ninguna de sus {len(metas)} meta(s) está cumplida. ¡Ánimo, juntos! 🔥",
+                    url="/tablero/sprint.html", tag="sprint")
+
+        # 4) Hábito sin marcar — noche 20:00–22:00, por persona
+        if on("habitos") and 20*60 <= hm < 22*60:
+            cumplidos = set(cargar_registro_dia().get("habitos_cumplidos", []))
+            for p in configuradas:
+                pendientes = [h for h in _habitos_de_hoy(ahora, p["id"]) if h.get("id") and h["id"] not in cumplidos]
+                if pendientes and _marcar_aviso_intel(hoy, p["id"], "habitos"):
+                    lista = ", ".join(h["nombre"] for h in pendientes[:3])
+                    _enrutar(p["id"], "✅ Hábitos de hoy",
+                             f"Te queda(n) {len(pendientes)} por marcar: {lista}{'…' if len(pendientes) > 3 else ''}",
+                             url="/", tag="habitos")
+    except Exception as e:
+        print(f"⚠️  revisar_avisos_inteligentes: {e}")
 
 
 def _leer_eventos_google(cals, inicio_dia, fin_dia):

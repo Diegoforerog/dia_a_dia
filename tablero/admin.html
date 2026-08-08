@@ -2536,6 +2536,33 @@
       <div class="card">
         <div class="card-head">
           <div>
+            <div class="card-eyebrow">Avisos automáticos</div>
+            <h2>Recordatorios inteligentes</h2>
+            <p>LoveSprint les avisa solo, por Web Push y Telegram, en el momento justo. Enciendan o apaguen cada uno.</p>
+          </div>
+        </div>
+        <div id="avisos-intel-toggles" style="display:flex;flex-direction:column;gap:2px;">
+          <label class="ai-toggle"><span><b>🍳 Hora de cocinar</b><small>Cuando toca preparar el plato del menú (almuerzo y cena).</small></span><input type="checkbox" id="ai-cocinar" checked></label>
+          <label class="ai-toggle"><span><b>✅ Hábito sin marcar</b><small>En la noche, si a alguien le falta marcar hábitos del día.</small></span><input type="checkbox" id="ai-habitos" checked></label>
+          <label class="ai-toggle"><span><b>🎯 Meta de sprint sin avance</b><small>A mitad de semana si aún no han cumplido ninguna meta.</small></span><input type="checkbox" id="ai-sprint" checked></label>
+          <label class="ai-toggle"><span><b>🛒 Faltan cosas en el mercado</b><small>El sábado en la mañana, si la lista tiene pendientes.</small></span><input type="checkbox" id="ai-mercado" checked></label>
+        </div>
+        <div class="form-actions" style="margin-top:14px;">
+          <button class="primary" onclick="guardarAvisosIntel()">Guardar avisos</button>
+        </div>
+      </div>
+      <style>
+        .ai-toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 2px;border-bottom:1px solid var(--line-soft);cursor:pointer;}
+        .ai-toggle:last-child{border-bottom:none;}
+        .ai-toggle span{display:flex;flex-direction:column;gap:2px;}
+        .ai-toggle b{font-size:14px;font-weight:600;color:var(--ink);}
+        .ai-toggle small{font-size:12px;color:var(--stone);}
+        .ai-toggle input{width:20px;height:20px;accent-color:var(--burnt);cursor:pointer;flex-shrink:0;}
+      </style>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
             <div class="card-eyebrow">Horario laboral</div>
             <h2>Tus horas de trabajo por día</h2>
             <p>El comando <code>/libre</code> y el cálculo de huecos en tu agenda usan estos horarios. Días no marcados se consideran no laborales.</p>
@@ -3247,6 +3274,28 @@ async function comprobarApi() {
   }
   cargarHorarioLaboral();
   cargarHorarioSueno();
+  cargarAvisosIntel();
+}
+
+async function cargarAvisosIntel() {
+  try {
+    const v = await api('/avisos-inteligentes');
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val !== false; };
+    set('ai-cocinar', v.cocinar); set('ai-habitos', v.habitos);
+    set('ai-sprint', v.sprint);   set('ai-mercado', v.mercado);
+  } catch (e) { console.error(e); }
+}
+
+async function guardarAvisosIntel() {
+  const body = {
+    cocinar: document.getElementById('ai-cocinar').checked,
+    habitos: document.getElementById('ai-habitos').checked,
+    sprint:  document.getElementById('ai-sprint').checked,
+    mercado: document.getElementById('ai-mercado').checked,
+  };
+  try { await api('/avisos-inteligentes', { method: 'PUT', body: JSON.stringify(body) });
+    toast('🔔 Avisos guardados'); }
+  catch (e) { toast('No se pudo guardar'); }
 }
 
 /* ───── PROGRESO ───── */

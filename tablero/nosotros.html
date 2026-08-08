@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<script>(function(){try{var u=new URL(location.href);var k=u.searchParams.get("k");if(k){localStorage.setItem("organizador_token",k);u.searchParams.delete("k");history.replaceState({},"",u.pathname+u.search+u.hash);}}catch(e){}})();</script>
+<title>LoveSprint — Nosotros</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..600,0..100&family=Inter:wght@400..700&display=swap" rel="stylesheet">
+<script src="/tablero/dd.js" defer></script>
+<style>
+  :root{
+    --paper:#FBFAF6;--paper-deep:#F5F2EA;--surface:#FFFFFF;--surface-2:#F8F6F0;
+    --ink:#0E0D0B;--charcoal:#3A3733;--stone:#7A746B;--mist:#A8A29A;
+    --line:#E8E4DA;--line-soft:#F0ECE2;--line-strong:#D5CFC2;
+    --burnt:#EC4899;--burnt-hover:#DB2777;--burnt-soft:#FCE7F3;--burnt-line:#F9A8D4;
+    --sage:#5C8A6F;--sage-soft:#E8F0EA;--crimson:#A8392F;--crimson-soft:#F4E5E3;
+    --amber:#B47B1E;--amber-soft:#F8EFDB;--indigo:#8B5CF6;--indigo-soft:#F3E8FF;
+    --font-brand:"Fraunces","Times New Roman",serif;--font-body:"Inter",-apple-system,sans-serif;
+    --ease:cubic-bezier(.4,0,.2,1);
+  }
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased;}
+  html,body{margin:0;padding:0;}
+  body{font-family:var(--font-body);font-size:14px;line-height:1.55;color:var(--ink);background:var(--paper);
+    background-image:radial-gradient(circle at 15% 10%,rgba(236,72,153,.04)0%,transparent 45%),radial-gradient(circle at 85% 90%,rgba(155,93,229,.04)0%,transparent 50%);}
+  .app{display:grid;grid-template-columns:264px 1fr;min-height:100vh;}
+  .sidebar{position:sticky;top:0;height:100vh;padding:24px 18px;border-right:1px solid #241A38;
+    background:linear-gradient(180deg,#3B2D52 0%,#241A38 100%);display:flex;flex-direction:column;gap:22px;color:#E2E8F0;
+    --sb-muted:#94A3B8;--sb-text:#E2E8F0;--sb-hover:rgba(255,255,255,.08);}
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand-mark{font-family:var(--font-brand);font-style:italic;font-size:28px;line-height:1;letter-spacing:-.02em;color:#fff;}
+  .brand-tag{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sb-muted);font-weight:500;}
+  .nav-section{display:flex;flex-direction:column;gap:2px;}
+  .nav-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sb-muted);padding:0 10px 6px;font-weight:600;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--sb-text);font-size:13.5px;
+    text-decoration:none;transition:background .15s;background:transparent;border:none;cursor:pointer;font-family:inherit;text-align:left;width:100%;font-weight:500;position:relative;}
+  .nav-item:hover{background:var(--sb-hover);color:#fff;}
+  .nav-item.active{background:#fff;color:#241A38;font-weight:600;}
+  .nav-item.active::before{content:"";position:absolute;left:-18px;top:50%;transform:translateY(-50%);width:3px;height:18px;background:#F472B6;border-radius:0 2px 2px 0;}
+  .nav-icon{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+
+  main{padding:34px 34px 80px;min-width:0;max-width:840px;}
+  .hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  .greeting{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--stone);font-weight:600;}
+  h1{font-family:var(--font-brand);font-weight:500;font-size:46px;line-height:1.04;letter-spacing:-.025em;margin:4px 0 4px;}
+  h1 em{font-style:italic;color:var(--burnt);}
+  .racha{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#FCE7F3,#F3E8FF);border:1px solid #F9A8D4;
+    border-radius:999px;padding:8px 16px;font-weight:700;color:#3A3733;white-space:nowrap;}
+  .racha .n{font-size:20px;color:var(--burnt);font-variant-numeric:tabular-nums;}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:16px;}
+  .card-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--burnt);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
+  .card-eyebrow a{color:var(--mist);text-decoration:none;font-weight:600;letter-spacing:0;text-transform:none;font-size:12px;}
+  .card-eyebrow a:hover{color:var(--burnt);}
+
+  /* foco / sprint */
+  .foco{background:linear-gradient(135deg,#FCE7F3,#F3E8FF);border-color:#F9A8D4;}
+  .foco .lema{font-family:var(--font-brand);font-size:27px;font-weight:500;letter-spacing:-.01em;line-height:1.15;color:var(--ink);}
+  .foco .lema.vacio{color:var(--mist);font-style:italic;font-size:20px;}
+  .prog{display:flex;align-items:center;gap:14px;margin-top:16px;}
+  .ring{--pct:0;width:56px;height:56px;border-radius:50%;flex-shrink:0;position:relative;
+    background:conic-gradient(var(--burnt) calc(var(--pct)*1%), rgba(255,255,255,.6) 0);display:flex;align-items:center;justify-content:center;}
+  .ring span{width:42px;height:42px;border-radius:50%;background:#FCEAF3;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12.5px;font-variant-numeric:tabular-nums;}
+  .prog-txt strong{font-size:15px;color:var(--ink);} .prog-txt{font-size:13.5px;color:var(--stone);}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .persona-col .phead{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .phead .av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0;}
+  .phead .nom{font-weight:700;font-size:15px;}
+  .phead .est{font-size:11.5px;color:var(--stone);}
+  .hab{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--line);border-radius:11px;margin-bottom:7px;background:var(--surface);}
+  .hab .mk{width:20px;height:20px;border-radius:50%;border:2px solid var(--line-strong);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;}
+  .hab.ok{background:var(--sage-soft);border-color:transparent;}
+  .hab.ok .mk{background:var(--sage);border-color:var(--sage);}
+  .hab.ok .nom{text-decoration:line-through;color:var(--stone);}
+  .hab .ic{font-size:15px;}
+  .hab .nom{font-size:13.5px;font-weight:500;flex:1;min-width:0;}
+  .mini-vacio{color:var(--mist);font-style:italic;font-size:13px;padding:8px 2px;}
+
+  .tres{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;}
+  .mini{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:block;text-decoration:none;color:inherit;transition:transform .12s,box-shadow .15s,border-color .15s;}
+  .mini:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(15,23,42,.08);border-color:var(--line-strong);}
+  .mini .ico{font-size:22px;}
+  .mini .tit{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--stone);margin:8px 0 2px;}
+  .mini .val{font-family:var(--font-brand);font-size:22px;font-weight:500;line-height:1.2;color:var(--ink);}
+  .mini .val small{font-family:var(--font-body);font-size:13px;color:var(--stone);font-weight:600;}
+  .mini .extra{font-size:12.5px;color:var(--stone);margin-top:3px;}
+
+  .vacio{text-align:center;padding:40px;color:var(--mist);}
+  @media(max-width:920px){
+    .app{grid-template-columns:1fr;}
+    .sidebar{position:relative;height:auto;flex-direction:row;flex-wrap:wrap;padding:18px 20px;}
+    .nav-section{flex-direction:row;flex-wrap:wrap;flex:1 1 100%;}
+    .nav-item{width:auto;}.nav-item.active::before{display:none;}.nav-label{display:none;}
+    main{padding:22px 16px 60px;}h1{font-size:34px;}.grid2{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"><img src="/tablero/lovesprint-mark.png" alt="LoveSprint" class="brand-logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:8px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">Love<em>Sprint</em></div><div class="brand-tag">juntos · organizados · avanzando</div></div>
+    <div class="nav-section">
+      <div class="nav-label">Tablero</div>
+      <a href="/" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span>Hoy</span></a>
+      <a href="/tablero/nosotros.html" class="nav-item active"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg><span>Nosotros</span></a>
+      <a href="/tablero/sprint.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 22V4l13 4-13 4"/><path d="M4 13h9"/></svg><span>Sprint</span></a>
+      <a href="/tablero/agenda.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Agenda</span></a>
+      <a href="/tablero/proyectos.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="8" rx="1"/></svg><span>Proyectos</span></a>
+      <div class="nav-label" style="margin-top:8px;">Casa</div>
+      <a href="/tablero/comidas.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 3v7a3 3 0 0 0 3 3v8M7 3v7M10 3v7M17 3s-2 2-2 5 2 4 2 4v6"/></svg><span>Comidas</span></a>
+      <a href="/tablero/mercado.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Mercado</span></a>
+      <a href="/tablero/gastos.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><span>Gastos</span></a>
+      <div class="nav-label" style="margin-top:8px;">Configurar</div>
+      <a href="/tablero/admin.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4"/></svg><span>Configuración</span></a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <div>
+        <div class="greeting" id="saludo">Su centro de mando</div>
+        <h1><em>Nosotros</em></h1>
+      </div>
+      <div class="racha" id="racha" title="Semanas de sprint cerradas seguidas"><span class="n" id="racha-n">0</span> semanas 🔥</div>
+    </div>
+
+    <div id="contenido"><div class="vacio">Cargando su semana…</div></div>
+  </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', init);
+let D=null, personasMap={};
+
+async function init(){
+  const t = await DD.token(); if(!t) return;
+  try{ D = await DD.fetch('/nosotros'); }
+  catch(e){ document.getElementById('contenido').innerHTML='<div class="vacio">No se pudo cargar: '+esc(e.message)+'</div>'; return; }
+  (D.personas||[]).forEach(p=>personasMap[p.id]=p);
+  pintar();
+}
+
+function fmtCOP(n){ return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(n||0); }
+function ini(p){ return (p.nombre||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+function nombreCorto(p){ return (p.nombre||'').split(/\s+/)[0]; }
+
+function pintar(){
+  const sp = D.sprint||{};
+  document.getElementById('racha-n').textContent = sp.racha||0;
+  const hora = new Date().getHours();
+  document.getElementById('saludo').textContent =
+    hora<12?'Buenos días, pareja':hora<19?'Buenas tardes, pareja':'Buenas noches, pareja';
+
+  let html='';
+
+  // ── Foco de la semana ──
+  const pct = sp.total ? Math.round(sp.hechas/sp.total*100) : 0;
+  html += `<div class="card foco">
+    <div class="card-eyebrow">El foco de esta semana <a href="/tablero/sprint.html">abrir sprint →</a></div>
+    <div class="lema ${sp.lema?'':'vacio'}">${sp.lema?esc(sp.lema):'Aún no eligen su foco de la semana'}</div>
+    <div class="prog">
+      <div class="ring" style="--pct:${pct}"><span>${pct}%</span></div>
+      <div class="prog-txt"><strong>${sp.hechas||0} de ${sp.total||0}</strong> metas cumplidas<br>
+        ${sp.total? (sp.hechas===sp.total?'¡Semana redonda! 🎉':'Vamos avanzando, juntos.') : 'Agreguen metas en el Sprint.'}</div>
+    </div>
+  </div>`;
+
+  // ── Hábitos de hoy, lado a lado ──
+  html += `<div class="card"><div class="card-eyebrow">Hábitos de hoy</div><div class="grid2">`;
+  (D.habitos||[]).forEach(col=>{
+    const p = personasMap[col.persona_id] || {color:'#EC4899',nombre:col.nombre};
+    const hechos = col.habitos.filter(h=>h.hecho).length;
+    const tot = col.habitos.length;
+    html += `<div class="persona-col">
+      <div class="phead">
+        <span class="av" style="background:${p.color||'#EC4899'}">${p.emoji||ini(p)}</span>
+        <div><div class="nom">${esc(nombreCorto(p)||col.nombre)}</div>
+        <div class="est">${tot?`${hechos}/${tot} hechos hoy`:'sin hábitos hoy'}</div></div>
+      </div>`;
+    if(!tot){ html += `<div class="mini-vacio">Nada para hoy ✨</div>`; }
+    else { html += col.habitos.map(h=>`<div class="hab ${h.hecho?'ok':''}">
+        <span class="mk">${h.hecho?'✓':''}</span><span class="ic">${h.icono||'•'}</span>
+        <span class="nom">${esc(h.nombre)}</span></div>`).join(''); }
+    html += `</div>`;
+  });
+  html += `</div></div>`;
+
+  // ── Tres mini-tarjetas: comida, mercado, gastos ──
+  const c = D.comida_hoy||{};
+  const platos = ['desayuno','almuerzo','cena','comida'].map(k=>c[k]).filter(Boolean);
+  const merc = D.mercado||{};
+  const g = D.gastos||{};
+  let gastoVal, gastoExtra;
+  if(!g.cantidad){ gastoVal='<small>Sin gastos este mes</small>'; gastoExtra=''; }
+  else if(g.quien_debe){ gastoVal=`${esc(nombreCorto({nombre:g.quien_debe.de_nombre}))} debe ${fmtCOP(g.quien_debe.monto)}`; gastoExtra=`a ${esc(nombreCorto({nombre:g.quien_debe.a_nombre}))} · total ${fmtCOP(g.total)}`; }
+  else { gastoVal='¡A mano! 🤝'; gastoExtra=`total ${fmtCOP(g.total)} este mes`; }
+
+  html += `<div class="tres">
+    <a class="mini" href="/tablero/comidas.html">
+      <div class="ico">🍽️</div><div class="tit">Comida de hoy</div>
+      <div class="val">${platos.length?esc(platos.join(' · ')):'<small>Sin menú para hoy</small>'}</div>
+    </a>
+    <a class="mini" href="/tablero/mercado.html">
+      <div class="ico">🛒</div><div class="tit">Al mercado</div>
+      <div class="val">${merc.pendientes||0} <small>por comprar</small></div>
+      <div class="extra">${merc.total?`de ${merc.total} en la lista`:'lista vacía'}</div>
+    </a>
+    <a class="mini" href="/tablero/gastos.html">
+      <div class="ico">💸</div><div class="tit">Gastos del mes</div>
+      <div class="val">${gastoVal}</div>
+      <div class="extra">${gastoExtra}</div>
+    </a>
+  </div>`;
+
+  document.getElementById('contenido').innerHTML = html;
+}
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+</script>
+</body>
+</html>

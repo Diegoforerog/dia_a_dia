@@ -130,6 +130,7 @@ def ejecutar():
             "ALTER TABLE habitos ADD COLUMN IF NOT EXISTS persona_id TEXT",
             "ALTER TABLE personas ADD COLUMN IF NOT EXISTS pass_hash TEXT",
             "ALTER TABLE proyectos ADD COLUMN IF NOT EXISTS responsable_id TEXT",
+            "ALTER TABLE gastos ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'gasto'",
         ]:
             try:
                 cur.execute(alter)
@@ -157,6 +158,12 @@ def ejecutar():
             """CREATE TABLE IF NOT EXISTS sprints (
                 semana TEXT PRIMARY KEY, lema TEXT DEFAULT '', metas JSONB DEFAULT '[]'::jsonb,
                 cerrado BOOLEAN DEFAULT FALSE, updated_at TIMESTAMPTZ DEFAULT NOW())""",
+            """CREATE TABLE IF NOT EXISTS gastos (
+                id TEXT PRIMARY KEY, fecha DATE, descripcion TEXT NOT NULL,
+                monto DOUBLE PRECISION DEFAULT 0, categoria TEXT DEFAULT '',
+                pagado_por TEXT, participacion TEXT DEFAULT 'ambos',
+                tipo TEXT DEFAULT 'gasto',
+                created_at TIMESTAMPTZ DEFAULT NOW())""",
         ]:
             try:
                 cur.execute(ddl)

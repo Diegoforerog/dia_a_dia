@@ -5,16 +5,19 @@
    - API: siempre red (nunca cachear datos).
    - Push: listo para la Fase 2 (avisos por persona). */
 
-const VERSION = 'ls-v14';
+const VERSION = 'ls-v15';
 const SHELL = [
   '/',
   '/tablero/login.html',
   '/tablero/index.html',
+  '/tablero/nosotros.html',
   '/tablero/sprint.html',
   '/tablero/agenda.html',
   '/tablero/admin.html',
   '/tablero/proyectos.html',
   '/tablero/comidas.html',
+  '/tablero/mercado.html',
+  '/tablero/gastos.html',
   '/tablero/dd.js',
   '/tablero/lovesprint-mark.png',
   '/tablero/lovesprint-logo.png',

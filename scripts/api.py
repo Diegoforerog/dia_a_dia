@@ -3151,6 +3151,322 @@ def put_sprint():
     return jsonify({**fila, "racha": _racha_sprints()})
 
 
+# ============ GASTOS COMPARTIDOS (cuentas claras de pareja) ============
+
+def _personas_activas():
+    return [p for p in cargar("personas.json").get("personas", []) if p.get("activo", True)]
+
+
+def _gastos_del_mes(mes=None):
+    """Lista de gastos filtrada por mes 'YYYY-MM' (o todos si no se da)."""
+    gastos = cargar("gastos.json").get("gastos", [])
+    if mes:
+        gastos = [g for g in gastos if str(g.get("fecha") or "")[:7] == mes]
+    return gastos
+
+
+def _resumen_gastos(mes=None):
+    """Total, pagado por cada quién y quién le debe a quién (reparto 50/50 salvo
+    que el gasto sea personal de una persona)."""
+    personas = _personas_activas()
+    ids = [p["id"] for p in personas]
+    nombres = {p["id"]: p.get("nombre", p["id"]) for p in personas}
+    gastos = _gastos_del_mes(mes)
+
+    pagado = {i: 0.0 for i in ids}
+    debe = {i: 0.0 for i in ids}     # cuánto le corresponde asumir a cada quién
+    recibido = {i: 0.0 for i in ids}
+    total_gastos = 0.0
+    total_ingresos = 0.0
+    n_gastos = 0
+    n_ingresos = 0
+    for g in gastos:
+        try:
+            m = float(g.get("monto") or 0)
+        except (TypeError, ValueError):
+            m = 0.0
+        quien = g.get("pagado_por")
+        if (g.get("tipo") or "gasto") == "ingreso":
+            total_ingresos += m
+            n_ingresos += 1
+            if quien in recibido:
+                recibido[quien] += m
+            continue
+        total_gastos += m
+        n_gastos += 1
+        if quien in pagado:
+            pagado[quien] += m
+        part = g.get("participacion") or "ambos"
+        if part in ids:                       # gasto personal de alguien
+            debe[part] += m
+        else:                                 # compartido: se reparte entre activos
+            n = len(ids) or 1
+            for i in ids:
+                debe[i] += m / n
+
+    neto = {i: round(pagado[i] - debe[i], 2) for i in ids}   # + = le deben, - = debe
+    quien_debe = None
+    if len(ids) == 2:
+        a, b = ids
+        if neto[a] > 0.005:      # a puso de más → b le debe a a
+            quien_debe = {"de": b, "de_nombre": nombres[b], "a": a, "a_nombre": nombres[a], "monto": round(neto[a], 2)}
+        elif neto[b] > 0.005:
+            quien_debe = {"de": a, "de_nombre": nombres[a], "a": b, "a_nombre": nombres[b], "monto": round(neto[b], 2)}
+
+    return {
+        "mes": mes,
+        "total": round(total_gastos, 2),            # compat: 'total' = gastos
+        "total_gastos": round(total_gastos, 2),
+        "total_ingresos": round(total_ingresos, 2),
+        "balance_neto": round(total_ingresos - total_gastos, 2),
+        "cantidad": n_gastos,
+        "cantidad_ingresos": n_ingresos,
+        "personas": [{"id": i, "nombre": nombres[i], "pagado": round(pagado[i], 2),
+                      "recibido": round(recibido[i], 2), "neto": neto[i]} for i in ids],
+        "quien_debe": quien_debe,
+    }
+
+
+@app.route("/api/gastos", methods=["GET"])
+@requiere_auth
+def get_gastos():
+    mes = request.args.get("mes")
+    return jsonify({"gastos": _gastos_del_mes(mes)})
+
+
+@app.route("/api/gastos", methods=["POST"])
+@requiere_auth
+def post_gasto():
+    body = request.get_json() or {}
+    if not body.get("descripcion"):
+        return jsonify({"error": "Falta la descripción"}), 400
+    data = cargar("gastos.json"); data.setdefault("gastos", [])
+    try:
+        monto = float(body.get("monto") or 0)
+    except (TypeError, ValueError):
+        monto = 0.0
+    nuevo = {
+        "id": body.get("id") or nuevo_id("gasto"),
+        "fecha": body.get("fecha") or date.today().isoformat(),
+        "descripcion": body["descripcion"],
+        "monto": monto,
+        "categoria": body.get("categoria", ""),
+        "pagado_por": body.get("pagado_por"),
+        "participacion": body.get("participacion") or "ambos",
+        "tipo": "ingreso" if body.get("tipo") == "ingreso" else "gasto",
+    }
+    data["gastos"].insert(0, nuevo)
+    guardar("gastos.json", data)
+    return jsonify(nuevo), 201
+
+
+@app.route("/api/gastos/leer-factura", methods=["POST"])
+@requiere_auth
+def leer_factura():
+    """Recibe una foto de factura/recibo (data URL o base64) y devuelve
+    {descripcion, monto, categoria, fecha} leídos por IA. NO guarda nada:
+    el usuario confirma en el formulario. Montos en pesos colombianos."""
+    body = request.get_json() or {}
+    img = body.get("imagen") or ""
+    if not img:
+        return jsonify({"error": "Falta la imagen"}), 400
+    if not img.startswith("data:"):
+        img = "data:image/jpeg;base64," + img
+    try:
+        from openai import OpenAI
+    except ImportError:
+        return jsonify({"error": "Falta instalar openai"}), 500
+    if not os.getenv("OPENAI_API_KEY"):
+        return jsonify({"error": "Falta OPENAI_API_KEY"}), 500
+
+    cats = "mercado, comida, hogar, servicios, transporte, salud, ocio, otros"
+    sistema = (
+        "Eres un lector de facturas y recibos de compra en Colombia. Los montos están "
+        "en PESOS COLOMBIANOS (COP), sin centavos. Extraes el TOTAL pagado (no subtotales "
+        "ni items sueltos). Respondes SOLO JSON válido.")
+    usuario_txt = (
+        "Lee esta factura/recibo y devuelve EXACTAMENTE este JSON:\n"
+        '{"descripcion": "comercio o resumen corto de la compra", '
+        '"monto": number (el TOTAL en pesos, entero, sin puntos ni símbolos), '
+        f'"categoria": "una de: {cats}", '
+        '"fecha": "YYYY-MM-DD si aparece, si no null"}\n'
+        "Si no logras leer el total, pon monto 0.")
+    try:
+        cliente = OpenAI()
+        resp = cliente.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": sistema},
+                {"role": "user", "content": [
+                    {"type": "text", "text": usuario_txt},
+                    {"type": "image_url", "image_url": {"url": img}},
+                ]},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.1,
+            max_tokens=300,
+        )
+        datos = json.loads(resp.choices[0].message.content)
+    except Exception as e:
+        return jsonify({"error": f"No se pudo leer la factura: {e}"}), 502
+
+    try:
+        monto = float(datos.get("monto") or 0)
+    except (TypeError, ValueError):
+        monto = 0.0
+    cats_validas = {"mercado", "comida", "hogar", "servicios", "transporte", "salud", "ocio", "otros"}
+    categoria = datos.get("categoria") if datos.get("categoria") in cats_validas else "otros"
+    return jsonify({
+        "descripcion": (datos.get("descripcion") or "").strip()[:120],
+        "monto": monto,
+        "categoria": categoria,
+        "fecha": datos.get("fecha") or None,
+    })
+
+
+@app.route("/api/gastos/<gid>", methods=["PUT"])
+@requiere_auth
+def put_gasto(gid):
+    body = request.get_json() or {}
+    data = cargar("gastos.json")
+    for g in data.get("gastos", []):
+        if g["id"] == gid:
+            if "monto" in body:
+                try:
+                    body["monto"] = float(body["monto"] or 0)
+                except (TypeError, ValueError):
+                    body["monto"] = 0.0
+            g.update({k: v for k, v in body.items() if k != "id"})
+            guardar("gastos.json", data)
+            return jsonify(g)
+    return jsonify({"error": "Gasto no encontrado"}), 404
+
+
+@app.route("/api/gastos/<gid>", methods=["DELETE"])
+@requiere_auth
+def delete_gasto(gid):
+    data = cargar("gastos.json")
+    data["gastos"] = [g for g in data.get("gastos", []) if g["id"] != gid]
+    guardar("gastos.json", data)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/gastos/resumen", methods=["GET"])
+@requiere_auth
+def get_gastos_resumen():
+    mes = request.args.get("mes") or date.today().strftime("%Y-%m")
+    return jsonify(_resumen_gastos(mes))
+
+
+# ============ VISTA "NOSOTROS" (tablero de pareja) ============
+
+def _habitos_hoy_estado(persona_id=None):
+    """Hábitos que tocan hoy (respeta días + alcance) con su estado de cumplido."""
+    habs = cargar("habitos.json")
+    cats = {c["id"]: c for c in habs.get("categorias", [])}
+    dia_iso = date.today().isoweekday()
+    cumplidos = set(cargar_registro_dia().get("habitos_cumplidos", []))
+    out = []
+    for h in habs.get("habitos", []):
+        if not h.get("activo", True):
+            continue
+        dias = h.get("dias")
+        if dias and isinstance(dias, list) and dia_iso not in dias:
+            continue
+        if persona_id:
+            alc = h.get("alcance", "pareja")
+            if alc == "personal" and h.get("persona_id") != persona_id:
+                continue
+        cat = cats.get(h.get("categoria_id"), {})
+        out.append({
+            "id": h["id"], "nombre": h.get("nombre", ""),
+            "icono": cat.get("icono") or "•",
+            "hecho": h["id"] in cumplidos,
+        })
+    return out
+
+
+@app.route("/api/nosotros", methods=["GET"])
+@requiere_auth
+def get_nosotros():
+    """Todo lo de la pareja en una sola foto: sprint, hábitos de hoy por persona,
+    balance de gastos del mes, comida de hoy y pendientes del mercado."""
+    semana = _semana_iso()
+    personas = _personas_activas()
+
+    # Sprint de la semana
+    fila = next((s for s in cargar("sprints.json").get("sprints", []) if s.get("semana") == semana), None)
+    metas = (fila or {}).get("metas", [])
+    sprint = {
+        "semana": semana,
+        "lema": (fila or {}).get("lema", ""),
+        "metas": metas,
+        "hechas": sum(1 for m in metas if m.get("hecha")),
+        "total": len(metas),
+        "cerrado": (fila or {}).get("cerrado", False),
+        "racha": _racha_sprints(),
+    }
+
+    # Hábitos de hoy por persona
+    habitos = [{
+        "persona_id": p["id"], "nombre": p.get("nombre", ""),
+        "color": p.get("color", "#EC4899"), "emoji": p.get("emoji", ""),
+        "habitos": _habitos_hoy_estado(p["id"]),
+    } for p in personas]
+
+    # Comida de hoy (menú de la semana)
+    dias_nom = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+    nombre_dia = dias_nom[date.today().weekday()]
+    menu_fila = next((m for m in cargar("menus.json").get("menus", []) if m.get("semana") == semana), None)
+    comida_hoy = ((menu_fila or {}).get("dias", {}) or {}).get(nombre_dia, {}) or {}
+
+    # Mercado pendiente
+    merc = cargar("lista_mercado.json").get("lista_mercado", [])
+    mercado = {"pendientes": sum(1 for m in merc if not m.get("comprado")), "total": len(merc)}
+
+    # Historias en progreso por persona (trabajo activo)
+    historias = cargar("historias.json").get("historias", [])
+    trabajo = {}
+    for p in personas:
+        trabajo[p["id"]] = sum(
+            1 for h in historias
+            if h.get("estado") == "en_progreso" and h.get("responsable_id") in (p["id"], "ambos"))
+
+    return jsonify({
+        "semana": semana,
+        "sprint": sprint,
+        "habitos": habitos,
+        "gastos": _resumen_gastos(date.today().strftime("%Y-%m")),
+        "comida_hoy": comida_hoy,
+        "mercado": mercado,
+        "trabajo": trabajo,
+        "personas": [{"id": p["id"], "nombre": p.get("nombre", ""), "color": p.get("color", "#EC4899"),
+                      "emoji": p.get("emoji", "")} for p in personas],
+    })
+
+
+# ============ AVISOS INTELIGENTES (toggles de pareja) ============
+
+_AVISOS_INTEL_DEFECTO = {"cocinar": True, "habitos": True, "sprint": True, "mercado": True}
+
+
+@app.route("/api/avisos-inteligentes", methods=["GET"])
+@requiere_auth
+def get_avisos_inteligentes():
+    val = cargar("config.json").get("avisos_inteligentes") or {}
+    return jsonify({k: val.get(k, d) for k, d in _AVISOS_INTEL_DEFECTO.items()})
+
+
+@app.route("/api/avisos-inteligentes", methods=["PUT"])
+@requiere_auth
+def put_avisos_inteligentes():
+    body = request.get_json() or {}
+    cfg = cargar("config.json")
+    cfg["avisos_inteligentes"] = {k: bool(body.get(k, d)) for k, d in _AVISOS_INTEL_DEFECTO.items()}
+    guardar("config.json", cfg)
+    return jsonify(cfg["avisos_inteligentes"])
+
+
 # ============ TABLERO ESTÁTICO ============
 
 @app.route("/")
