@@ -784,6 +784,15 @@
     border: 1px solid var(--line);
     display: inline-block;
   }
+  .btn-generar-plan {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: inherit; font-size: 14px; font-weight: 600; color: #fff; cursor: pointer;
+    border: none; border-radius: 11px; padding: 12px 20px;
+    background: linear-gradient(135deg, var(--burnt), var(--indigo));
+    box-shadow: 0 6px 18px rgba(155,93,229,.28);
+  }
+  .btn-generar-plan:hover { filter: brightness(1.05); }
+  .btn-generar-plan svg { stroke: currentColor; fill: none; }
 
   .empty {
     color: var(--stone);
@@ -1510,19 +1519,19 @@
         <span>Comidas</span>
       </a>
       <div class="nav-label" style="margin-top:8px;">Configurar</div>
-      <a href="/tablero/admin.html" class="nav-item">
+      <a href="/tablero/admin.html#clientes" class="nav-item">
         <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M3 21c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 11a4 4 0 0 0 0-8"/><path d="M22 21c0-2.5-1.9-4.6-4.3-4.9"/></svg>
         <span>Clientes</span>
       </a>
-      <a href="/tablero/admin.html" class="nav-item">
+      <a href="/tablero/admin.html#habitos" class="nav-item">
         <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 4-7.5"/><path d="M3 4v5h5"/></svg>
         <span>Hábitos</span>
       </a>
-      <a href="/tablero/admin.html" class="nav-item">
+      <a href="/tablero/admin.html#tareas" class="nav-item">
         <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
         <span>Tareas</span>
       </a>
-      <a href="/tablero/admin.html" class="nav-item">
+      <a href="/tablero/admin.html#calendarios" class="nav-item">
         <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
         <span>Calendarios</span>
       </a>
@@ -1890,8 +1899,11 @@ function pintarPlan(plan, clientes) {
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
         <h3>El plan aún no está listo</h3>
-        <p>La IA arma tu agenda cada mañana. Genéralo a mano si quieres empezar ya.</p>
-        <code>python3 scripts/plan_manana.py</code>
+        <p>La IA arma tu agenda cada mañana. Si quieres empezar ya, genéralo con un toque.</p>
+        <button class="btn-generar-plan" onclick="generarPlanAhora(event)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v9h-9"/></svg>
+          ✨ Generar mi plan de hoy
+        </button>
       </div>`;
     return;
   }
@@ -2190,7 +2202,7 @@ function pintarStatus(registro) {
   }
 
   if (!clientesData) {
-    document.getElementById('status-text').textContent = 'Inicia la API: python3 scripts/api.py';
+    document.getElementById('status-text').textContent = 'Sin conexión — reintenta en un momento';
     return;
   }
 
@@ -2334,13 +2346,15 @@ async function generarPlanAhora(e) {
   e.stopPropagation();
   e.preventDefault();
   const btn = e.currentTarget;
-  const txt = document.getElementById('kpi-plan-btn-text');
+  // Feedback en el botón que se tocó (KPI o el del estado vacío)
+  const esVacio = btn.classList.contains('btn-generar-plan');
+  const txt = esVacio ? btn : document.getElementById('kpi-plan-btn-text');
   const fechaInput = document.getElementById('kpi-plan-fecha');
   const fecha = fechaInput && fechaInput.value ? fechaInput.value : new Date().toISOString().slice(0,10);
   const original = txt.textContent;
   btn.disabled = true;
-  btn.querySelector('svg').classList.add('spinning');
-  txt.textContent = 'Generando…';
+  const svg = btn.querySelector('svg'); if (svg) svg.classList.add('spinning');
+  txt.textContent = esVacio ? '✨ Generando tu plan…' : 'Generando…';
 
   try {
     const token = await getToken();
