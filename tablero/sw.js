@@ -5,7 +5,7 @@
    - API: siempre red (nunca cachear datos).
    - Push: listo para la Fase 2 (avisos por persona). */
 
-const VERSION = 'dd-v4';
+const VERSION = 'ls-v5';
 const SHELL = [
   '/',
   '/tablero/index.html',
@@ -14,6 +14,7 @@ const SHELL = [
   '/tablero/proyectos.html',
   '/tablero/comidas.html',
   '/tablero/dd.js',
+  '/tablero/logo.svg',
   '/tablero/manifest.webmanifest',
   '/tablero/iconos/icono-192.png',
   '/tablero/iconos/icono-512.png',
@@ -72,7 +73,7 @@ self.addEventListener('fetch', (e) => {
 self.addEventListener('push', (e) => {
   let data = {};
   try { data = e.data ? e.data.json() : {}; } catch (_) {}
-  const title = data.title || 'Día a día';
+  const title = data.title || 'LoveSprint';
   const opts = {
     body: data.body || '',
     icon: '/tablero/iconos/icono-192.png',

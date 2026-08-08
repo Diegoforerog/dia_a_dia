@@ -330,7 +330,7 @@ def push_prueba():
     nombre = persona.get("nombre", "")
     res = avisos.avisar_persona(
         persona_id,
-        "Día a día",
+        "LoveSprint",
         f"¡Hola {nombre}! Tus avisos están funcionando 🎉",
         url="/",
         tag="prueba",

@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   Día a día — runtime compartido (Fase 0 PRO)
+   LoveSprint — runtime compartido (Fase 0 PRO)
    · Contexto de persona ("soy Diego / soy X") con selector elegante
    · Chip de persona en el sidebar (cambiar con un toque)
    · Registro del service worker (PWA instalable)
@@ -76,7 +76,7 @@
       const puedeCerrar = !!DD.persona();
       ov.innerHTML = `
         <div class="dd-persona-caja" role="dialog" aria-modal="true" aria-label="Elegir persona">
-          <div class="dd-persona-marca">Día <em>a</em> día</div>
+          <div class="dd-persona-marca"><img src="/tablero/logo.svg" alt="LoveSprint" class="brand-logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:8px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">Love<em>Sprint</em></div>
           <h2 class="dd-persona-titulo">¿Quién está aquí?</h2>
           <p class="dd-persona-sub">Elige tu perfil para ver tus proyectos, tus avisos y tu plan del día.</p>
           <div class="dd-persona-cards">
@@ -217,7 +217,7 @@
   const css = document.createElement('style');
   css.textContent = `
   .dd-persona-overlay{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;
-    background:color-mix(in srgb, #0F172A 62%, transparent);backdrop-filter:blur(8px);
+    background:color-mix(in srgb, #241A38 62%, transparent);backdrop-filter:blur(8px);
     opacity:0;transition:opacity .22s ease;padding:20px;}
   .dd-persona-overlay.visible{opacity:1;}
   .dd-persona-caja{position:relative;background:#FBFAF6;border:1px solid #E8E4DA;border-radius:20px;
@@ -288,7 +288,7 @@
   }
   if (!document.querySelector('meta[name="theme-color"]')) {
     const m = document.createElement('meta');
-    m.name = 'theme-color'; m.content = '#0F172A';
+    m.name = 'theme-color'; m.content = '#241A38';
     document.head.appendChild(m);
   }
   if (!document.querySelector('link[rel="apple-touch-icon"]')) {

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Día a día — Agenda</title>
+<title>LoveSprint — Agenda</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,11 +15,11 @@
     --paper:#FBFAF6; --paper-deep:#F5F2EA; --surface:#FFFFFF; --surface-2:#F8F6F0;
     --ink:#0E0D0B; --charcoal:#3A3733; --stone:#7A746B; --mist:#A8A29A;
     --line:#E8E4DA; --line-soft:#F0ECE2; --line-strong:#D5CFC2;
-    --burnt:#2563EB; --burnt-soft:#EFF6FF; --burnt-line:#BFDBFE;
+    --burnt:#EC4899; --burnt-soft:#FCE7F3; --burnt-line:#F9A8D4;
     --sage:#5C8A6F; --sage-soft:#E8F0EA;
     --crimson:#A8392F; --crimson-soft:#F4E5E3;
     --amber:#B47B1E; --amber-soft:#F8EFDB;
-    --indigo:#4A4D7A; --indigo-soft:#ECEDF4;
+    --indigo:#8B5CF6; --indigo-soft:#F3E8FF;
     --font-brand:"Fraunces","Times New Roman",serif;
     --font-display:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;
     --font-body:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;
@@ -46,8 +46,8 @@
     top: 0;
     height: 100vh;
     padding: 24px 18px;
-    border-right: 1px solid #0F172A;
-    background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+    border-right: 1px solid #241A38;
+    background: linear-gradient(180deg, #3B2D52 0%, #241A38 100%);
     display: flex;
     flex-direction: column;
     gap: 22px;
@@ -60,8 +60,8 @@
   .sidebar .brand-tag { color: var(--sb-muted); }
   .sidebar .nav-item { color: var(--sb-text); }
   .sidebar .nav-item:hover { background: var(--sb-hover); color: #FFFFFF; }
-  .sidebar .nav-item.active { background: #FFFFFF; color: #0F172A; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
-  .sidebar .nav-item.active::before { background: #60A5FA; }
+  .sidebar .nav-item.active { background: #FFFFFF; color: #241A38; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+  .sidebar .nav-item.active::before { background: #F472B6; }
   .sidebar .nav-label { color: var(--sb-muted); }
   .sidebar .foot-link { color: var(--sb-muted); }
   .sidebar .foot-link:hover { color: #FFFFFF; }
@@ -70,7 +70,7 @@
     border-color: rgba(255,255,255,.12);
   }
   .sidebar .date-day-num { color: #FFFFFF; }
-  .sidebar .date-weekday { color: #60A5FA; }
+  .sidebar .date-weekday { color: #F472B6; }
   .sidebar .date-month { color: #E2E8F0; }
   .sidebar .date-year { color: #94A3B8; font-size: 12px; font-weight: 500; }
   .sidebar .cals-title { color: var(--sb-muted); }
@@ -110,7 +110,7 @@
   .profile-card:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.14); }
   .profile-avatar {
     width: 34px; height: 34px; border-radius: 50%;
-    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    background: linear-gradient(135deg, #3B82F6, #EC4899);
     color: #FFFFFF; display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 12.5px; flex-shrink: 0;
     box-shadow: 0 2px 6px rgba(37, 99, 235, .4);
@@ -641,8 +641,8 @@
   <!-- ───── SIDEBAR ───── -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">Día <em>a</em> día</div>
-      <div class="brand-tag">tu ritual diario</div>
+      <div class="brand-mark"><img src="/tablero/logo.svg" alt="LoveSprint" class="brand-logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:8px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">Love<em>Sprint</em></div>
+      <div class="brand-tag">juntos · organizados · avanzando</div>
     </div>
 
     <div class="date-card">
@@ -710,7 +710,7 @@
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <button id="btn-sync-google" onclick="sincronizarYRecargar()"
-                style="background:transparent;border:1px solid var(--burnt-line,#BFDBFE);color:var(--burnt,#1E40AF);font-size:12px;padding:7px 12px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;"
+                style="background:transparent;border:1px solid var(--burnt-line,#F9A8D4);color:var(--burnt,#1E40AF);font-size:12px;padding:7px 12px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;"
                 title="Buscar calendarios nuevos compartidos en tu Google">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v9h-9"/></svg>
           Sincronizar Google

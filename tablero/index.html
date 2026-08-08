@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Día a día — Hoy</title>
+<title>LoveSprint — Hoy</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,10 +28,10 @@
     --line-soft:    #F0ECE2;
     --line-strong:  #D5CFC2;
 
-    --burnt:        #2563EB;
-    --burnt-hover:  #1D4ED8;
-    --burnt-soft:   #EFF6FF;
-    --burnt-line:   #BFDBFE;
+    --burnt:        #EC4899;
+    --burnt-hover:  #DB2777;
+    --burnt-soft:   #FCE7F3;
+    --burnt-line:   #F9A8D4;
 
     --sage:         #5C8A6F;
     --sage-soft:    #E8F0EA;
@@ -42,8 +42,8 @@
     --amber:        #B47B1E;
     --amber-soft:   #F8EFDB;
 
-    --indigo:       #4A4D7A;
-    --indigo-soft:  #ECEDF4;
+    --indigo:       #8B5CF6;
+    --indigo-soft:  #F3E8FF;
 
     --font-brand:   "Fraunces", "Times New Roman", serif;
     --font-display: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -78,8 +78,8 @@
     top: 0;
     height: 100vh;
     padding: 24px 18px;
-    border-right: 1px solid #0F172A;
-    background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+    border-right: 1px solid #241A38;
+    background: linear-gradient(180deg, #3B2D52 0%, #241A38 100%);
     display: flex;
     flex-direction: column;
     gap: 22px;
@@ -143,7 +143,7 @@
     font-size: 10.5px;
     letter-spacing: .16em;
     text-transform: uppercase;
-    color: #60A5FA;
+    color: #F472B6;
     font-weight: 600;
     line-height: 1.2;
   }
@@ -188,7 +188,7 @@
   .nav-item:hover { background: var(--sb-hover); color: #FFFFFF; }
   .nav-item.active {
     background: #FFFFFF;
-    color: #0F172A;
+    color: #241A38;
     font-weight: 600;
     box-shadow: 0 1px 2px rgba(0,0,0,.15);
   }
@@ -200,7 +200,7 @@
     transform: translateY(-50%);
     width: 3px;
     height: 18px;
-    background: #60A5FA;
+    background: #F472B6;
     border-radius: 0 2px 2px 0;
   }
   .nav-icon {
@@ -285,7 +285,7 @@
   .profile-avatar {
     width: 34px; height: 34px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    background: linear-gradient(135deg, #3B82F6, #EC4899);
     color: #FFFFFF;
     display: flex;
     align-items: center;
@@ -1477,8 +1477,8 @@
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">Día <em>a</em> día</div>
-      <div class="brand-tag">tu ritual diario</div>
+      <div class="brand-mark"><img src="/tablero/logo.svg" alt="LoveSprint" class="brand-logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:8px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">Love<em>Sprint</em></div>
+      <div class="brand-tag">juntos · organizados · avanzando</div>
     </div>
 
     <div class="date-card">
@@ -2449,7 +2449,7 @@ async function pintarSemana() {
         const hora = e.allDay ? 'todo' : (e.start ? e.start.slice(11,16) : '—');
         return `<div class="semana-evento">
           <span class="h">${hora}</span>
-          <span class="dot" style="background:${e.backgroundColor||'#4A4D7A'}"></span>
+          <span class="dot" style="background:${e.backgroundColor||'#8B5CF6'}"></span>
           <span>${e.title}</span>
         </div>`;
       }).join('');
@@ -2657,7 +2657,7 @@ async function pintarMes() {
     evs.sort((a,b) => (a.start||'').localeCompare(b.start||''));
 
     let listaEvs = evs.slice(0, 3).map(e =>
-      `<div class="mes-cell-evento" style="border-left-color:${e.backgroundColor||'#4A4D7A'}" title="${e.title}">${e.title}</div>`
+      `<div class="mes-cell-evento" style="border-left-color:${e.backgroundColor||'#8B5CF6'}" title="${e.title}">${e.title}</div>`
     ).join('');
     if (evs.length > 3) listaEvs += `<div class="mes-cell-mas">+${evs.length - 3}</div>`;
 

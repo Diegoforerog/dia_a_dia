@@ -1,0 +1,22 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="LoveSprint">
+  <defs>
+    <linearGradient id="ls-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F0559B"/>
+      <stop offset="55%" stop-color="#D45CB4"/>
+      <stop offset="100%" stop-color="#9B5DE5"/>
+    </linearGradient>
+  </defs>
+  <!-- corazón de dos personas -->
+  <path d="M60,103 C24,78 11,58 11,38 C11,22 23,12 37,12 C48,12 55,19 60,29 C65,19 72,12 83,12 C97,12 109,22 109,38 C109,58 96,78 60,103 Z"
+        fill="none" stroke="url(#ls-grad)" stroke-width="8.5" stroke-linejoin="round"/>
+  <!-- cabezas -->
+  <circle cx="34" cy="9" r="7.5" fill="#F0559B"/>
+  <circle cx="86" cy="9" r="7.5" fill="#9B5DE5"/>
+  <!-- check (avance) -->
+  <path d="M41,57 L54,70 L80,42" fill="none" stroke="url(#ls-grad)" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- líneas de velocidad -->
+  <g stroke="#9B5DE5" stroke-width="5" stroke-linecap="round">
+    <line x1="96" y1="70" x2="112" y2="70"/>
+    <line x1="99" y1="80" x2="110" y2="80"/>
+  </g>
+</svg>
