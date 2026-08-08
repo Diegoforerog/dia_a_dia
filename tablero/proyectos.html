@@ -210,6 +210,10 @@
   .card-bloqueo { display: flex; gap: 6px; align-items: flex-start; font-size: 11.5px; color: var(--crimson); background: var(--crimson-soft); border-radius: 7px; padding: 5px 8px; margin-bottom: 7px; line-height: 1.4; }
   .card-foot { display: flex; align-items: center; gap: 8px; }
   .avatar { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9.5px; font-weight: 700; color: #fff; background: var(--pc, var(--mist)); flex-shrink: 0; box-shadow: 0 0 0 2px var(--surface); }
+  .avatar-ambos { display: inline-flex; }
+  .avatar-ambos .avatar:not(:first-child) { margin-left: -8px; }
+  .proy-resp { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: 9px; font-weight: 700; color: #fff; background: var(--pc, #7A5CA8); margin-left: 2px; }
+  .proy-chip.activo .proy-resp { box-shadow: 0 0 0 1.5px rgba(255,255,255,.5); }
   .card-meta { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--stone); font-variant-numeric: tabular-nums; }
   .card-meta svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.8; }
   .card-meta.vencida { color: var(--crimson); font-weight: 600; }
@@ -487,6 +491,9 @@
       <label>Cliente / área
         <select id="np-cliente"></select>
       </label>
+      <label>¿De quién es el proyecto?
+        <select id="np-resp"></select>
+      </label>
       <label>Prioridad
         <select id="np-prio">
           <option value="baja">Baja</option>
@@ -570,6 +577,7 @@ function pintarStrip() {
       <span class="proy-dot" style="background:${c?.color || '#A8A29A'}"></span>
       ${esc(p.nombre)}
       ${c ? `<span class="proy-cliente">· ${esc(c.nombre)}</span>` : ''}
+      ${etiquetaResp(p.responsable_id)}
     </button>`;
   }).join('') + `<button class="proy-chip mas" onclick="abrirModalProyecto()">+ Proyecto</button>`;
 }
@@ -602,7 +610,7 @@ function pintarFiltroEpicas() {
 function historiasVisibles() {
   return S.historias.filter(h =>
     h.proyecto_id === F.proyecto &&
-    (F.persona === 'todos' || h.responsable_id === F.persona) &&
+    (F.persona === 'todos' || h.responsable_id === F.persona || h.responsable_id === 'ambos') &&
     (!F.epica || h.epica_id === F.epica) &&
     (!F.q || (h.titulo || '').toLowerCase().includes(F.q))
   );
@@ -626,8 +634,24 @@ function pintarBoard() {
   }).join('');
 }
 
+function etiquetaResp(respId) {
+  if (!respId) return '';
+  if (respId === 'ambos') return `<span class="proy-resp" title="Los dos">👫</span>`;
+  const p = S.personas.find(x => x.id === respId);
+  return p ? `<span class="proy-resp" style="--pc:${p.color}" title="${esc(p.nombre)}">${p.emoji || iniciales(p)}</span>` : '';
+}
+
+function avatarResponsable(respId) {
+  if (respId === 'ambos') {
+    return `<span class="avatar-ambos" title="Los dos">` +
+      S.personas.slice(0, 2).map(p => `<span class="avatar" style="--pc:${p.color}">${p.emoji || iniciales(p)}</span>`).join('') +
+      `</span>`;
+  }
+  const p = S.personas.find(x => x.id === respId);
+  return p ? `<span class="avatar" style="--pc:${p.color}" title="${esc(p.nombre)}">${p.emoji || iniciales(p)}</span>` : '';
+}
+
 function cardHTML(h) {
-  const p = S.personas.find(x => x.id === h.responsable_id);
   const e = S.epicas.find(x => x.id === h.epica_id);
   const subs = h.subtareas || [];
   const subsHechas = subs.filter(s => s.hecho).length;
@@ -642,7 +666,7 @@ function cardHTML(h) {
     ${(h.etiquetas || []).length ? `<div class="card-tags">${h.etiquetas.map(t => `<span class="card-tag">${esc(t)}</span>`).join('')}</div>` : ''}
     ${h.estado === 'bloqueado' && h.motivo_bloqueo ? `<div class="card-bloqueo">⛔ ${esc(h.motivo_bloqueo)}</div>` : ''}
     <div class="card-foot">
-      ${p ? `<span class="avatar" style="--pc:${p.color}" title="${esc(p.nombre)}">${p.emoji || iniciales(p)}</span>` : ''}
+      ${avatarResponsable(h.responsable_id)}
       <span class="der">
         ${subs.length ? `<span class="card-meta" title="Subtareas"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m9 12 2 2 4-4"/></svg>${subsHechas}/${subs.length}</span>` : ''}
         ${crits.length ? `<span class="card-meta" title="Criterios de aceptación">✓ ${crits.filter(c => c.hecho).length}/${crits.length}</span>` : ''}
@@ -829,6 +853,10 @@ function pintarDrawer(enfocarBloqueo = false) {
                   onclick="cambiarCampo('responsable_id', '${p.id}', true)">
             <span class="avatar">${p.emoji || iniciales(p)}</span><span class="nom">${esc(p.nombre)}</span>
           </button>`).join('')}
+        <button class="d-avatar-btn ${h.responsable_id === 'ambos' ? 'activo' : ''}" style="--pc:#7A5CA8"
+                onclick="cambiarCampo('responsable_id', 'ambos', true)">
+          <span class="avatar">👫</span><span class="nom">Los dos</span>
+        </button>
         <button class="d-avatar-btn ${!h.responsable_id ? 'activo' : ''}" style="--pc:#A8A29A"
                 onclick="cambiarCampo('responsable_id', null, true)">
           <span class="avatar">—</span><span class="nom">Nadie</span>
@@ -983,6 +1011,7 @@ function abrirModalHistoria() {
     '<option value="">Sin fase</option>' + eps.map(e => `<option value="${e.id}">${esc(e.titulo)}</option>`).join('');
   document.getElementById('nh-resp').innerHTML =
     S.personas.map(p => `<option value="${p.id}" ${DD.personaId() === p.id ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('') +
+    '<option value="ambos">👫 Los dos</option>' +
     '<option value="">Sin responsable</option>';
   document.getElementById('nh-titulo').value = '';
   abrirModal('modal-historia');
@@ -1069,6 +1098,10 @@ async function borrarEpica(id) {
 function abrirModalProyecto() {
   document.getElementById('np-cliente').innerHTML =
     S.clientes.filter(c => c.activo !== false).map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+  document.getElementById('np-resp').innerHTML =
+    '<option value="ambos">👫 Los dos</option>' +
+    S.personas.map(p => `<option value="${p.id}" ${DD.personaId() === p.id ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('') +
+    '<option value="">Sin asignar</option>';
   document.getElementById('np-nombre').value = '';
   abrirModal('modal-proyecto');
   setTimeout(() => document.getElementById('np-nombre').focus(), 80);
@@ -1083,6 +1116,7 @@ async function crearProyecto() {
       body: JSON.stringify({
         nombre,
         cliente_id: document.getElementById('np-cliente').value,
+        responsable_id: document.getElementById('np-resp').value || null,
         prioridad: document.getElementById('np-prio').value,
         deadline: document.getElementById('np-deadline').value || null,
       }),

@@ -1519,7 +1519,7 @@
         <span>Comidas</span>
       </a>
       <div class="nav-label" style="margin-top:8px;">Configurar</div>
-      <a href="/tablero/admin.html#clientes" class="nav-item" data-solo-admin>
+      <a href="/tablero/admin.html#clientes" class="nav-item">
         <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M3 21c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 11a4 4 0 0 0 0-8"/><path d="M22 21c0-2.5-1.9-4.6-4.3-4.9"/></svg>
         <span>Clientes</span>
       </a>
@@ -2266,7 +2266,7 @@ async function pintarTrabajoHoy(){
     const proyMap={}; proyectos.forEach(p=>proyMap[p.id]=p.nombre);
     let hs=(data.historias||[]).filter(h=>h.estado!=='hecho' &&
       (h.estado==='en_progreso' || (h.fecha_objetivo && h.fecha_objetivo<=hoyStr)));
-    if(yo) hs=hs.filter(h=>!h.responsable_id || h.responsable_id===yo);
+    if(yo) hs=hs.filter(h=>!h.responsable_id || h.responsable_id===yo || h.responsable_id==='ambos');
     const COL={backlog:'Backlog',planeado:'Planeado',en_progreso:'En progreso',qa:'Revisión',bloqueado:'Bloqueado'};
     if(!hs.length){ cont.innerHTML='<div class="empty">Nada urgente en el tablero. ✨</div>'; return; }
     cont.innerHTML=hs.slice(0,8).map(h=>{

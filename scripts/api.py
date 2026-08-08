@@ -178,7 +178,8 @@ def post_proyecto():
         "estado": body.get("estado", "activo"),
         "prioridad": body.get("prioridad", "media"),
         "deadline": body.get("deadline"),
-        "descripcion": body.get("descripcion", "")
+        "descripcion": body.get("descripcion", ""),
+        "responsable_id": body.get("responsable_id")
     }
     data["proyectos"].append(nuevo)
     guardar("proyectos.json", data)

@@ -709,7 +709,7 @@ def enviar_resumen_matutino(forzar: bool = False):
         cals_p = [c for c in cals_all if c.get("persona_id") == p["id"]]
         eventos = _leer_eventos_google(cals_p, inicio_dia, fin_dia)
         his_p = [h for h in historias
-                 if h.get("responsable_id") == p["id"] and h.get("estado") != "hecho"
+                 if h.get("responsable_id") in (p["id"], "ambos") and h.get("estado") != "hecho"
                  and (h.get("estado") == "en_progreso"
                       or (h.get("fecha_objetivo") and h["fecha_objetivo"] <= hoy.isoformat()))]
         habs_hoy = _habitos_de_hoy(ahora, p["id"])
