@@ -2163,8 +2163,30 @@
         <div>
           <div class="page-crumbs">Configurar <span>· Calendarios</span></div>
           <h1 class="page-title">Tus <em>calendarios</em></h1>
-          <p class="page-sub">Conecta tus calendarios de Gmail con enlaces iCal privados. La IA los lee para respetar tus eventos al armar el plan del día.</p>
+          <p class="page-sub">Conecta tu Google con un clic y tus eventos aparecen en el plan del día.</p>
         </div>
+      </div>
+
+      <!-- Conexión rápida con Google (1 clic) -->
+      <div class="card" style="border:1.5px solid var(--burnt-line);background:linear-gradient(135deg, var(--burnt-soft), #fff);">
+        <div class="card-head">
+          <div>
+            <div class="card-eyebrow" style="color:var(--burnt)">Recomendado</div>
+            <h2>Conectar con Google</h2>
+            <p id="gcal-estado" style="color:var(--stone);font-size:13px;">Revisando conexión…</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+          <button class="primary" onclick="conectarGoogle()" id="btn-conectar-google">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M4.9 4.9l2.8 2.8M2 12h4M19.1 4.9l-2.8 2.8M22 12h-4"/></svg>
+            Conectar con Google
+          </button>
+          <button class="subtle" onclick="buscarCalendariosGoogle()" id="btn-buscar-cals">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v9h-9"/></svg>
+            Buscar mis calendarios
+          </button>
+        </div>
+        <p style="color:var(--mist);font-size:11.5px;margin:12px 0 0;">Al conectar tu cuenta de Google, tus calendarios aparecen solos. Luego asígnale un dueño a cada uno abajo.</p>
       </div>
 
       <div class="card">
@@ -2974,8 +2996,46 @@ async function cumplirTarea(id) {
 }
 
 /* ───── CALENDARIOS ───── */
+async function actualizarEstadoGoogle() {
+  const el = document.getElementById('gcal-estado');
+  if (!el) return;
+  try {
+    const d = await api('/calendarios/estado_oauth');
+    if (d.listo_para_usar) {
+      el.innerHTML = '✓ <strong style="color:var(--sage)">Conectado con Google</strong> — toca «Buscar mis calendarios» para traerlos.';
+    } else {
+      el.textContent = 'Aún no está conectado. Toca «Conectar con Google».';
+    }
+  } catch (e) { el.textContent = 'No pude revisar la conexión.'; }
+}
+
+async function conectarGoogle() {
+  const b = document.getElementById('btn-conectar-google');
+  b.disabled = true;
+  try {
+    const d = await api('/oauth/google/start');
+    if (d.auth_url) { window.location.href = d.auth_url; }
+    else { toast(d.error || 'No se pudo iniciar la conexión'); b.disabled = false; }
+  } catch (e) { toast('No se pudo iniciar la conexión'); b.disabled = false; }
+}
+
+async function buscarCalendariosGoogle() {
+  const b = document.getElementById('btn-buscar-cals');
+  const orig = b.innerHTML; b.disabled = true; b.textContent = 'Buscando…';
+  try {
+    const d = await api('/calendarios/sync_google', { method: 'POST', body: '{}' });
+    if (d.error) { toast(d.error); }
+    else {
+      toast(d.total_agregados ? `Se agregaron ${d.total_agregados} calendario(s) ✓` : 'Ya tenías todos tus calendarios');
+      cargarCalendarios();
+    }
+  } catch (e) { toast('Primero conéctate con Google'); }
+  finally { b.disabled = false; b.innerHTML = orig; }
+}
+
 let _personasCache = [];
 async function cargarCalendarios() {
+  actualizarEstadoGoogle();
   const clientes = (await api('/clientes')).clientes || [];
   const empMap = {}; clientes.forEach(e => empMap[e.id] = e);
   _personasCache = ((await api('/personas')).personas || []).filter(p => p.activo !== false);
