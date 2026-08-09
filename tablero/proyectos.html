@@ -461,6 +461,9 @@
       <label>Título
         <input type="text" id="nh-titulo" placeholder="Qué hay que lograr" maxlength="140">
       </label>
+      <label>Proyecto
+        <select id="nh-proyecto" onchange="nhEpicasDe(this.value)"></select>
+      </label>
       <label>Épica
         <select id="nh-epica"><option value="">Sin épica</option></select>
       </label>
@@ -488,6 +491,9 @@
   <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-head"><h3>Épicas del proyecto</h3><button class="drawer-x" onclick="cerrarModal('modal-epicas')">✕</button></div>
     <div class="modal-cuerpo">
+      <label>Proyecto
+        <select id="ne-proyecto" onchange="pintarListaEpicas()"></select>
+      </label>
       <div class="checklist" id="lista-epicas"></div>
       <div class="check-add">
         <input type="text" id="ne-titulo" placeholder="Nueva épica, p. ej. «Diseño»" maxlength="80"
@@ -1022,11 +1028,22 @@ function mostrarGuardado() {
 }
 
 /* ═══════════════ MODAL: nueva historia ═══════════════ */
-function abrirModalHistoria() {
-  if (!F.proyecto) { toast('Primero crea un proyecto'); return; }
-  const eps = S.epicas.filter(e => e.proyecto_id === F.proyecto);
+function opcionesProyectos(sel) {
+  return S.proyectos.map(p =>
+    `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('');
+}
+
+function nhEpicasDe(pid) {
+  const eps = S.epicas.filter(e => e.proyecto_id === pid);
   document.getElementById('nh-epica').innerHTML =
     '<option value="">Sin épica</option>' + eps.map(e => `<option value="${e.id}">${esc(e.titulo)}</option>`).join('');
+}
+
+function abrirModalHistoria() {
+  if (!S.proyectos.length) { toast('Primero crea un proyecto'); return; }
+  const pid = F.proyecto || S.proyectos[0].id;
+  document.getElementById('nh-proyecto').innerHTML = opcionesProyectos(pid);
+  nhEpicasDe(pid);
   document.getElementById('nh-resp').innerHTML =
     S.personas.map(p => `<option value="${p.id}" ${DD.personaId() === p.id ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('') +
     '<option value="ambos">👫 Los dos</option>' +
@@ -1039,11 +1056,12 @@ function abrirModalHistoria() {
 async function crearHistoria() {
   const titulo = document.getElementById('nh-titulo').value.trim();
   if (!titulo) { toast('Ponle un título'); return; }
+  const pid = document.getElementById('nh-proyecto').value || F.proyecto;
   try {
     const nueva = await DD.fetch('/historias', {
       method: 'POST',
       body: JSON.stringify({
-        proyecto_id: F.proyecto,
+        proyecto_id: pid,
         titulo,
         epica_id: document.getElementById('nh-epica').value || null,
         responsable_id: document.getElementById('nh-resp').value || null,
@@ -1052,20 +1070,26 @@ async function crearHistoria() {
     });
     S.historias.push(nueva);
     cerrarModal('modal-historia');
-    pintarBoard();
+    // Si la historia es de otro proyecto, saltar a ese canvas para verla
+    if (pid !== F.proyecto) elegirProyecto(pid); else pintarBoard();
     toast('Historia creada en Backlog');
   } catch (e) { toast('No se pudo crear: ' + e.message); }
 }
 
 /* ═══════════════ MODAL: épicas ═══════════════ */
 function abrirModalEpicas() {
-  if (!F.proyecto) { toast('Primero crea un proyecto'); return; }
+  if (!S.proyectos.length) { toast('Primero crea un proyecto'); return; }
+  document.getElementById('ne-proyecto').innerHTML = opcionesProyectos(F.proyecto || S.proyectos[0].id);
   pintarListaEpicas();
   abrirModal('modal-epicas');
 }
 
+function proyectoEpicaSel() {
+  return document.getElementById('ne-proyecto').value || F.proyecto;
+}
+
 function pintarListaEpicas() {
-  const eps = S.epicas.filter(e => e.proyecto_id === F.proyecto);
+  const eps = S.epicas.filter(e => e.proyecto_id === proyectoEpicaSel());
   const cont = document.getElementById('lista-epicas');
   cont.innerHTML = eps.length ? eps.map(e => {
     const n = S.historias.filter(h => h.epica_id === e.id).length;
@@ -1087,7 +1111,7 @@ async function crearEpica() {
   const titulo = (inp.value || '').trim(); if (!titulo) return;
   try {
     const nueva = await DD.fetch('/epicas', {
-      method: 'POST', body: JSON.stringify({ proyecto_id: F.proyecto, titulo }),
+      method: 'POST', body: JSON.stringify({ proyecto_id: proyectoEpicaSel(), titulo }),
     });
     S.epicas.push(nueva); inp.value = '';
     pintarListaEpicas(); pintarFiltroEpicas();

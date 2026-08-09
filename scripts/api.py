@@ -3547,10 +3547,24 @@ def post_curso():
 @requiere_auth
 def put_curso(cid):
     body = request.get_json() or {}
+    for k in ("lecciones_total", "lecciones_hechas", "min_dia"):
+        if k in body:
+            try:
+                body[k] = max(0, int(body[k] or 0))
+            except (TypeError, ValueError):
+                body.pop(k)
     data = cargar("cursos.json")
     for c in data.get("cursos", []):
         if c["id"] == cid:
             c.update({k: v for k, v in body.items() if k not in ("id", "historial")})
+            # Coherencia módulos ↔ estado: completos → terminado; si suben el total → reabrir
+            total = int(c.get("lecciones_total") or 0)
+            hechas = int(c.get("lecciones_hechas") or 0)
+            if total and hechas >= total:
+                c["lecciones_hechas"] = total
+                c["estado"] = "terminado"
+            elif c.get("estado") == "terminado" and total and hechas < total:
+                c["estado"] = "activo"
             guardar("cursos.json", data)
             return jsonify(c)
     return jsonify({"error": "Curso no encontrado"}), 404

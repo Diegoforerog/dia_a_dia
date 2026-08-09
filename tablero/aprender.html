@@ -245,10 +245,10 @@
   </main>
 </div>
 
-<!-- MODAL: nuevo curso -->
+<!-- MODAL: curso (nuevo / editar) -->
 <div class="modal-fondo" id="m-nuevo">
   <div class="modal">
-    <h3>Nuevo curso o habilidad</h3>
+    <h3 id="n-titulo-modal">Nuevo curso o habilidad</h3>
     <label>¿Qué van a aprender?</label>
     <input id="n-nombre" placeholder="ej. Curso de inglés de Platzi" maxlength="80">
     <div class="fila2">
@@ -256,14 +256,18 @@
       <div><label>¿De quién?</label><select id="n-quien"></select></div>
     </div>
     <div class="fila2">
-      <div><label># de lecciones <small style="text-transform:none;letter-spacing:0">(0 si no aplica)</small></label><input id="n-lecciones" type="number" min="0" max="500" value="0" inputmode="numeric"></div>
+      <div><label># de módulos <small style="text-transform:none;letter-spacing:0">(0 si no aplica)</small></label><input id="n-lecciones" type="number" min="0" max="500" value="0" inputmode="numeric"></div>
       <div><label>Minutos al día</label><input id="n-min" type="number" min="5" max="240" value="20" inputmode="numeric"></div>
+    </div>
+    <div class="fila2" id="n-hechas-wrap" style="display:none">
+      <div><label>Módulos ya completados</label><input id="n-hechas" type="number" min="0" max="500" value="0" inputmode="numeric"></div>
+      <div></div>
     </div>
     <label>🎁 Recompensa al terminarlo</label>
     <input id="n-premio" placeholder="ej. Cena en nuestro restaurante favorito" maxlength="120">
     <div class="modal-acciones">
       <button class="btn" onclick="cerrar('m-nuevo')">Cancelar</button>
-      <button class="btn primario" onclick="crearCurso()">Crear curso</button>
+      <button class="btn primario" id="n-guardar" onclick="crearCurso()">Crear curso</button>
     </div>
   </div>
 </div>
@@ -461,11 +465,12 @@ function cursoHtml(c){
           ${minHoy ? `<span style="color:var(--sage);font-weight:700;">✓ hoy: ${minHoy} min</span>` : ''}
         </div>
       </div>
+      <button class="cu-del" onclick="abrirEditarCurso('${c.id}')" aria-label="Editar" style="color:var(--stone)">✎</button>
       <button class="cu-del" onclick="borrarCurso('${c.id}')" aria-label="Eliminar">🗑</button>
     </div>
     ${total ? `<div class="cu-prog">
       <div class="track"><span class="fill" style="width:${pct}%"></span></div>
-      <div class="lbl"><span>Lección ${hechas} de ${total}</span><span>${pct}%</span></div>
+      <div class="lbl"><span>Módulo ${hechas} de ${total}</span><span>${pct}%</span></div>
     </div>` : ''}
     ${c.recompensa ? `<div class="cu-premio ${done?'win':''}">🎁 ${done?'¡Se ganaron:':'Al terminar:'} ${esc(c.recompensa)}${done?' — ¡a cobrarla! 🎉':''}</div>` : ''}
     ${misiones.length ? `<div class="misiones">` + misiones.map((m,i)=>`
@@ -475,12 +480,41 @@ function cursoHtml(c){
       </label>`).join('') + `</div>` : ''}
     ${!done ? `<div class="cu-acciones">
       <button class="btn btn-estudie" onclick="abrirEstudie('${c.id}')">✓ Estudié hoy</button>
+      ${total ? `<button class="btn" style="font-weight:700" onclick="moduloListo('${c.id}', this)">📗 Módulo listo</button>` : ''}
       <button class="btn ia" onclick="misionesIA('${c.id}', this)">✨ Misiones</button>
     </div>` : ''}
   </div>`;
 }
 
-function abrirNuevo(){ abrir('m-nuevo'); setTimeout(()=>document.getElementById('n-nombre').focus(),80); }
+let cursoEditId = null;
+
+function abrirNuevo(){
+  cursoEditId = null;
+  document.getElementById('n-titulo-modal').textContent = 'Nuevo curso o habilidad';
+  document.getElementById('n-guardar').textContent = 'Crear curso';
+  document.getElementById('n-hechas-wrap').style.display = 'none';
+  document.getElementById('n-nombre').value=''; document.getElementById('n-emoji').value='';
+  document.getElementById('n-lecciones').value=0; document.getElementById('n-min').value=20;
+  document.getElementById('n-premio').value='';
+  abrir('m-nuevo'); setTimeout(()=>document.getElementById('n-nombre').focus(),80);
+}
+
+function abrirEditarCurso(id){
+  const c = cursos.find(x=>x.id===id); if(!c) return;
+  cursoEditId = id;
+  document.getElementById('n-titulo-modal').textContent = 'Editar curso';
+  document.getElementById('n-guardar').textContent = '✓ Guardar cambios';
+  document.getElementById('n-nombre').value = c.nombre || '';
+  document.getElementById('n-emoji').value = c.emoji || '';
+  document.getElementById('n-quien').value = c.persona_id || 'ambos';
+  document.getElementById('n-lecciones').value = c.lecciones_total || 0;
+  document.getElementById('n-min').value = c.min_dia || 20;
+  document.getElementById('n-premio').value = c.recompensa || '';
+  document.getElementById('n-hechas-wrap').style.display = '';
+  document.getElementById('n-hechas').value = c.lecciones_hechas || 0;
+  abrir('m-nuevo');
+}
+
 async function crearCurso(){
   const nombre = document.getElementById('n-nombre').value.trim();
   if(!nombre){ toast('Ponle nombre al curso'); return; }
@@ -493,11 +527,33 @@ async function crearCurso(){
     recompensa: document.getElementById('n-premio').value.trim(),
   };
   try{
-    const nuevo = await DD.fetch('/cursos',{method:'POST',body:JSON.stringify(body)});
-    cursos.push(nuevo); pintarCursos(); cerrar('m-nuevo');
-    document.getElementById('n-nombre').value=''; document.getElementById('n-premio').value='';
-    toast('🎓 Curso creado — ¡a estudiar!');
+    if(cursoEditId){
+      body.lecciones_hechas = +document.getElementById('n-hechas').value || 0;
+      const u = await DD.fetch('/cursos/'+cursoEditId,{method:'PUT',body:JSON.stringify(body)});
+      const i = cursos.findIndex(c=>c.id===cursoEditId);
+      if(i>=0) cursos[i] = u;
+      cerrar('m-nuevo'); pintarCursos(); cargarReto();
+      toast(u.estado==='terminado' ? '🏆 ¡Con eso quedó completado!' : '✓ Curso actualizado');
+    } else {
+      const nuevo = await DD.fetch('/cursos',{method:'POST',body:JSON.stringify(body)});
+      cursos.push(nuevo); pintarCursos(); cerrar('m-nuevo');
+      toast('🎓 Curso creado — ¡a estudiar!');
+    }
   }catch(e){ toast('No se pudo: '+e.message); }
+}
+
+/* Un módulo terminado, de un toque (suma 50 pts; si era el último, completa el curso) */
+async function moduloListo(id, btn){
+  if(!DD.personaId()){ DD.abrirSelector(true); return; }
+  if(btn){ btn.disabled=true; btn.textContent='…'; }
+  try{
+    const r = await DD.fetch('/cursos/'+id+'/estudiar',{method:'POST',
+      body:JSON.stringify({persona_id: DD.personaId(), minutos: 0, lecciones: 1})});
+    const i = cursos.findIndex(c=>c.id===id);
+    if(i>=0) cursos[i] = r.curso;
+    pintarCursos(); cargarReto();
+    mostrarResultadoEstudio(r);
+  }catch(e){ toast('No se pudo: '+e.message); if(btn){ btn.disabled=false; btn.textContent='📗 Módulo listo'; } }
 }
 
 async function borrarCurso(id){
@@ -529,25 +585,28 @@ async function guardarEstudio(){
     const i = cursos.findIndex(c=>c.id===cursoSel.id);
     if(i>=0) cursos[i] = r.curso;
     cerrar('m-estudie'); pintarCursos(); cargarReto();
-    if(r.terminado){
-      document.getElementById('c-emoji').textContent = '🏆';
-      document.getElementById('c-titulo').textContent = '¡CURSO TERMINADO!';
-      document.getElementById('c-texto').textContent = `${r.curso.nombre} · +${r.pts_ganados} pts · ${r.nivel.nombre}`;
-      const pr = document.getElementById('c-premio');
-      if(r.recompensa){ pr.style.display=''; pr.textContent = `🎁 Se ganaron: ${r.recompensa}`; }
-      else pr.style.display='none';
-      document.getElementById('celebra').classList.add('abierto');
-    } else {
-      document.getElementById('c-emoji').textContent = (r.curso.racha||0)>=3 ? '🔥' : '⭐';
-      document.getElementById('c-titulo').textContent = `+${r.pts_ganados} puntos`;
-      document.getElementById('c-texto').textContent =
-        `Racha: ${r.curso.racha} día(s) · Eres ${r.nivel.nombre}` +
-        (r.nivel.siguiente ? ` · te faltan ${r.nivel.faltan} pts para ${r.nivel.siguiente}` : '');
-      document.getElementById('c-premio').style.display='none';
-      document.getElementById('celebra').classList.add('abierto');
-    }
+    mostrarResultadoEstudio(r);
   }catch(e){ toast('No se pudo: '+e.message); }
   finally{ btn.disabled=false; btn.textContent='✓ Registrar'; }
+}
+
+function mostrarResultadoEstudio(r){
+  if(r.terminado){
+    document.getElementById('c-emoji').textContent = '🏆';
+    document.getElementById('c-titulo').textContent = '¡CURSO COMPLETADO!';
+    document.getElementById('c-texto').textContent = `${r.curso.nombre} · +${r.pts_ganados} pts · ${r.nivel.nombre}`;
+    const pr = document.getElementById('c-premio');
+    if(r.recompensa){ pr.style.display=''; pr.textContent = `🎁 Se ganaron: ${r.recompensa}`; }
+    else pr.style.display='none';
+  } else {
+    document.getElementById('c-emoji').textContent = (r.curso.racha||0)>=3 ? '🔥' : '⭐';
+    document.getElementById('c-titulo').textContent = `+${r.pts_ganados} puntos`;
+    document.getElementById('c-texto').textContent =
+      `Racha: ${r.curso.racha} día(s) · Eres ${r.nivel.nombre}` +
+      (r.nivel.siguiente ? ` · te faltan ${r.nivel.faltan} pts para ${r.nivel.siguiente}` : '');
+    document.getElementById('c-premio').style.display='none';
+  }
+  document.getElementById('celebra').classList.add('abierto');
 }
 
 /* ── Misiones IA ── */
