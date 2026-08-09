@@ -140,6 +140,7 @@
       <button class="btn" onclick="cambiarSemana(1)">→</button>
     </div>
 
+    <div id="planeacion-banner"></div>
     <div id="cerrada-banner"></div>
 
     <div class="card">
@@ -175,16 +176,22 @@ const DIAS = ['lunes','martes','miércoles','jueves','viernes','sábado','doming
 
 function isoSemana(d){ const dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const day=dt.getUTCDay()||7; dt.setUTCDate(dt.getUTCDate()+4-day); const y=new Date(Date.UTC(dt.getUTCFullYear(),0,1)); const wk=Math.ceil((((dt-y)/86400000)+1)/7); return `${dt.getUTCFullYear()}-W${String(wk).padStart(2,'0')}`; }
 function lunesDe(iso){ const [y,w]=iso.split('-W').map(Number); const s=new Date(Date.UTC(y,0,1+(w-1)*7)); const day=s.getUTCDay()||7; const l=new Date(s); l.setUTCDate(s.getUTCDate()-day+1); return l; }
-function tituloSemana(iso){ const l=lunesDe(iso); const d=new Date(l); d.setUTCDate(l.getUTCDate()+6); const f=x=>x.toLocaleDateString('es',{day:'numeric',month:'short',timeZone:'UTC'}); const hoy=isoSemana(new Date()); return (iso===hoy?'Esta semana · ':'')+`${f(l)} – ${f(d)}`; }
+function tituloSemana(iso){ const l=lunesDe(iso); const d=new Date(l); d.setUTCDate(l.getUTCDate()+5); const f=x=>x.toLocaleDateString('es',{day:'numeric',month:'short',timeZone:'UTC'}); const sp=semanaSprintHoy(); const dom=new Date().getDay()===0; const pre=(iso===sp?(dom?'Próxima semana · ':'Esta semana · '):''); return pre+`${f(l)} – ${f(d)}`; }
 function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function uid(){ return 'm'+Math.random().toString(36).slice(2,9); }
+// Ritual: sprint lun→sáb; el DOMINGO ya se planea la semana que arranca el lunes
+function semanaSprintHoy(){ const n=new Date(); if(n.getDay()===0){ n.setDate(n.getDate()+1); } return isoSemana(n); }
 let personas=[];
 
 document.addEventListener('DOMContentLoaded', init);
 async function init(){
   const t = await DD.token(); if(!t) return;
   personas = (await DD.fetch('/personas')).personas || [];
-  semanaActual = isoSemana(new Date());
+  semanaActual = semanaSprintHoy();
+  if(new Date().getDay()===0){
+    const b=document.getElementById('planeacion-banner');
+    if(b) b.innerHTML='<div class="cerrada-banner" style="background:var(--indigo-soft);border-color:color-mix(in srgb,var(--indigo) 30%,transparent);color:var(--indigo)">🗓️ Domingo de planeación — están armando el sprint que arranca el lunes.</div>';
+  }
   await cargar();
 }
 async function cargar(){

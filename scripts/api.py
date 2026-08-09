@@ -2780,6 +2780,16 @@ def local_token():
 
 # ============ COMIDAS + DESPENSA (Fase 4 — módulo compartido) ============
 
+def _semana_sprint(fecha=None):
+    """Semana de sprint según el ritual: un sprint va lunes→sábado (cierra sáb 23:59)
+    y el DOMINGO es día de planeación de la semana que arranca el lunes. Por eso el
+    domingo esta función apunta ya a la semana SIGUIENTE."""
+    d = fecha or date.today()
+    if d.isoweekday() == 7:      # domingo → planear la semana que empieza mañana
+        d = d + timedelta(days=1)
+    return _semana_iso(d)
+
+
 def _semana_iso(fecha=None):
     d = fecha or date.today()
     y, w, _ = d.isocalendar()
@@ -3135,7 +3145,7 @@ def _racha_sprints() -> int:
 @app.route("/api/sprint", methods=["GET"])
 @requiere_auth
 def get_sprint():
-    semana = request.args.get("semana") or _semana_iso()
+    semana = request.args.get("semana") or _semana_sprint()
     fila = next((s for s in cargar("sprints.json").get("sprints", []) if s.get("semana") == semana), None)
     return jsonify({
         "semana": semana,
@@ -3212,7 +3222,7 @@ def sugerir_foco_sprint():
 @requiere_auth
 def put_sprint():
     body = request.get_json() or {}
-    semana = body.get("semana") or _semana_iso()
+    semana = body.get("semana") or _semana_sprint()
     data = cargar("sprints.json"); data.setdefault("sprints", [])
     fila = next((s for s in data["sprints"] if s.get("semana") == semana), None)
     if not fila:
@@ -3465,14 +3475,15 @@ def _habitos_hoy_estado(persona_id=None):
 def get_nosotros():
     """Todo lo de la pareja en una sola foto: sprint, hábitos de hoy por persona,
     balance de gastos del mes, comida de hoy y pendientes del mercado."""
-    semana = _semana_iso()
+    semana = _semana_iso()               # semana calendario (menú/comida de hoy)
+    semana_sp = _semana_sprint()          # semana de sprint (domingo → siguiente)
     personas = _personas_activas()
 
-    # Sprint de la semana
-    fila = next((s for s in cargar("sprints.json").get("sprints", []) if s.get("semana") == semana), None)
+    # Sprint de la semana (el domingo ya apunta al que arranca el lunes)
+    fila = next((s for s in cargar("sprints.json").get("sprints", []) if s.get("semana") == semana_sp), None)
     metas = (fila or {}).get("metas", [])
     sprint = {
-        "semana": semana,
+        "semana": semana_sp,
         "lema": (fila or {}).get("lema", ""),
         "metas": metas,
         "hechas": sum(1 for m in metas if m.get("hecha")),

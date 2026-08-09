@@ -133,18 +133,21 @@ def iniciar():
         replace_existing=True,
         next_run_time=datetime.now(TZ) + timedelta(seconds=90)
     )
-    # Resumen dominical de pareja: domingos 7:30pm (tolera hasta 2h de atraso)
+    # Ritual de sprint: cierre automático sábado 23:59 + resumen/planeación domingo 7:30pm
     try:
         from apscheduler.triggers.cron import CronTrigger as _Cron
         s.add_job(
+            cerrar_sprint_semana,
+            _Cron(day_of_week="sat", hour=23, minute=59, timezone=TZ),
+            id="_cerrar_sprint", replace_existing=True, misfire_grace_time=3600
+        )
+        s.add_job(
             enviar_resumen_dominical,
             _Cron(day_of_week="sun", hour=19, minute=30, timezone=TZ),
-            id="_resumen_dominical",
-            replace_existing=True,
-            misfire_grace_time=7200
+            id="_resumen_dominical", replace_existing=True, misfire_grace_time=7200
         )
     except Exception as e:
-        print(f"⚠️  No se pudo programar resumen dominical: {e}")
+        print(f"⚠️  No se pudo programar ritual de sprint: {e}")
     # Re-programar recordatorios pendientes
     reprogramar_recordatorios_pendientes()
     print("⚙️  Scheduler iniciado · jobs:", len(s.get_jobs()))
@@ -818,6 +821,23 @@ def revisar_avisos_inteligentes():
 # ─────────────────────────────────────────────────────────
 # Resumen dominical de pareja (domingo ~7:30pm)
 # ─────────────────────────────────────────────────────────
+def cerrar_sprint_semana():
+    """Sábado 23:59: cierra el sprint de la semana que termina. 1 sprint = lun→sáb."""
+    from comun import cargar, guardar
+    try:
+        ahora = datetime.now(TZ)
+        y, w, _ = ahora.isocalendar()
+        semana = f"{y}-W{w:02d}"
+        data = cargar("sprints.json"); data.setdefault("sprints", [])
+        fila = next((s for s in data["sprints"] if s.get("semana") == semana), None)
+        if fila and not fila.get("cerrado") and (fila.get("lema") or fila.get("metas")):
+            fila["cerrado"] = True
+            guardar("sprints.json", data)
+            print(f"🏁 Sprint {semana} cerrado automáticamente (sáb 23:59)")
+    except Exception as e:
+        print(f"⚠️  cerrar_sprint_semana: {e}")
+
+
 def enviar_resumen_dominical(forzar: bool = False):
     """Cada domingo en la noche: cómo les fue la semana como pareja
     (sprint, estudio, hábitos, gastos, mercado) + arranque de la nueva."""
@@ -837,7 +857,7 @@ def enviar_resumen_dominical(forzar: bool = False):
         personas = {p["id"]: p for p in cargar("personas.json").get("personas", [])
                     if p.get("activo", True)}
         nom = lambda pid: (personas.get(pid, {}).get("nombre") or pid).split(" ")[0]
-        partes = ["💞 *Resumen de su semana*"]
+        partes = ["💞 *Resumen de la semana* · hoy es día de planeación 🗓️"]
 
         # 🎯 Sprint
         fila = next((s for s in cargar("sprints.json").get("sprints", [])
@@ -928,7 +948,9 @@ def enviar_resumen_dominical(forzar: bool = False):
         if pend:
             partes.append(f"🛒 Mercado: {pend} cosa(s) pendientes")
 
-        partes.append("\n🌟 Arranca semana nueva: elijan su foco en el Sprint 💪")
+        partes.append("\n🗓️ *Hoy a planear la próxima semana*: en el Sprint dale a "
+                      "«✨ Sugerir con IA» para el foco y las metas, y dejen sus actividades "
+                      "en «Planeado». El sprint arranca el lunes. 💪")
         texto = "\n".join(partes)
 
         import avisos
