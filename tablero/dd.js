@@ -44,7 +44,12 @@
       opts.headers = Object.assign({ 'X-API-Token': t }, opts.headers || {});
       if (opts.body && !opts.headers['Content-Type']) opts.headers['Content-Type'] = 'application/json';
       const r = await fetch(API + ruta, opts);
-      if (!r.ok) throw new Error('API ' + r.status + ' en ' + ruta);
+      if (!r.ok) {
+        // Si el servidor explicó el error, mostrar ESE motivo (no solo el código)
+        let msg = 'API ' + r.status + ' en ' + ruta;
+        try { const d = await r.json(); if (d && d.error) msg = d.error; } catch (_) {}
+        throw new Error(msg);
+      }
       return r.json();
     },
 
@@ -414,7 +419,6 @@
       ]},
       { grupo: 'Configurar', items: [
         { href: '/tablero/admin.html#clientes', ic: 'clientes', txt: 'Clientes' },
-        { href: '/tablero/admin.html#habitos', ic: 'habitos', txt: 'Hábitos' },
         { href: '/tablero/admin.html#tareas', ic: 'tareas', txt: 'Tareas' },
         { href: '/tablero/admin.html#recordatorios', ic: 'recordatorios', txt: 'Recordatorios' },
         { href: '/tablero/admin.html#calendarios', ic: 'calendarios', txt: 'Calendarios' },

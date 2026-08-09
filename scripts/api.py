@@ -769,6 +769,16 @@ def cumplir_habito(hid):
     return jsonify({"ok": True, "habito_id": hid, "fecha": registro["fecha"]})
 
 
+@app.route("/api/habitos/<hid>/descumplir", methods=["POST"])
+@requiere_auth
+def descumplir_habito(hid):
+    """Quita la marca de cumplido de HOY (deshacer un toque accidental)."""
+    registro = cargar_registro_dia()
+    registro["habitos_cumplidos"] = [h for h in registro.get("habitos_cumplidos", []) if h != hid]
+    guardar_registro_dia(registro)
+    return jsonify({"ok": True, "habito_id": hid, "fecha": registro["fecha"]})
+
+
 @app.route("/api/habitos/<hid>", methods=["DELETE"])
 @requiere_auth
 def delete_habito(hid):
@@ -3641,7 +3651,7 @@ def plan_curso_ia(cid):
         "adaptadas al progreso actual. En español."
     )
     try:
-        cliente = OpenAI()
+        cliente = OpenAI(timeout=30)
         resp = cliente.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "system", "content": sistema}, {"role": "user", "content": usuario}],
@@ -3650,7 +3660,10 @@ def plan_curso_ia(cid):
         )
         propuesta = json.loads(resp.choices[0].message.content)
     except Exception as e:
-        return jsonify({"error": f"IA no disponible: {e}"}), 502
+        import traceback
+        print(f"⚠️  plan_curso_ia: {type(e).__name__}: {e}")
+        print(traceback.format_exc()[-400:])
+        return jsonify({"error": f"IA no disponible ({type(e).__name__}): {str(e)[:160]}"}), 502
 
     curso["misiones"] = [{"texto": str(m)[:160], "hecha": False}
                           for m in (propuesta.get("misiones") or [])[:5]]

@@ -46,6 +46,13 @@
   h1{font-family:var(--font-brand);font-weight:500;font-size:44px;line-height:1.04;letter-spacing:-.025em;margin:4px 0 6px;}
   h1 em{font-style:italic;color:var(--burnt);}
 
+  .tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:18px;}
+  .tab{flex:1;border:none;background:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--stone);
+    padding:11px 14px;border-radius:9px;transition:all .13s;}
+  .tab.active{background:#241A38;color:#fff;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+
   .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:10px;font-family:inherit;font-size:13px;font-weight:600;
     cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--charcoal);transition:all .15s;}
   .btn:hover{border-color:var(--line-strong);background:var(--surface-2);}
@@ -101,6 +108,41 @@
 
   .vacio{text-align:center;padding:44px 20px;color:var(--mist);}
   .vacio .emoji{font-size:44px;display:block;margin-bottom:10px;}
+
+  /* hábitos: filas grandes para el pulgar */
+  .hab-prog{background:linear-gradient(135deg,#FCE7F3,#F3E8FF);border:1px solid #F9A8D4;border-radius:16px;
+    padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;}
+  .hab-prog .n{font-family:var(--font-brand);font-size:32px;color:var(--burnt);font-variant-numeric:tabular-nums;}
+  .hab-prog .n small{font-size:14px;color:var(--stone);font-family:var(--font-body);font-weight:600;}
+  .hab-prog .t{font-size:13.5px;font-weight:700;color:var(--charcoal);}
+  .hab-prog .s{font-size:12px;color:var(--stone);}
+  .hb{display:flex;align-items:center;gap:13px;padding:14px 15px;background:var(--surface);border:1.5px solid var(--line);
+    border-radius:14px;margin-bottom:9px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;
+    transition:transform .08s,background .15s,border-color .15s;min-height:60px;}
+  .hb:active{transform:scale(.985);}
+  .hb .mk{width:28px;height:28px;border-radius:50%;border:2.5px solid var(--line-strong);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;transition:all .15s;}
+  .hb.ok{background:var(--sage-soft);border-color:transparent;}
+  .hb.ok .mk{background:var(--sage);border-color:var(--sage);}
+  .hb.ok .hb-nom{text-decoration:line-through;color:var(--stone);}
+  .hb .hb-ic{font-size:19px;flex-shrink:0;}
+  .hb .hb-tx{flex:1;min-width:0;}
+  .hb .hb-nom{font-size:15px;font-weight:600;}
+  .hb .hb-sub{font-size:11.5px;color:var(--stone);display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+  .hb .hb-sub .pill{font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--indigo-soft);color:var(--indigo);}
+  .hb .hb-racha{color:var(--amber);font-weight:700;}
+  .hb .hb-edit{background:none;border:none;color:var(--mist);cursor:pointer;font-size:14px;padding:7px 9px;border-radius:8px;flex-shrink:0;}
+  .hb .hb-edit:hover{background:var(--line-soft);color:var(--ink);}
+  .hb.otro-dia{opacity:.55;cursor:default;}
+  .hab-grupo{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--stone);margin:18px 2px 10px;}
+  .dias-chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .dias-chips button{width:38px;height:38px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);
+    font-family:inherit;font-size:12px;font-weight:700;color:var(--stone);cursor:pointer;}
+  .dias-chips button.on{background:#241A38;border-color:#241A38;color:#fff;}
+  .quien-seg{display:flex;gap:8px;flex-wrap:wrap;}
+  .quien-seg button{flex:1;min-width:90px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;font-family:inherit;
+    font-size:12.5px;font-weight:700;color:var(--stone);padding:10px;border-radius:10px;}
+  .quien-seg button.on{background:var(--burnt-soft);border-color:var(--burnt);color:var(--burnt);}
 
   /* modales */
   .modal-fondo{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:900;padding:20px;}
@@ -170,20 +212,36 @@
         <div class="greeting">Suben de nivel, juntos</div>
         <h1>A <em>aprender</em></h1>
       </div>
-      <button class="btn primario" onclick="abrirNuevo()">＋ Nuevo curso</button>
+      <button class="btn primario" id="btn-nuevo" onclick="abrirNuevo()">＋ Nuevo curso</button>
     </div>
 
-    <div class="card reto" id="card-reto" style="display:none">
-      <div class="card-eyebrow" style="color:var(--indigo)">
-        Reto de la semana
-        <span class="reto-modos" id="reto-modos"></span>
+    <div class="tabs">
+      <button class="tab active" data-panel="cursos" onclick="irPanel('cursos')">🎓 Cursos</button>
+      <button class="tab" data-panel="habitos" onclick="irPanel('habitos')">✅ Hábitos</button>
+    </div>
+
+    <!-- PANEL CURSOS -->
+    <section class="panel active" id="panel-cursos">
+      <div class="card reto" id="card-reto" style="display:none">
+        <div class="card-eyebrow" style="color:var(--indigo)">
+          Reto de la semana
+          <span class="reto-modos" id="reto-modos"></span>
+        </div>
+        <div class="reto-frase" id="reto-frase"></div>
+        <div class="reto-sub" id="reto-sub"></div>
+        <div class="reto-barras" id="reto-barras"></div>
       </div>
-      <div class="reto-frase" id="reto-frase"></div>
-      <div class="reto-sub" id="reto-sub"></div>
-      <div class="reto-barras" id="reto-barras"></div>
-    </div>
+      <div id="lista-cursos"><div class="vacio">Cargando…</div></div>
+    </section>
 
-    <div id="lista-cursos"><div class="vacio">Cargando…</div></div>
+    <!-- PANEL HÁBITOS -->
+    <section class="panel" id="panel-habitos">
+      <div class="hab-prog" id="hab-prog" style="display:none">
+        <div class="n" id="hp-n">0<small>/0</small></div>
+        <div><div class="t" id="hp-t">Hábitos de hoy</div><div class="s" id="hp-s"></div></div>
+      </div>
+      <div id="lista-habitos"><div class="vacio">Cargando…</div></div>
+    </section>
   </main>
 </div>
 
@@ -235,6 +293,28 @@
   </div>
 </div>
 
+<!-- MODAL: hábito (nuevo / editar) -->
+<div class="modal-fondo" id="m-habito">
+  <div class="modal">
+    <h3 id="h-titulo">Nuevo hábito</h3>
+    <label>¿Qué hábito?</label>
+    <input id="h-nombre" placeholder="ej. Ejercicio 30 min" maxlength="60">
+    <label>Categoría</label>
+    <select id="h-cat"></select>
+    <label>¿De quién es?</label>
+    <div class="quien-seg" id="h-quien"></div>
+    <label>¿Qué días? <small style="text-transform:none;letter-spacing:0">(todos marcados = diario)</small></label>
+    <div class="dias-chips" id="h-dias"></div>
+    <div class="modal-acciones" style="justify-content:space-between;">
+      <button class="btn" id="h-borrar" style="color:var(--crimson);border-color:var(--crimson-soft);background:var(--crimson-soft);visibility:hidden" onclick="borrarHabito()">Eliminar</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="cerrar('m-habito')">Cancelar</button>
+        <button class="btn primario" onclick="guardarHabito()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- CELEBRACIÓN -->
 <div class="celebra" id="celebra">
   <div class="caja">
@@ -259,7 +339,16 @@ async function init(){
   document.getElementById('n-quien').innerHTML =
     '<option value="ambos">👫 Los dos</option>' +
     personas.map(p=>`<option value="${p.id}">${esc(nom(p))}</option>`).join('');
-  await Promise.all([cargarCursos(), cargarReto()]);
+  await Promise.all([cargarCursos(), cargarReto(), cargarHabitos()]);
+  if(location.hash === '#habitos') irPanel('habitos');
+}
+
+function irPanel(id){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.panel===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id==='panel-'+id));
+  const btn = document.getElementById('btn-nuevo');
+  if(id==='habitos'){ btn.textContent='＋ Nuevo hábito'; btn.onclick=()=>abrirHabito(); }
+  else { btn.textContent='＋ Nuevo curso'; btn.onclick=abrirNuevo; }
 }
 function nom(p){ return (p.nombre||'').split(/\s+/)[0]; }
 function pDe(id){ return personas.find(x=>x.id===id); }
@@ -476,6 +565,139 @@ async function toggleMision(cid, idx, v){
   c.misiones[idx].hecha = v; pintarCursos();
   try{ await DD.fetch('/cursos/'+cid,{method:'PUT',body:JSON.stringify({misiones:c.misiones})}); }
   catch(e){ toast('No se pudo guardar'); }
+}
+
+/* ═══════════ HÁBITOS (todo desde aquí) ═══════════ */
+const DIAS_L = [[1,'L'],[2,'M'],[3,'X'],[4,'J'],[5,'V'],[6,'S'],[7,'D']];
+let H = { categorias:[], habitos:[], cumplidos:new Set() };
+let habEdit = null, hQuien = 'personal', hDias = new Set([1,2,3,4,5,6,7]);
+
+async function cargarHabitos(){
+  try{
+    const [hd, reg] = await Promise.all([DD.fetch('/habitos'), DD.fetch('/plan/hoy')]);
+    H.categorias = hd.categorias || [];
+    H.habitos = hd.habitos || [];
+    H.cumplidos = new Set(reg.habitos_cumplidos || []);
+  }catch(e){ console.warn(e); }
+  pintarHabitos();
+}
+
+function catInfo(id){ return H.categorias.find(c=>c.id===id) || {icono:'✨', nombre:''}; }
+function esMio(h){
+  const yo = DD.personaId();
+  return (h.alcance||'pareja')!=='personal' || h.persona_id===yo;
+}
+
+function pintarHabitos(){
+  const cont = document.getElementById('lista-habitos');
+  const dow = new Date().getDay() || 7;   // ISO 1..7
+  const mios = H.habitos.filter(h=>h.activo!==false && esMio(h));
+  const hoy = mios.filter(h=>!h.dias || !Array.isArray(h.dias) || !h.dias.length || h.dias.includes(dow));
+  const otros = mios.filter(h=>!hoy.includes(h));
+
+  const hechos = hoy.filter(h=>H.cumplidos.has(h.id)).length;
+  const prog = document.getElementById('hab-prog');
+  if(hoy.length){
+    prog.style.display='flex';
+    document.getElementById('hp-n').innerHTML = `${hechos}<small>/${hoy.length}</small>`;
+    document.getElementById('hp-t').textContent = hechos===hoy.length ? '¡Día completo! 🎉' : 'Hábitos de hoy';
+    document.getElementById('hp-s').textContent = hechos===hoy.length
+      ? 'Todos marcados. Así se hace.' : 'Toca cada uno cuando lo cumplas.';
+  } else prog.style.display='none';
+
+  if(!mios.length){
+    cont.innerHTML = `<div class="vacio"><span class="emoji">✅</span>Sin hábitos todavía.<br>Crea el primero con el botón de arriba.</div>`;
+    return;
+  }
+  let html = hoy.map(h=>filaHab(h,true)).join('');
+  if(otros.length){
+    html += `<div class="hab-grupo">No tocan hoy</div>` + otros.map(h=>filaHab(h,false)).join('');
+  }
+  cont.innerHTML = html;
+}
+
+function filaHab(h, deHoy){
+  const ok = H.cumplidos.has(h.id);
+  const cat = catInfo(h.categoria_id);
+  const pareja = (h.alcance||'pareja')!=='personal';
+  const dias = (h.dias&&h.dias.length&&h.dias.length<7)
+    ? h.dias.map(d=>DIAS_L.find(x=>x[0]===d)?.[1]||'').join('') : 'diario';
+  return `<div class="hb ${ok?'ok':''} ${deHoy?'':'otro-dia'}" ${deHoy?`onclick="toggleHab('${h.id}')"`:''}>
+    <div class="mk">${ok?'✓':''}</div>
+    <span class="hb-ic">${cat.icono||'✨'}</span>
+    <div class="hb-tx">
+      <div class="hb-nom">${esc(h.nombre)}</div>
+      <div class="hb-sub">${pareja?'<span class="pill">👫 de los dos</span>':''}
+        ${(h.racha_actual||0)>0?`<span class="hb-racha">🔥 ${h.racha_actual}</span>`:''}
+        <span>${dias}</span></div>
+    </div>
+    <button class="hb-edit" onclick="abrirHabito('${h.id}',event)" aria-label="Editar">✎</button>
+  </div>`;
+}
+
+async function toggleHab(id){
+  const era = H.cumplidos.has(id);
+  if(era) H.cumplidos.delete(id); else H.cumplidos.add(id);
+  pintarHabitos();
+  if(!era && navigator.vibrate) navigator.vibrate(12);
+  try{ await DD.fetch(`/habitos/${id}/${era?'descumplir':'cumplir'}`,{method:'POST',body:'{}'}); }
+  catch(e){ if(era) H.cumplidos.add(id); else H.cumplidos.delete(id); pintarHabitos(); toast('No se pudo guardar'); }
+}
+
+function abrirHabito(id, ev){
+  if(ev) ev.stopPropagation();
+  habEdit = id ? H.habitos.find(h=>h.id===id) : null;
+  document.getElementById('h-titulo').textContent = habEdit ? 'Editar hábito' : 'Nuevo hábito';
+  document.getElementById('h-nombre').value = habEdit ? habEdit.nombre : '';
+  document.getElementById('h-cat').innerHTML =
+    H.categorias.map(c=>`<option value="${c.id}">${c.icono||''} ${esc(c.nombre)}</option>`).join('');
+  if(habEdit && habEdit.categoria_id) document.getElementById('h-cat').value = habEdit.categoria_id;
+  hQuien = habEdit ? ((habEdit.alcance||'pareja')==='personal' ? 'personal' : 'pareja') : 'personal';
+  hDias = new Set(habEdit && habEdit.dias && habEdit.dias.length ? habEdit.dias : [1,2,3,4,5,6,7]);
+  pintarQuien(); pintarDias();
+  document.getElementById('h-borrar').style.visibility = habEdit ? 'visible' : 'hidden';
+  abrir('m-habito');
+  if(!habEdit) setTimeout(()=>document.getElementById('h-nombre').focus(),80);
+}
+function pintarQuien(){
+  document.getElementById('h-quien').innerHTML =
+    `<button class="${hQuien==='personal'?'on':''}" onclick="hQuien='personal';pintarQuien()">Solo mío</button>
+     <button class="${hQuien==='pareja'?'on':''}" onclick="hQuien='pareja';pintarQuien()">👫 De los dos</button>`;
+}
+function pintarDias(){
+  document.getElementById('h-dias').innerHTML = DIAS_L.map(([n,l])=>
+    `<button class="${hDias.has(n)?'on':''}" onclick="toggleDia(${n})">${l}</button>`).join('');
+}
+function toggleDia(n){ if(hDias.has(n)){ if(hDias.size>1) hDias.delete(n); } else hDias.add(n); pintarDias(); }
+
+async function guardarHabito(){
+  const nombre = document.getElementById('h-nombre').value.trim();
+  if(!nombre){ toast('Ponle nombre al hábito'); return; }
+  const body = {
+    nombre,
+    categoria_id: document.getElementById('h-cat').value,
+    alcance: hQuien,
+    persona_id: hQuien==='personal' ? DD.personaId() : null,
+    dias: hDias.size===7 ? null : [...hDias].sort((a,b)=>a-b),
+  };
+  try{
+    if(habEdit){
+      const u = await DD.fetch('/habitos/'+habEdit.id,{method:'PUT',body:JSON.stringify(body)});
+      Object.assign(H.habitos.find(h=>h.id===habEdit.id), u);
+    } else {
+      H.habitos.push(await DD.fetch('/habitos',{method:'POST',body:JSON.stringify(body)}));
+    }
+    cerrar('m-habito'); pintarHabitos(); toast('Hábito guardado ✓');
+  }catch(e){ toast('No se pudo: '+e.message); }
+}
+
+async function borrarHabito(){
+  if(!habEdit || !confirm(`¿Eliminar «${habEdit.nombre}»?`)) return;
+  try{
+    await DD.fetch('/habitos/'+habEdit.id,{method:'DELETE'});
+    H.habitos = H.habitos.filter(h=>h.id!==habEdit.id);
+    cerrar('m-habito'); pintarHabitos(); toast('Hábito eliminado');
+  }catch(e){ toast('No se pudo: '+e.message); }
 }
 
 /* util */
