@@ -143,7 +143,11 @@
     <div id="cerrada-banner"></div>
 
     <div class="card">
-      <div class="card-eyebrow">El foco de la semana</div>
+      <div class="card-eyebrow" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <span>El foco de la semana</span>
+        <button class="btn" id="btn-foco-ia" onclick="sugerirFoco()"
+          style="background:linear-gradient(135deg,#8B5CF6,#EC4899);border:none;color:#fff;padding:7px 12px;font-size:12px;">✨ Sugerir con IA</button>
+      </div>
       <input class="lema-input" id="lema" placeholder="ej. Avanzar la página web y comer en casa" onchange="guardarLema()" maxlength="120">
     </div>
 
@@ -232,6 +236,22 @@ function pintar(){
 
 async function guardar(){ const d = await DD.fetch('/sprint',{method:'PUT',body:JSON.stringify({semana:semanaActual, lema:sprint.lema, metas:sprint.metas, cerrado:sprint.cerrado})}); sprint.racha=d.racha; document.getElementById('racha-n').textContent=d.racha; }
 function guardarLema(){ sprint.lema=document.getElementById('lema').value; guardar(); toast('Foco guardado'); }
+
+async function sugerirFoco(){
+  const b=document.getElementById('btn-foco-ia'); const orig=b.textContent; b.textContent='✨ Pensando…'; b.disabled=true;
+  try{
+    const r=await DD.fetch('/sprint/sugerir-foco',{method:'POST',body:'{}'});
+    if(r.lema){ sprint.lema=r.lema; document.getElementById('lema').value=r.lema; }
+    // Agrega las metas propuestas que aún no estén
+    (r.metas||[]).forEach(t=>{
+      if(t && !sprint.metas.some(m=>m.texto.toLowerCase()===t.toLowerCase()))
+        sprint.metas.push({id:uid(),texto:t,responsable_id:'ambos',hecha:false});
+    });
+    pintar(); await guardar();
+    toast('✨ Foco y metas sugeridos — ajústenlos a gusto');
+  }catch(e){ toast('No se pudo: '+e.message); }
+  finally{ b.textContent=orig; b.disabled=false; }
+}
 function agregarMeta(){ const inp=document.getElementById('nueva-meta'); const t=inp.value.trim(); if(!t)return; sprint.metas.push({id:uid(),texto:t,responsable_id:DD.personaId()||'ambos',hecha:false}); inp.value=''; pintar(); guardar(); setTimeout(()=>document.getElementById('nueva-meta').focus(),40); }
 function toggleMeta(i,v){ sprint.metas[i].hecha=v; pintar(); guardar(); }
 function setResp(i,v){ sprint.metas[i].responsable_id=v||null; guardar(); }

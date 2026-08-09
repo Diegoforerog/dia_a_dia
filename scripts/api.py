@@ -3146,6 +3146,68 @@ def get_sprint():
     })
 
 
+@app.route("/api/sprint/sugerir-foco", methods=["POST"])
+@requiere_auth
+def sugerir_foco_sprint():
+    """La IA propone el foco (lema) + metas de la semana leyendo lo que hay:
+    historias PLANEADAS de la semana, hábitos activos y recordatorios próximos."""
+    try:
+        from openai import OpenAI
+    except ImportError:
+        return jsonify({"error": "Falta instalar openai"}), 500
+    if not os.getenv("OPENAI_API_KEY"):
+        return jsonify({"error": "Falta OPENAI_API_KEY"}), 500
+
+    # Contexto: historias planeadas + en progreso (no hechas)
+    historias = cargar("historias.json").get("historias", [])
+    planeadas = [h.get("titulo", "") for h in historias
+                 if h.get("estado") in ("planeado", "en_progreso") and h.get("titulo")][:20]
+    # Hábitos activos
+    habs = [h.get("nombre", "") for h in cargar("habitos.json").get("habitos", [])
+            if h.get("activo", True) and h.get("nombre")][:15]
+    # Recordatorios activos (títulos)
+    recs = [r.get("titulo", "") for r in cargar("recordatorios.json").get("recordatorios", [])
+            if r.get("activo", True) and not r.get("enviado") and r.get("titulo")][:10]
+
+    contexto = {
+        "actividades_planeadas": planeadas,
+        "habitos": habs,
+        "recordatorios": recs,
+    }
+    sistema = ("Eres el coach de una pareja (Diego y Vanessa) que organiza su semana. "
+               "A partir de sus actividades planeadas, hábitos y recordatorios, propones "
+               "UN foco de la semana corto e inspirador y 3-5 metas concretas. "
+               "Respondes SOLO JSON válido.")
+    usuario = (
+        "Con este contexto de su semana:\n"
+        + json.dumps(contexto, ensure_ascii=False)
+        + '\n\nDevuelve EXACTAMENTE: {"lema": "foco corto (máx 12 palabras)", '
+        '"metas": ["meta 1", "meta 2", "meta 3"]}. '
+        "El lema resume el espíritu de la semana; las metas son lo más importante "
+        "a lograr, en español, empezando con verbo. Si no hay casi contexto, propón "
+        "un foco equilibrado de pareja (trabajo + salud + hogar + tiempo juntos)."
+    )
+    try:
+        cliente = OpenAI(timeout=30)
+        resp = cliente.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "system", "content": sistema}, {"role": "user", "content": usuario}],
+            response_format={"type": "json_object"},
+            temperature=0.7, max_tokens=350,
+        )
+        prop = json.loads(resp.choices[0].message.content)
+    except Exception as e:
+        import traceback
+        print(f"⚠️  sugerir_foco_sprint: {type(e).__name__}: {e}")
+        print(traceback.format_exc()[-400:])
+        return jsonify({"error": f"IA no disponible ({type(e).__name__}): {str(e)[:160]}"}), 502
+
+    return jsonify({
+        "lema": str(prop.get("lema") or "")[:120],
+        "metas": [str(m)[:120] for m in (prop.get("metas") or [])[:5]],
+    })
+
+
 @app.route("/api/sprint", methods=["PUT"])
 @requiere_auth
 def put_sprint():

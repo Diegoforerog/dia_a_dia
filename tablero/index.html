@@ -1749,7 +1749,7 @@
           <div class="card-head">
             <div>
               <div class="card-eyebrow">Tus proyectos</div>
-              <h2>Tu trabajo de hoy</h2>
+              <h2>Tus actividades de hoy</h2>
             </div>
             <a href="/tablero/proyectos.html" style="font-size:12px;color:var(--burnt);text-decoration:none;border-bottom:1px solid var(--burnt-line);">ver tablero →</a>
           </div>
@@ -2338,11 +2338,16 @@ async function pintarTrabajoHoy(){
     const data=await apiGet('/historias') || {historias:[]};
     const proyectos=(window.__DATA__&&window.__DATA__.proyectos)||[];
     const proyMap={}; proyectos.forEach(p=>proyMap[p.id]=p.nombre);
-    let hs=(data.historias||[]).filter(h=>h.estado!=='hecho' &&
-      (h.estado==='en_progreso' || (h.fecha_objetivo && h.fecha_objetivo<=hoyStr)));
+    // "En progreso" = lo del día (lo que pasaron la noche anterior)
+    let hs=(data.historias||[]).filter(h=>h.estado==='en_progreso');
     if(yo) hs=hs.filter(h=>!h.responsable_id || h.responsable_id===yo || h.responsable_id==='ambos');
+    const planeadas=(data.historias||[]).filter(h=>h.estado==='planeado' &&
+      (!yo || !h.responsable_id || h.responsable_id===yo || h.responsable_id==='ambos')).length;
     const COL={backlog:'Backlog',planeado:'Planeado',en_progreso:'En progreso',qa:'Revisión',bloqueado:'Bloqueado'};
-    if(!hs.length){ cont.innerHTML='<div class="empty">Nada urgente en el tablero. ✨</div>'; return; }
+    if(!hs.length){
+      cont.innerHTML=`<div class="empty">Nada en «En progreso» para hoy.<br><span style="font-size:12px">Pásalas ahí desde <a href="/tablero/proyectos.html" style="color:var(--burnt)">Proyectos</a> la noche anterior.</span>${planeadas?`<div style="margin-top:8px;font-size:12px;color:var(--stone)">📋 ${planeadas} planeada(s) para esta semana</div>`:''}</div>`;
+      return;
+    }
     cont.innerHTML=hs.slice(0,8).map(h=>{
       const venc = h.fecha_objetivo && h.fecha_objetivo<hoyStr;
       return `<a class="trabajo-fila" href="/tablero/proyectos.html">

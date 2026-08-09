@@ -1033,10 +1033,11 @@ def enviar_resumen_matutino(forzar: bool = False):
                 pass
         cals_p = [c for c in cals_all if c.get("persona_id") == p["id"]]
         eventos = _leer_eventos_google(cals_p, inicio_dia, fin_dia)
-        his_p = [h for h in historias
-                 if h.get("responsable_id") in (p["id"], "ambos") and h.get("estado") != "hecho"
-                 and (h.get("estado") == "en_progreso"
-                      or (h.get("fecha_objetivo") and h["fecha_objetivo"] <= hoy.isoformat()))]
+        # "En progreso" = lo del DÍA (lo que Diego/Vane pasaron la noche anterior);
+        # "Planeado" = lo de la SEMANA.
+        mios = [h for h in historias if h.get("responsable_id") in (p["id"], "ambos")]
+        his_p = [h for h in mios if h.get("estado") == "en_progreso"]
+        semana_p = [h for h in mios if h.get("estado") == "planeado"]
         habs_hoy = _habitos_de_hoy(ahora, p["id"])
 
         partes = [f"☀️ *Buenos días {p['nombre']}*", f"\n📅 *Hoy {fecha_human}*"]
@@ -1045,11 +1046,15 @@ def enviar_resumen_matutino(forzar: bool = False):
             partes += [f"🕐 {e['hora']}  {e['titulo']}" for e in eventos]
         else:
             partes.append("\n*━━ Reuniones ━━*\n_Sin reuniones hoy_ ✨")
+        partes.append(f"\n*━━ Tus actividades de hoy ({len(his_p)}) ━━*")
         if his_p:
-            partes.append(f"\n*━━ Tu trabajo de hoy ({len(his_p)}) ━━*")
             partes += [f"• {h['titulo']}" for h in his_p[:8]]
             if len(his_p) > 8:
-                partes.append(f"_+ {len(his_p)-8} más en el tablero_")
+                partes.append(f"_+ {len(his_p)-8} más_")
+        else:
+            partes.append("_Nada en «En progreso». Muévelas ahí la noche anterior._")
+        if semana_p:
+            partes.append(f"📋 _Esta semana: {len(semana_p)} planeada(s)_")
         if habs_hoy:
             partes.append(f"\n*━━ Hábitos del día ({len(habs_hoy)}) ━━*")
             partes += [f"{h['icono']} {h['nombre']}" for h in habs_hoy[:8]]
@@ -1062,7 +1067,7 @@ def enviar_resumen_matutino(forzar: bool = False):
                     partes.append(f"{etiquetas[momento]}: {comida[momento]}")
         partes.append("\n_Buen día. Que tu energía rinda._ 💪")
         texto = "\n".join(partes)
-        cuerpo_push = f"{len(eventos)} reunión(es) · {len(his_p)} del tablero · {len(habs_hoy)} hábitos"
+        cuerpo_push = f"{len(eventos)} reunión(es) · {len(his_p)} actividad(es) de hoy · {len(habs_hoy)} hábitos"
         if comida.get("almuerzo"):
             cuerpo_push += f" · 🍽️ {comida['almuerzo']}"
 
