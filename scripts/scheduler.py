@@ -120,9 +120,9 @@ def iniciar():
         replace_existing=True,
         next_run_time=datetime.now(TZ) + timedelta(seconds=30)
     )
-    # Resumen matutino: cada día a la hora de despertar configurada
+    # Planeación del día: todos los días a las 6:00 a.m.
     _programar_resumen_matutino()
-    # RECOVERY: si ya pasó la hora de despertar HOY y no se envió → enviar
+    # RECOVERY: si ya pasaron las 6:00 HOY y no se envió → enviar
     _intentar_resumen_si_falta()
     # Avisos inteligentes (cocinar, hábitos, sprint, mercado): escaneo cada 15 min
     _asegurar_tabla_avisos_intel()
@@ -153,42 +153,36 @@ def iniciar():
     print("⚙️  Scheduler iniciado · jobs:", len(s.get_jobs()))
 
 
+RESUMEN_HORA = 6   # planeación del día TODOS los días a las 6:00 (pedido de Diego)
+RESUMEN_MIN = 0
+
+
 def _programar_resumen_matutino():
-    """Lee config.horario_sueno.despertar y programa el resumen diario a esa hora.
+    """Planeación del día a las 6:00 a.m. todos los días.
     misfire_grace_time alto: si el sistema estaba caído cuando tocaba, lo dispara
     hasta 1h después de su hora teórica."""
     try:
         from apscheduler.triggers.cron import CronTrigger
-        from comun import cargar
-        cfg = cargar("config.json")
-        sueno = cfg.get("horario_sueno") if isinstance(cfg, dict) else None
-        despertar = (sueno or {}).get("despertar", "06:00")
-        hora, minuto = map(int, despertar.split(":"))
         s = get_scheduler()
         s.add_job(
             enviar_resumen_matutino,
-            CronTrigger(hour=hora, minute=minuto, timezone=TZ),
+            CronTrigger(hour=RESUMEN_HORA, minute=RESUMEN_MIN, timezone=TZ),
             id="_resumen_matutino",
             replace_existing=True,
             misfire_grace_time=3600  # tolera hasta 1h de atraso
         )
-        print(f"☀️  Resumen matutino programado para las {despertar} (misfire grace 1h)")
+        print(f"☀️  Planeación del día programada para las {RESUMEN_HORA:02d}:{RESUMEN_MIN:02d}")
     except Exception as e:
         print(f"⚠️  No se pudo programar resumen matutino: {e}")
 
 
 def _intentar_resumen_si_falta():
-    """Al boot: si ya pasó la hora de despertar HOY y NO se envió resumen →
-    enviarlo ahora. Cubre el caso de easypanel reiniciando el container
+    """Al boot: si ya pasaron las 6:00 HOY y NO se envió la planeación →
+    enviarla ahora. Cubre el caso de easypanel reiniciando el container
     justo a la hora teórica."""
     try:
-        from comun import cargar
-        cfg = cargar("config.json")
-        sueno = cfg.get("horario_sueno") if isinstance(cfg, dict) else None
-        despertar = (sueno or {}).get("despertar", "06:00")
-        hora, minuto = map(int, despertar.split(":"))
         ahora = datetime.now(TZ)
-        hora_hoy = ahora.replace(hour=hora, minute=minuto, second=0, microsecond=0)
+        hora_hoy = ahora.replace(hour=RESUMEN_HORA, minute=RESUMEN_MIN, second=0, microsecond=0)
         if ahora < hora_hoy:
             return  # aún no es hora, el cron lo manejará
         rows = _db.query("SELECT 1 FROM resumen_diario_enviado WHERE fecha=%s", (ahora.date(),))
@@ -1063,6 +1057,9 @@ def enviar_resumen_matutino(forzar: bool = False):
         habs_hoy = _habitos_de_hoy(ahora, p["id"])
 
         partes = [f"☀️ *Buenos días {p['nombre']}*", f"\n📅 *Hoy {fecha_human}*"]
+        if ahora.isoweekday() == 7:   # domingo = planeación
+            partes.append("\n🗓️ *Día de planeación* — dejen listo el sprint que arranca "
+                          "el lunes: foco (✨ Sugerir con IA) y sus actividades en «Planeado».")
         if eventos:
             partes.append(f"\n*━━ Tus reuniones ({len(eventos)}) ━━*")
             partes += [f"🕐 {e['hora']}  {e['titulo']}" for e in eventos]
