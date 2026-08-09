@@ -2549,6 +2549,7 @@
           <label class="ai-toggle"><span><b>🧺 Se acabó algo de la despensa</b><small>En la mañana, si hay cosas marcadas como agotadas.</small></span><input type="checkbox" id="ai-despensa" checked></label>
           <label class="ai-toggle"><span><b>⏰ Tareas por vencer</b><small>En la mañana, si tienes tareas que vencen hoy o mañana.</small></span><input type="checkbox" id="ai-vencimientos" checked></label>
           <label class="ai-toggle"><span><b>🎓 Te toca estudiar</b><small>En la tarde, si aún no registras estudio en tus cursos.</small></span><input type="checkbox" id="ai-estudio" checked></label>
+          <label class="ai-toggle"><span><b>💞 Resumen dominical</b><small>El domingo 7:30pm: cómo les fue la semana juntos (sprint, estudio, hábitos, gastos).</small></span><input type="checkbox" id="ai-resumen-semanal" checked></label>
         </div>
         <div class="form-actions" style="margin-top:14px;">
           <button class="primary" onclick="guardarAvisosIntel()">Guardar avisos</button>
@@ -3287,7 +3288,7 @@ async function cargarAvisosIntel() {
     set('ai-cocinar', v.cocinar); set('ai-habitos', v.habitos);
     set('ai-sprint', v.sprint);   set('ai-mercado', v.mercado);
     set('ai-despensa', v.despensa); set('ai-vencimientos', v.vencimientos);
-    set('ai-estudio', v.estudio);
+    set('ai-estudio', v.estudio); set('ai-resumen-semanal', v.resumen_semanal);
   } catch (e) { console.error(e); }
 }
 
@@ -3300,6 +3301,7 @@ async function guardarAvisosIntel() {
     despensa: document.getElementById('ai-despensa').checked,
     vencimientos: document.getElementById('ai-vencimientos').checked,
     estudio: document.getElementById('ai-estudio').checked,
+    resumen_semanal: document.getElementById('ai-resumen-semanal').checked,
   };
   try { await api('/avisos-inteligentes', { method: 'PUT', body: JSON.stringify(body) });
     toast('🔔 Avisos guardados'); }

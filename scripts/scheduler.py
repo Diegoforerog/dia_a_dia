@@ -133,6 +133,18 @@ def iniciar():
         replace_existing=True,
         next_run_time=datetime.now(TZ) + timedelta(seconds=90)
     )
+    # Resumen dominical de pareja: domingos 7:30pm (tolera hasta 2h de atraso)
+    try:
+        from apscheduler.triggers.cron import CronTrigger as _Cron
+        s.add_job(
+            enviar_resumen_dominical,
+            _Cron(day_of_week="sun", hour=19, minute=30, timezone=TZ),
+            id="_resumen_dominical",
+            replace_existing=True,
+            misfire_grace_time=7200
+        )
+    except Exception as e:
+        print(f"⚠️  No se pudo programar resumen dominical: {e}")
     # Re-programar recordatorios pendientes
     reprogramar_recordatorios_pendientes()
     print("⚙️  Scheduler iniciado · jobs:", len(s.get_jobs()))
@@ -770,6 +782,139 @@ def revisar_avisos_inteligentes():
                              url="/", tag="habitos")
     except Exception as e:
         print(f"⚠️  revisar_avisos_inteligentes: {e}")
+
+
+# ─────────────────────────────────────────────────────────
+# Resumen dominical de pareja (domingo ~7:30pm)
+# ─────────────────────────────────────────────────────────
+def enviar_resumen_dominical(forzar: bool = False):
+    """Cada domingo en la noche: cómo les fue la semana como pareja
+    (sprint, estudio, hábitos, gastos, mercado) + arranque de la nueva."""
+    from comun import cargar, cargar_registro_dia
+    try:
+        cfg = cargar("config.json")
+        tog = (cfg.get("avisos_inteligentes") or {}) if isinstance(cfg, dict) else {}
+        if not tog.get("resumen_semanal", True) and not forzar:
+            return
+        ahora = datetime.now(TZ)
+        hoy = ahora.date()
+        if not forzar and not _marcar_aviso_intel(hoy, "_todos", "resumen_semanal"):
+            return  # ya se envió este domingo
+
+        y, w, _ = hoy.isocalendar()
+        semana = f"{y}-W{w:02d}"
+        personas = {p["id"]: p for p in cargar("personas.json").get("personas", [])
+                    if p.get("activo", True)}
+        nom = lambda pid: (personas.get(pid, {}).get("nombre") or pid).split(" ")[0]
+        partes = ["💞 *Resumen de su semana*"]
+
+        # 🎯 Sprint
+        fila = next((s for s in cargar("sprints.json").get("sprints", [])
+                     if s.get("semana") == semana), None)
+        if fila and (fila.get("lema") or fila.get("metas")):
+            metas = fila.get("metas") or []
+            hechas = sum(1 for m in metas if m.get("hecha"))
+            lema = fila.get("lema") or "sin foco"
+            cierre = "semana cerrada ✓" if fila.get("cerrado") else "¡ciérrenla en el Sprint!"
+            partes.append(f"🎯 «{lema}»: {hechas}/{len(metas)} metas · {cierre}")
+
+        # 🎓 Estudio + reto
+        mins = {}
+        for c in cargar("cursos.json").get("cursos", []):
+            for h in (c.get("historial") or []):
+                try:
+                    f = date.fromisoformat(str(h.get("fecha"))[:10])
+                except (TypeError, ValueError):
+                    continue
+                fy, fw, _ = f.isocalendar()
+                if f"{fy}-W{fw:02d}" == semana and h.get("persona_id"):
+                    mins[h["persona_id"]] = mins.get(h["persona_id"], 0) + int(h.get("minutos") or 0)
+        if mins:
+            detalle = " · ".join(f"{nom(pid)} {m} min" for pid, m in mins.items())
+            reto = cfg.get("reto_aprender") or {}
+            total = sum(mins.values())
+            extra = ""
+            if reto.get("modo", "coop") == "coop":
+                meta = int(reto.get("meta_min") or 300)
+                extra = " — ¡reto cumplido! 🤝" if total >= meta else f" — quedaron a {meta - total} min de la meta"
+            elif reto.get("modo") == "versus" and len(mins) > 1:
+                lider = max(mins, key=mins.get)
+                vals = sorted(mins.values())
+                extra = " — empate 🤜🤛" if vals[-1] == vals[-2] else f" — 👑 ganó {nom(lider)}"
+            partes.append(f"🎓 Estudio: {detalle}{extra}")
+
+        # ✅ Hábitos marcados en la semana (lunes a hoy)
+        cumplidos = 0
+        for i in range(7):
+            d = hoy - timedelta(days=i)
+            dy, dw, _ = d.isocalendar()
+            if f"{dy}-W{dw:02d}" != semana:
+                continue
+            try:
+                cumplidos += len(cargar_registro_dia(d.isoformat()).get("habitos_cumplidos", []))
+            except Exception:
+                pass
+        if cumplidos:
+            partes.append(f"✅ Hábitos: marcaron {cumplidos} esta semana")
+
+        # 💸 Gastos del mes (reparto 50/50 en lo compartido)
+        mes = hoy.strftime("%Y-%m")
+        gastos = [g for g in cargar("gastos.json").get("gastos", [])
+                  if str(g.get("fecha") or "")[:7] == mes and (g.get("tipo") or "gasto") == "gasto"]
+        if gastos:
+            ids = list(personas.keys())
+            pagado = {i: 0.0 for i in ids}
+            debe = {i: 0.0 for i in ids}
+            total_g = 0.0
+            for g in gastos:
+                try:
+                    m = float(g.get("monto") or 0)
+                except (TypeError, ValueError):
+                    m = 0.0
+                total_g += m
+                if g.get("pagado_por") in pagado:
+                    pagado[g["pagado_por"]] += m
+                part = g.get("participacion") or "ambos"
+                if part in ids:
+                    debe[part] += m
+                else:
+                    for i in ids:
+                        debe[i] += m / (len(ids) or 1)
+            deuda = ""
+            if len(ids) == 2:
+                a, b = ids
+                neto_a = pagado[a] - debe[a]
+                if abs(neto_a) > 0.005:
+                    deudor, acreedor = (b, a) if neto_a > 0 else (a, b)
+                    deuda = f" · {nom(deudor)} le debe ${abs(round(neto_a)):,.0f} a {nom(acreedor)}".replace(",", ".")
+                else:
+                    deuda = " · están a mano 🤝"
+            partes.append(f"💸 Este mes: gastado ${round(total_g):,.0f}{deuda}".replace(",", "."))
+
+        # 🛒 Mercado
+        pend = sum(1 for m in cargar("lista_mercado.json").get("lista_mercado", [])
+                   if not m.get("comprado"))
+        if pend:
+            partes.append(f"🛒 Mercado: {pend} cosa(s) pendientes")
+
+        partes.append("\n🌟 Arranca semana nueva: elijan su foco en el Sprint 💪")
+        texto = "\n".join(partes)
+
+        import avisos
+        avisos.avisar_todos("💞 Resumen de su semana",
+                            "Cómo les fue juntos esta semana — mírenlo 💪",
+                            url="/tablero/nosotros.html", tag="resumen-semanal")
+        # El detalle completo va por Telegram (permite más texto)
+        for p in personas.values():
+            chat = p.get("telegram_chat_id") or ""
+            if chat:
+                import avisos as _av
+                _av._enviar_telegram(chat, texto)
+        if not any(p.get("telegram_chat_id") for p in personas.values()):
+            telegram_send(texto)
+        print(f"💞 Resumen dominical enviado ({semana})")
+    except Exception as e:
+        print(f"⚠️  resumen dominical: {e}")
 
 
 def _leer_eventos_google(cals, inicio_dia, fin_dia):

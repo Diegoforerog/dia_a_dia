@@ -3690,7 +3690,8 @@ def put_reto_aprender():
 # ============ AVISOS INTELIGENTES (toggles de pareja) ============
 
 _AVISOS_INTEL_DEFECTO = {"cocinar": True, "habitos": True, "sprint": True, "mercado": True,
-                         "despensa": True, "vencimientos": True, "estudio": True}
+                         "despensa": True, "vencimientos": True, "estudio": True,
+                         "resumen_semanal": True}
 
 
 @app.route("/api/avisos-inteligentes", methods=["GET"])
