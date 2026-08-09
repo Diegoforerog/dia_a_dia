@@ -403,12 +403,12 @@
       <div>
         <div class="greeting">Sacarlos adelante, juntos</div>
         <h1>Proyectos <em>en marcha</em></h1>
-        <p>Cada proyecto tiene su canvas: fases, historias y quién se encarga. Arrastra las tarjetas según avancen.</p>
+        <p>Cada proyecto tiene su canvas: épicas, historias de usuario y quién se encarga. Arrastra las tarjetas según avancen.</p>
       </div>
       <div class="hero-actions">
         <button class="btn" onclick="abrirModalEpicas()">
           <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
-          Fases
+          Épicas
         </button>
         <button class="btn primario" onclick="abrirModalHistoria()">
           <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -422,7 +422,7 @@
     <div class="filtros" id="filtros" style="display:none;">
       <div class="seg" id="seg-persona"></div>
       <select id="filtro-epica" onchange="F.epica=this.value; pintarBoard()">
-        <option value="">Todas las fases</option>
+        <option value="">Todas las épicas</option>
       </select>
       <input type="search" id="filtro-q" placeholder="Buscar historia…" oninput="F.q=this.value.toLowerCase(); pintarBoard()">
       <div class="spacer"></div>
@@ -432,7 +432,7 @@
 
     <div id="vacio" class="vacio-general" style="display:none;">
       <h3>Empecemos por el primero</h3>
-      <p>Crea un proyecto y ármale su canvas de fases e historias.</p>
+      <p>Crea un proyecto y ármale su canvas de épicas e historias de usuario.</p>
       <button class="btn primario" onclick="abrirModalProyecto()">
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         Crear proyecto
@@ -446,7 +446,7 @@
 <aside class="drawer" id="drawer" aria-label="Detalle de la historia">
   <div class="drawer-head">
     <span class="drawer-estado-dot" id="d-dot"></span>
-    <span class="crumb" id="d-crumb">Historia</span>
+    <span class="crumb" id="d-crumb">Historia de usuario</span>
     <span class="drawer-guardado" id="d-guardado">Guardado ✓</span>
     <button class="drawer-x" onclick="cerrarDrawer()" aria-label="Cerrar">✕</button>
   </div>
@@ -456,13 +456,13 @@
 <!-- MODAL: nueva historia -->
 <div class="modal-fondo" id="modal-historia">
   <div class="modal" role="dialog" aria-modal="true">
-    <div class="modal-head"><h3>Nueva historia</h3><button class="drawer-x" onclick="cerrarModal('modal-historia')">✕</button></div>
+    <div class="modal-head"><h3>Nueva historia de usuario</h3><button class="drawer-x" onclick="cerrarModal('modal-historia')">✕</button></div>
     <div class="modal-cuerpo">
       <label>Título
         <input type="text" id="nh-titulo" placeholder="Qué hay que lograr" maxlength="140">
       </label>
-      <label>Fase (épica)
-        <select id="nh-epica"><option value="">Sin fase</option></select>
+      <label>Épica
+        <select id="nh-epica"><option value="">Sin épica</option></select>
       </label>
       <label>Responsable
         <select id="nh-resp"></select>
@@ -483,14 +483,14 @@
   </div>
 </div>
 
-<!-- MODAL: fases (épicas) -->
+<!-- MODAL: épicas -->
 <div class="modal-fondo" id="modal-epicas">
   <div class="modal" role="dialog" aria-modal="true">
-    <div class="modal-head"><h3>Fases del proyecto</h3><button class="drawer-x" onclick="cerrarModal('modal-epicas')">✕</button></div>
+    <div class="modal-head"><h3>Épicas del proyecto</h3><button class="drawer-x" onclick="cerrarModal('modal-epicas')">✕</button></div>
     <div class="modal-cuerpo">
       <div class="checklist" id="lista-epicas"></div>
       <div class="check-add">
-        <input type="text" id="ne-titulo" placeholder="Nueva fase, p. ej. «Diseño»" maxlength="80"
+        <input type="text" id="ne-titulo" placeholder="Nueva épica, p. ej. «Diseño»" maxlength="80"
                onkeydown="if(event.key==='Enter')crearEpica()">
         <button class="btn" onclick="crearEpica()">Añadir</button>
       </div>
@@ -620,7 +620,7 @@ function pintarSegPersona() {
 function pintarFiltroEpicas() {
   const sel = document.getElementById('filtro-epica');
   const eps = S.epicas.filter(e => e.proyecto_id === F.proyecto);
-  sel.innerHTML = '<option value="">Todas las fases</option>' +
+  sel.innerHTML = '<option value="">Todas las épicas</option>' +
     eps.map(e => `<option value="${e.id}" ${F.epica === e.id ? 'selected' : ''}>${esc(e.titulo)}</option>`).join('');
 }
 
@@ -846,9 +846,9 @@ function pintarDrawer(enfocarBloqueo = false) {
         </select>
       </div>
       <div class="d-campo">
-        <span class="d-etq">Fase</span>
+        <span class="d-etq">Épica</span>
         <select onchange="cambiarCampo('epica_id', this.value || null)">
-          <option value="">Sin fase</option>
+          <option value="">Sin épica</option>
           ${eps.map(e => `<option value="${e.id}" ${h.epica_id === e.id ? 'selected' : ''}>${esc(e.titulo)}</option>`).join('')}
         </select>
       </div>
@@ -1026,7 +1026,7 @@ function abrirModalHistoria() {
   if (!F.proyecto) { toast('Primero crea un proyecto'); return; }
   const eps = S.epicas.filter(e => e.proyecto_id === F.proyecto);
   document.getElementById('nh-epica').innerHTML =
-    '<option value="">Sin fase</option>' + eps.map(e => `<option value="${e.id}">${esc(e.titulo)}</option>`).join('');
+    '<option value="">Sin épica</option>' + eps.map(e => `<option value="${e.id}">${esc(e.titulo)}</option>`).join('');
   document.getElementById('nh-resp').innerHTML =
     S.personas.map(p => `<option value="${p.id}" ${DD.personaId() === p.id ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('') +
     '<option value="ambos">👫 Los dos</option>' +
@@ -1077,9 +1077,9 @@ function pintarListaEpicas() {
         <option value="en_progreso" ${e.estado === 'en_progreso' ? 'selected' : ''}>En progreso</option>
         <option value="hecha" ${e.estado === 'hecha' ? 'selected' : ''}>Hecha</option>
       </select>
-      <button class="del" onclick="borrarEpica('${e.id}')" aria-label="Eliminar fase">✕</button>
+      <button class="del" onclick="borrarEpica('${e.id}')" aria-label="Eliminar épica">✕</button>
     </div>`;
-  }).join('') : '<div class="col-vacia">Sin fases todavía. Las fases agrupan historias (p. ej. «Investigar», «Ejecutar», «Cerrar»).</div>';
+  }).join('') : '<div class="col-vacia">Sin épicas todavía. Las épicas agrupan historias de usuario (p. ej. «Investigar», «Ejecutar», «Cerrar»).</div>';
 }
 
 async function crearEpica() {
@@ -1091,7 +1091,7 @@ async function crearEpica() {
     });
     S.epicas.push(nueva); inp.value = '';
     pintarListaEpicas(); pintarFiltroEpicas();
-  } catch (e) { toast('No se pudo crear la fase: ' + e.message); }
+  } catch (e) { toast('No se pudo crear la épica: ' + e.message); }
 }
 
 async function cambiarEstadoEpica(id, estado) {
@@ -1103,7 +1103,7 @@ async function cambiarEstadoEpica(id, estado) {
 
 async function borrarEpica(id) {
   const n = S.historias.filter(h => h.epica_id === id).length;
-  if (!confirm(n ? `Esta fase tiene ${n} historia(s); quedarán sin fase. ¿Eliminar?` : '¿Eliminar esta fase?')) return;
+  if (!confirm(n ? `Esta épica tiene ${n} historia(s); quedarán sin épica. ¿Eliminar?` : '¿Eliminar esta épica?')) return;
   try {
     await DD.fetch('/epicas/' + id, { method: 'DELETE' });
     S.epicas = S.epicas.filter(e => e.id !== id);
@@ -1142,7 +1142,7 @@ async function crearProyecto() {
     S.proyectos.push(nuevo);
     cerrarModal('modal-proyecto');
     elegirProyecto(nuevo.id);
-    toast('Proyecto creado — ahora ármale sus fases');
+    toast('Proyecto creado — ahora ármale sus épicas');
   } catch (e) { toast('No se pudo crear: ' + e.message); }
 }
 
