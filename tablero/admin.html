@@ -2548,6 +2548,7 @@
           <label class="ai-toggle"><span><b>🛒 Faltan cosas en el mercado</b><small>El sábado en la mañana, si la lista tiene pendientes.</small></span><input type="checkbox" id="ai-mercado" checked></label>
           <label class="ai-toggle"><span><b>🧺 Se acabó algo de la despensa</b><small>En la mañana, si hay cosas marcadas como agotadas.</small></span><input type="checkbox" id="ai-despensa" checked></label>
           <label class="ai-toggle"><span><b>⏰ Tareas por vencer</b><small>En la mañana, si tienes tareas que vencen hoy o mañana.</small></span><input type="checkbox" id="ai-vencimientos" checked></label>
+          <label class="ai-toggle"><span><b>🎓 Te toca estudiar</b><small>En la tarde, si aún no registras estudio en tus cursos.</small></span><input type="checkbox" id="ai-estudio" checked></label>
         </div>
         <div class="form-actions" style="margin-top:14px;">
           <button class="primary" onclick="guardarAvisosIntel()">Guardar avisos</button>
@@ -3286,6 +3287,7 @@ async function cargarAvisosIntel() {
     set('ai-cocinar', v.cocinar); set('ai-habitos', v.habitos);
     set('ai-sprint', v.sprint);   set('ai-mercado', v.mercado);
     set('ai-despensa', v.despensa); set('ai-vencimientos', v.vencimientos);
+    set('ai-estudio', v.estudio);
   } catch (e) { console.error(e); }
 }
 
@@ -3297,6 +3299,7 @@ async function guardarAvisosIntel() {
     mercado: document.getElementById('ai-mercado').checked,
     despensa: document.getElementById('ai-despensa').checked,
     vencimientos: document.getElementById('ai-vencimientos').checked,
+    estudio: document.getElementById('ai-estudio').checked,
   };
   try { await api('/avisos-inteligentes', { method: 'PUT', body: JSON.stringify(body) });
     toast('🔔 Avisos guardados'); }

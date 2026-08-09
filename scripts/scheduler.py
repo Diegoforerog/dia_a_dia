@@ -736,7 +736,29 @@ def revisar_avisos_inteligentes():
                              f"{'…' if len(por_vencer) > 3 else ''}",
                              url="/tablero/proyectos.html", tag="vencimientos")
 
-        # 6) Hábito sin marcar — noche 20:00–22:00, por persona
+        # 6) Te toca estudiar — tarde 18:00–21:00, por persona
+        if on("estudio") and 18*60 <= hm < 21*60:
+            cursos = [c for c in cargar("cursos.json").get("cursos", [])
+                      if c.get("estado") != "terminado"]
+            hoy_iso = hoy.isoformat()
+            for p in configuradas:
+                pendientes_est = []
+                for c in cursos:
+                    if c.get("persona_id") not in (p["id"], "ambos"):
+                        continue
+                    estudio_hoy = any(str(h.get("fecha"))[:10] == hoy_iso and h.get("persona_id") == p["id"]
+                                      for h in (c.get("historial") or []))
+                    if not estudio_hoy:
+                        pendientes_est.append(c)
+                if pendientes_est and _marcar_aviso_intel(hoy, p["id"], "estudio"):
+                    c0 = pendientes_est[0]
+                    racha = c0.get("racha") or 0
+                    extra = f" — llevas {racha} día(s) de racha 🔥" if racha >= 2 else ""
+                    _enrutar(p["id"], "🎓 Te toca estudiar",
+                             f"{c0.get('emoji','📚')} {c0['nombre']}: {c0.get('min_dia',20)} min de hoy{extra}",
+                             url="/tablero/aprender.html", tag="estudio")
+
+        # 7) Hábito sin marcar — noche 20:00–22:00, por persona
         if on("habitos") and 20*60 <= hm < 22*60:
             cumplidos = set(cargar_registro_dia().get("habitos_cumplidos", []))
             for p in configuradas:

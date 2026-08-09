@@ -383,6 +383,7 @@
     _ICONOS: {
       hoy: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
       nosotros: '<path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>',
+      aprender: '<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/>',
       sprint: '<path d="M4 22V4l13 4-13 4"/><path d="M4 13h9"/>',
       agenda: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
       proyectos: '<rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="8" rx="1"/>',
@@ -401,6 +402,7 @@
       { grupo: 'Tablero', items: [
         { href: '/', ic: 'hoy', txt: 'Hoy' },
         { href: '/tablero/nosotros.html', ic: 'nosotros', txt: 'Nosotros' },
+        { href: '/tablero/aprender.html', ic: 'aprender', txt: 'Aprender' },
         { href: '/tablero/sprint.html', ic: 'sprint', txt: 'Sprint' },
         { href: '/tablero/agenda.html', ic: 'agenda', txt: 'Agenda' },
         { href: '/tablero/proyectos.html', ic: 'proyectos', txt: 'Proyectos' },

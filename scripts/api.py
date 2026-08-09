@@ -12,7 +12,7 @@ Uso:
 """
 import os
 import json
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from flask import Flask, jsonify, request, send_from_directory, redirect
 from flask_cors import CORS
 from comun import (
@@ -3434,6 +3434,16 @@ def get_nosotros():
             1 for h in historias
             if h.get("estado") == "en_progreso" and h.get("responsable_id") in (p["id"], "ambos"))
 
+    # Aprender: minutos de la semana + cursos activos
+    cursos = cargar("cursos.json").get("cursos", [])
+    activos = [c for c in cursos if c.get("estado") != "terminado"]
+    aprender = {
+        "cursos_activos": len(activos),
+        "minutos_semana": _minutos_semana_por_persona(),
+        "modo": (cargar("config.json").get("reto_aprender") or {}).get("modo", "coop"),
+        "meta_min": int((cargar("config.json").get("reto_aprender") or {}).get("meta_min") or 300),
+    }
+
     return jsonify({
         "semana": semana,
         "sprint": sprint,
@@ -3442,15 +3452,245 @@ def get_nosotros():
         "comida_hoy": comida_hoy,
         "mercado": mercado,
         "trabajo": trabajo,
+        "aprender": aprender,
         "personas": [{"id": p["id"], "nombre": p.get("nombre", ""), "color": p.get("color", "#EC4899"),
                       "emoji": p.get("emoji", "")} for p in personas],
     })
 
 
+# ============ APRENDER (cursos + puntos + rachas + recompensas) ============
+
+NIVELES_APRENDER = [(0, "🥚 Novato"), (300, "🌱 Aprendiz"), (1000, "⚡ Avanzado"), (3000, "🏆 Maestro")]
+
+
+def _nivel_de(pts: float) -> dict:
+    actual = NIVELES_APRENDER[0]
+    siguiente = None
+    for umbral, nombre in NIVELES_APRENDER:
+        if pts >= umbral:
+            actual = (umbral, nombre)
+        elif siguiente is None:
+            siguiente = (umbral, nombre)
+    return {"nombre": actual[1], "pts": round(pts),
+            "siguiente": siguiente[1] if siguiente else None,
+            "faltan": max(0, round(siguiente[0] - pts)) if siguiente else 0}
+
+
+def _puntos_por_persona():
+    """Suma los pts del historial de todos los cursos, por persona."""
+    pts = {}
+    for c in cargar("cursos.json").get("cursos", []):
+        for h in (c.get("historial") or []):
+            pid = h.get("persona_id")
+            if pid:
+                pts[pid] = pts.get(pid, 0) + float(h.get("pts") or 0)
+    return pts
+
+
+def _minutos_semana_por_persona():
+    """Minutos de estudio de la semana ISO actual, por persona."""
+    semana = _semana_iso()
+    mins = {}
+    for c in cargar("cursos.json").get("cursos", []):
+        for h in (c.get("historial") or []):
+            try:
+                f = date.fromisoformat(str(h.get("fecha"))[:10])
+            except (TypeError, ValueError):
+                continue
+            if _semana_iso(f) == semana and h.get("persona_id"):
+                mins[h["persona_id"]] = mins.get(h["persona_id"], 0) + int(h.get("minutos") or 0)
+    return mins
+
+
+@app.route("/api/cursos", methods=["GET"])
+@requiere_auth
+def get_cursos():
+    return jsonify(cargar("cursos.json") or {"cursos": []})
+
+
+@app.route("/api/cursos", methods=["POST"])
+@requiere_auth
+def post_curso():
+    body = request.get_json() or {}
+    if not body.get("nombre"):
+        return jsonify({"error": "Falta el nombre"}), 400
+    data = cargar("cursos.json"); data.setdefault("cursos", [])
+    nuevo = {
+        "id": nuevo_id("curso"),
+        "nombre": body["nombre"],
+        "emoji": body.get("emoji") or "📚",
+        "persona_id": body.get("persona_id") or "ambos",
+        "lecciones_total": int(body.get("lecciones_total") or 0),
+        "lecciones_hechas": 0,
+        "min_dia": int(body.get("min_dia") or 20),
+        "recompensa": body.get("recompensa", ""),
+        "estado": "activo",
+        "racha": 0, "mejor_racha": 0, "ultimo_estudio": None,
+        "historial": [], "misiones": [],
+    }
+    data["cursos"].append(nuevo)
+    guardar("cursos.json", data)
+    return jsonify(nuevo), 201
+
+
+@app.route("/api/cursos/<cid>", methods=["PUT"])
+@requiere_auth
+def put_curso(cid):
+    body = request.get_json() or {}
+    data = cargar("cursos.json")
+    for c in data.get("cursos", []):
+        if c["id"] == cid:
+            c.update({k: v for k, v in body.items() if k not in ("id", "historial")})
+            guardar("cursos.json", data)
+            return jsonify(c)
+    return jsonify({"error": "Curso no encontrado"}), 404
+
+
+@app.route("/api/cursos/<cid>", methods=["DELETE"])
+@requiere_auth
+def delete_curso(cid):
+    data = cargar("cursos.json")
+    data["cursos"] = [c for c in data.get("cursos", []) if c["id"] != cid]
+    guardar("cursos.json", data)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/cursos/<cid>/estudiar", methods=["POST"])
+@requiere_auth
+def estudiar_curso(cid):
+    """Registra una sesión de estudio: suma puntos, cuida la racha y, si el curso
+    se termina, desbloquea la recompensa. Puntos = minutos + 25 si cumpliste tu
+    objetivo del día + 50 por lección terminada (+500 al terminar el curso)."""
+    body = request.get_json() or {}
+    persona_id = body.get("persona_id")
+    if not persona_id:
+        return jsonify({"error": "Falta persona_id"}), 400
+    minutos = max(0, min(int(body.get("minutos") or 0), 480))
+    lecciones = max(0, min(int(body.get("lecciones") or 0), 50))
+    if not minutos and not lecciones:
+        return jsonify({"error": "Registra minutos o lecciones"}), 400
+
+    data = cargar("cursos.json")
+    curso = next((c for c in data.get("cursos", []) if c["id"] == cid), None)
+    if not curso:
+        return jsonify({"error": "Curso no encontrado"}), 404
+
+    hoy = date.today()
+    ayer = (hoy - timedelta(days=1)).isoformat()
+    ultimo = str(curso.get("ultimo_estudio") or "")[:10]
+
+    # Racha del curso (compartida si el curso es de ambos)
+    if ultimo != hoy.isoformat():
+        curso["racha"] = (curso.get("racha") or 0) + 1 if ultimo == ayer else 1
+        curso["mejor_racha"] = max(curso.get("mejor_racha") or 0, curso["racha"])
+    curso["ultimo_estudio"] = hoy.isoformat()
+
+    # Progreso de lecciones y cierre del curso
+    recien_terminado = False
+    if lecciones:
+        curso["lecciones_hechas"] = (curso.get("lecciones_hechas") or 0) + lecciones
+        total = curso.get("lecciones_total") or 0
+        if total and curso["lecciones_hechas"] >= total and curso.get("estado") != "terminado":
+            curso["lecciones_hechas"] = total
+            curso["estado"] = "terminado"
+            recien_terminado = True
+
+    pts = minutos + (25 if minutos >= (curso.get("min_dia") or 20) else 0) + 50 * lecciones
+    if recien_terminado:
+        pts += 500
+
+    curso.setdefault("historial", []).append({
+        "fecha": hoy.isoformat(), "persona_id": persona_id,
+        "minutos": minutos, "lecciones": lecciones, "pts": pts,
+    })
+    guardar("cursos.json", data)
+
+    return jsonify({
+        "curso": curso, "pts_ganados": pts,
+        "terminado": recien_terminado,
+        "recompensa": curso.get("recompensa") if recien_terminado else None,
+        "nivel": _nivel_de(_puntos_por_persona().get(persona_id, 0)),
+    })
+
+
+@app.route("/api/cursos/<cid>/plan", methods=["POST"])
+@requiere_auth
+def plan_curso_ia(cid):
+    """La IA propone misiones concretas para avanzar el curso esta semana."""
+    data = cargar("cursos.json")
+    curso = next((c for c in data.get("cursos", []) if c["id"] == cid), None)
+    if not curso:
+        return jsonify({"error": "Curso no encontrado"}), 404
+    try:
+        from openai import OpenAI
+    except ImportError:
+        return jsonify({"error": "Falta instalar openai"}), 500
+    if not os.getenv("OPENAI_API_KEY"):
+        return jsonify({"error": "Falta OPENAI_API_KEY"}), 500
+
+    total = curso.get("lecciones_total") or 0
+    hechas = curso.get("lecciones_hechas") or 0
+    sistema = ("Eres un coach de estudio para una pareja. Propones misiones cortas, "
+               "concretas y motivadoras para avanzar un curso esta semana. "
+               "Respondes SOLO JSON válido.")
+    usuario = (
+        f"Curso: {curso['nombre']}. Progreso: lección {hechas} de {total or '?'}. "
+        f"Tiempo disponible: {curso.get('min_dia', 20)} minutos al día. "
+        'Devuelve EXACTAMENTE: {"misiones": ["...", "...", "..."]} — entre 3 y 5 '
+        "misiones para ESTA semana, cada una de una línea, empezando con un verbo, "
+        "adaptadas al progreso actual. En español."
+    )
+    try:
+        cliente = OpenAI()
+        resp = cliente.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "system", "content": sistema}, {"role": "user", "content": usuario}],
+            response_format={"type": "json_object"},
+            temperature=0.6, max_tokens=400,
+        )
+        propuesta = json.loads(resp.choices[0].message.content)
+    except Exception as e:
+        return jsonify({"error": f"IA no disponible: {e}"}), 502
+
+    curso["misiones"] = [{"texto": str(m)[:160], "hecha": False}
+                          for m in (propuesta.get("misiones") or [])[:5]]
+    guardar("cursos.json", data)
+    return jsonify({"misiones": curso["misiones"]})
+
+
+@app.route("/api/reto-aprender", methods=["GET"])
+@requiere_auth
+def get_reto_aprender():
+    cfg = cargar("config.json").get("reto_aprender") or {}
+    reto = {"modo": cfg.get("modo", "coop"), "meta_min": int(cfg.get("meta_min") or 300)}
+    mins = _minutos_semana_por_persona()
+    pts = _puntos_por_persona()
+    personas = [{
+        "id": p["id"], "nombre": p.get("nombre", ""), "color": p.get("color", "#EC4899"),
+        "emoji": p.get("emoji", ""),
+        "minutos_semana": mins.get(p["id"], 0),
+        "nivel": _nivel_de(pts.get(p["id"], 0)),
+    } for p in _personas_activas()]
+    return jsonify({**reto, "semana": _semana_iso(), "personas": personas})
+
+
+@app.route("/api/reto-aprender", methods=["PUT"])
+@requiere_auth
+def put_reto_aprender():
+    body = request.get_json() or {}
+    cfg = cargar("config.json")
+    cfg["reto_aprender"] = {
+        "modo": body.get("modo") if body.get("modo") in ("coop", "versus", "off") else "coop",
+        "meta_min": max(10, min(int(body.get("meta_min") or 300), 10000)),
+    }
+    guardar("config.json", cfg)
+    return jsonify(cfg["reto_aprender"])
+
+
 # ============ AVISOS INTELIGENTES (toggles de pareja) ============
 
 _AVISOS_INTEL_DEFECTO = {"cocinar": True, "habitos": True, "sprint": True, "mercado": True,
-                         "despensa": True, "vencimientos": True}
+                         "despensa": True, "vencimientos": True, "estudio": True}
 
 
 @app.route("/api/avisos-inteligentes", methods=["GET"])

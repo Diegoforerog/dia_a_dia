@@ -162,6 +162,14 @@ def ejecutar():
             """CREATE TABLE IF NOT EXISTS sprints (
                 semana TEXT PRIMARY KEY, lema TEXT DEFAULT '', metas JSONB DEFAULT '[]'::jsonb,
                 cerrado BOOLEAN DEFAULT FALSE, updated_at TIMESTAMPTZ DEFAULT NOW())""",
+            """CREATE TABLE IF NOT EXISTS cursos (
+                id TEXT PRIMARY KEY, nombre TEXT NOT NULL, emoji TEXT DEFAULT '📚',
+                persona_id TEXT DEFAULT 'ambos', lecciones_total INT DEFAULT 0,
+                lecciones_hechas INT DEFAULT 0, min_dia INT DEFAULT 20,
+                recompensa TEXT DEFAULT '', estado TEXT DEFAULT 'activo',
+                racha INT DEFAULT 0, mejor_racha INT DEFAULT 0, ultimo_estudio DATE,
+                historial JSONB DEFAULT '[]'::jsonb, misiones JSONB DEFAULT '[]'::jsonb,
+                created_at TIMESTAMPTZ DEFAULT NOW())""",
             """CREATE TABLE IF NOT EXISTS gastos (
                 id TEXT PRIMARY KEY, fecha DATE, descripcion TEXT NOT NULL,
                 monto DOUBLE PRECISION DEFAULT 0, categoria TEXT DEFAULT '',

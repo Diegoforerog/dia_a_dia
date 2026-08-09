@@ -172,6 +172,13 @@ def cargar(nombre_archivo: str) -> Dict:
         rows = query("SELECT semana, lema, metas, cerrado FROM sprints ORDER BY semana")
         return {"sprints": [_row_to_dict(r) for r in rows]}
 
+    if nombre_archivo == "cursos.json":
+        rows = query("""SELECT id, nombre, emoji, persona_id, lecciones_total,
+                               lecciones_hechas, min_dia, recompensa, estado,
+                               racha, mejor_racha, ultimo_estudio, historial, misiones
+                        FROM cursos ORDER BY created_at""")
+        return {"cursos": [_row_to_dict(r) for r in rows]}
+
     if nombre_archivo == "gastos.json":
         rows = query("""SELECT id, fecha, descripcion, monto, categoria,
                                pagado_por, participacion, tipo, created_at
@@ -303,6 +310,14 @@ def guardar(nombre_archivo: str, datos: Dict) -> None:
     if nombre_archivo == "sprints.json":
         _sync_lista("sprints", datos.get("sprints", []),
                     ["semana","lema","metas","cerrado"], pk="semana", json_cols={"metas"})
+        return
+
+    if nombre_archivo == "cursos.json":
+        _sync_lista("cursos", datos.get("cursos", []),
+                    ["id","nombre","emoji","persona_id","lecciones_total",
+                     "lecciones_hechas","min_dia","recompensa","estado",
+                     "racha","mejor_racha","ultimo_estudio","historial","misiones"],
+                    json_cols={"historial","misiones"})
         return
 
     if nombre_archivo == "gastos.json":

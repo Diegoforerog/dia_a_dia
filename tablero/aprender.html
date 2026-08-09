@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<script>(function(){try{var u=new URL(location.href);var k=u.searchParams.get("k");if(k){localStorage.setItem("organizador_token",k);u.searchParams.delete("k");history.replaceState({},"",u.pathname+u.search+u.hash);}}catch(e){}})();</script>
+<title>LoveSprint — Aprender</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..600,0..100&family=Inter:wght@400..700&display=swap" rel="stylesheet">
+<script src="/tablero/dd.js" defer></script>
+<style>
+  :root{
+    --paper:#FBFAF6;--paper-deep:#F5F2EA;--surface:#FFFFFF;--surface-2:#F8F6F0;
+    --ink:#0E0D0B;--charcoal:#3A3733;--stone:#7A746B;--mist:#A8A29A;
+    --line:#E8E4DA;--line-soft:#F0ECE2;--line-strong:#D5CFC2;
+    --burnt:#EC4899;--burnt-hover:#DB2777;--burnt-soft:#FCE7F3;--burnt-line:#F9A8D4;
+    --sage:#5C8A6F;--sage-soft:#E8F0EA;--crimson:#A8392F;--crimson-soft:#F4E5E3;
+    --amber:#B47B1E;--amber-soft:#F8EFDB;--indigo:#8B5CF6;--indigo-soft:#F3E8FF;
+    --font-brand:"Fraunces","Times New Roman",serif;--font-body:"Inter",-apple-system,sans-serif;
+    --ease:cubic-bezier(.4,0,.2,1);
+  }
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased;}
+  html,body{margin:0;padding:0;}
+  body{font-family:var(--font-body);font-size:14px;line-height:1.55;color:var(--ink);background:var(--paper);
+    background-image:radial-gradient(circle at 15% 10%,rgba(236,72,153,.03)0%,transparent 45%),radial-gradient(circle at 85% 90%,rgba(155,93,229,.03)0%,transparent 50%);}
+  .app{display:grid;grid-template-columns:264px 1fr;min-height:100vh;}
+  .sidebar{position:sticky;top:0;height:100vh;padding:24px 18px;border-right:1px solid #241A38;
+    background:linear-gradient(180deg,#3B2D52 0%,#241A38 100%);display:flex;flex-direction:column;gap:22px;color:#E2E8F0;
+    --sb-muted:#94A3B8;--sb-text:#E2E8F0;--sb-hover:rgba(255,255,255,.08);}
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand-mark{font-family:var(--font-brand);font-style:italic;font-size:28px;line-height:1;letter-spacing:-.02em;color:#fff;}
+  .brand-tag{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sb-muted);font-weight:500;}
+  .nav-section{display:flex;flex-direction:column;gap:2px;}
+  .nav-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sb-muted);padding:0 10px 6px;font-weight:600;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--sb-text);font-size:13.5px;
+    text-decoration:none;transition:background .15s;background:transparent;border:none;cursor:pointer;font-family:inherit;text-align:left;width:100%;font-weight:500;position:relative;}
+  .nav-item:hover{background:var(--sb-hover);color:#fff;}
+  .nav-item.active{background:#fff;color:#241A38;font-weight:600;}
+  .nav-item.active::before{content:"";position:absolute;left:-18px;top:50%;transform:translateY(-50%);width:3px;height:18px;background:#F472B6;border-radius:0 2px 2px 0;}
+  .nav-icon{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+
+  main{padding:34px 34px 90px;min-width:0;max-width:720px;}
+  .hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
+  .greeting{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--stone);font-weight:600;}
+  h1{font-family:var(--font-brand);font-weight:500;font-size:44px;line-height:1.04;letter-spacing:-.025em;margin:4px 0 6px;}
+  h1 em{font-style:italic;color:var(--burnt);}
+
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:10px;font-family:inherit;font-size:13px;font-weight:600;
+    cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--charcoal);transition:all .15s;}
+  .btn:hover{border-color:var(--line-strong);background:var(--surface-2);}
+  .btn.primario{background:var(--burnt);border-color:var(--burnt);color:#fff;}
+  .btn.ia{background:linear-gradient(135deg,#8B5CF6,#EC4899);border:none;color:#fff;}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px;}
+  .card-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--burnt);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+
+  /* reto de la semana */
+  .reto{background:linear-gradient(135deg,#FCE7F3,#F3E8FF);border-color:#F9A8D4;}
+  .reto-modos{display:inline-flex;border:1px solid rgba(0,0,0,.08);border-radius:10px;overflow:hidden;background:rgba(255,255,255,.6);}
+  .reto-modos button{border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;color:var(--stone);padding:8px 13px;}
+  .reto-modos button.on{background:#241A38;color:#fff;}
+  .reto-frase{font-family:var(--font-brand);font-size:21px;font-weight:500;margin:12px 0 4px;line-height:1.25;}
+  .reto-sub{font-size:12.5px;color:var(--stone);}
+  .reto-barras{display:flex;flex-direction:column;gap:9px;margin-top:14px;}
+  .rb{display:flex;align-items:center;gap:10px;}
+  .rb .av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0;overflow:hidden;}
+  .rb .av img{width:100%;height:100%;object-fit:cover;}
+  .rb .track{flex:1;height:12px;border-radius:99px;background:rgba(255,255,255,.7);overflow:hidden;}
+  .rb .fill{display:block;height:100%;border-radius:99px;transition:width .4s var(--ease);}
+  .rb .val{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:64px;text-align:right;}
+  .rb .corona{font-size:14px;}
+  .nivel-chip{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:rgba(255,255,255,.75);color:var(--charcoal);}
+  .meta-edit{background:none;border:none;font-family:inherit;font-size:12px;color:var(--indigo);font-weight:700;cursor:pointer;padding:2px 6px;}
+
+  /* cursos */
+  .curso{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px;}
+  .curso.done{border-color:color-mix(in srgb,var(--sage) 40%,transparent);background:var(--sage-soft);}
+  .cu-head{display:flex;align-items:flex-start;gap:12px;}
+  .cu-emoji{width:44px;height:44px;border-radius:12px;background:var(--indigo-soft);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+  .cu-tx{flex:1;min-width:0;}
+  .cu-nom{font-size:16px;font-weight:700;}
+  .cu-meta{font-size:12px;color:var(--stone);display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:2px;}
+  .cu-pill{font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--indigo-soft);color:var(--indigo);}
+  .cu-racha{font-weight:700;color:var(--amber);}
+  .cu-del{background:none;border:none;color:var(--mist);cursor:pointer;font-size:14px;padding:4px 6px;border-radius:7px;flex-shrink:0;}
+  .cu-del:hover{color:var(--crimson);background:var(--crimson-soft);}
+  .cu-prog{margin-top:12px;}
+  .cu-prog .track{height:10px;border-radius:99px;background:var(--line-soft);overflow:hidden;}
+  .cu-prog .fill{display:block;height:100%;background:linear-gradient(90deg,var(--burnt),var(--indigo));border-radius:99px;transition:width .4s var(--ease);}
+  .cu-prog .lbl{font-size:11.5px;color:var(--stone);margin-top:4px;display:flex;justify-content:space-between;}
+  .cu-premio{margin-top:10px;font-size:12.5px;color:var(--charcoal);background:var(--amber-soft);border-radius:10px;padding:8px 11px;}
+  .cu-premio.win{background:var(--sage-soft);color:var(--sage);font-weight:700;}
+  .cu-acciones{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .btn-estudie{flex:1;justify-content:center;padding:12px;font-size:14.5px;border-radius:12px;
+    background:linear-gradient(135deg,var(--burnt),var(--indigo));border:none;color:#fff;font-weight:700;}
+  .misiones{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+  .mision{display:flex;align-items:flex-start;gap:9px;font-size:13px;padding:8px 10px;background:var(--surface-2);border-radius:9px;}
+  .mision input{width:17px;height:17px;accent-color:var(--sage);margin-top:1px;flex-shrink:0;cursor:pointer;}
+  .mision.ok span{text-decoration:line-through;color:var(--stone);}
+
+  .vacio{text-align:center;padding:44px 20px;color:var(--mist);}
+  .vacio .emoji{font-size:44px;display:block;margin-bottom:10px;}
+
+  /* modales */
+  .modal-fondo{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:900;padding:20px;}
+  .modal-fondo.abierto{display:flex;}
+  .modal{background:var(--paper);border:1px solid var(--line);border-radius:18px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;box-shadow:0 26px 70px rgba(15,23,42,.3);padding:22px;}
+  .modal h3{font-family:var(--font-brand);font-weight:500;font-size:23px;margin:0 0 14px;}
+  .modal label{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--stone);display:block;margin:12px 0 5px;}
+  .modal input,.modal select{width:100%;font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);color:var(--ink);}
+  .modal input:focus,.modal select:focus{outline:none;border-color:var(--burnt-line);box-shadow:0 0 0 3px var(--burnt-soft);}
+  .modal .fila2{display:flex;gap:10px;}
+  .modal .fila2>div{flex:1;}
+  .modal-acciones{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+  .stepper{display:flex;align-items:center;gap:10px;}
+  .stepper button{width:42px;height:42px;border-radius:11px;border:1px solid var(--line);background:var(--surface);font-size:19px;cursor:pointer;color:var(--charcoal);}
+  .stepper .num{font-size:22px;font-weight:700;min-width:56px;text-align:center;font-variant-numeric:tabular-nums;}
+
+  /* celebración */
+  .celebra{position:fixed;inset:0;z-index:950;background:rgba(36,26,56,.72);backdrop-filter:blur(6px);
+    display:none;align-items:center;justify-content:center;padding:24px;}
+  .celebra.abierto{display:flex;}
+  .celebra .caja{background:linear-gradient(160deg,#FCE7F3,#F3E8FF);border-radius:24px;padding:38px 30px;text-align:center;max-width:400px;width:100%;
+    box-shadow:0 30px 80px rgba(10,6,25,.5);}
+  .celebra .big{font-size:58px;line-height:1;}
+  .celebra h2{font-family:var(--font-brand);font-weight:500;font-size:30px;margin:12px 0 6px;letter-spacing:-.02em;}
+  .celebra p{color:var(--charcoal);font-size:14px;margin:0 0 6px;}
+  .celebra .premio{background:rgba(255,255,255,.8);border-radius:14px;padding:14px;margin-top:14px;font-weight:700;color:var(--amber);font-size:15px;}
+  .celebra button{margin-top:20px;border:none;border-radius:12px;padding:13px 26px;font-family:inherit;font-size:15px;font-weight:700;color:#fff;
+    background:linear-gradient(135deg,var(--burnt),var(--indigo));cursor:pointer;}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#241A38;color:#fff;border-radius:12px;padding:11px 20px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:999;max-width:90vw;text-align:center;}
+  .toast.visible{opacity:1;transform:translateX(-50%);}
+
+  @media(max-width:920px){
+    .app{grid-template-columns:1fr;}
+    .sidebar{position:relative;height:auto;flex-direction:row;flex-wrap:wrap;padding:18px 20px;}
+    .nav-section{flex-direction:row;flex-wrap:wrap;flex:1 1 100%;}
+    .nav-item{width:auto;}.nav-item.active::before{display:none;}.nav-label{display:none;}
+    main{padding:22px 16px 90px;}h1{font-size:32px;}
+    .toast{bottom:calc(76px + env(safe-area-inset-bottom,0px));}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"><img src="/tablero/lovesprint-mark.png" alt="LoveSprint" class="brand-logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:8px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">Love<em>Sprint</em></div><div class="brand-tag">juntos · organizados · avanzando</div></div>
+    <div class="nav-section">
+      <div class="nav-label">Tablero</div>
+      <a href="/" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span>Hoy</span></a>
+      <a href="/tablero/nosotros.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg><span>Nosotros</span></a>
+      <a href="/tablero/aprender.html" class="nav-item active"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg><span>Aprender</span></a>
+      <a href="/tablero/sprint.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 22V4l13 4-13 4"/><path d="M4 13h9"/></svg><span>Sprint</span></a>
+      <a href="/tablero/agenda.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Agenda</span></a>
+      <a href="/tablero/proyectos.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="8" rx="1"/></svg><span>Proyectos</span></a>
+      <div class="nav-label" style="margin-top:8px;">Casa</div>
+      <a href="/tablero/comidas.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 3v7a3 3 0 0 0 3 3v8M7 3v7M10 3v7M17 3s-2 2-2 5 2 4 2 4v6"/></svg><span>Comidas</span></a>
+      <a href="/tablero/mercado.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Mercado</span></a>
+      <a href="/tablero/gastos.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><span>Gastos</span></a>
+      <div class="nav-label" style="margin-top:8px;">Configurar</div>
+      <a href="/tablero/admin.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4"/></svg><span>Configuración</span></a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <div>
+        <div class="greeting">Suben de nivel, juntos</div>
+        <h1>A <em>aprender</em></h1>
+      </div>
+      <button class="btn primario" onclick="abrirNuevo()">＋ Nuevo curso</button>
+    </div>
+
+    <div class="card reto" id="card-reto" style="display:none">
+      <div class="card-eyebrow" style="color:var(--indigo)">
+        Reto de la semana
+        <span class="reto-modos" id="reto-modos"></span>
+      </div>
+      <div class="reto-frase" id="reto-frase"></div>
+      <div class="reto-sub" id="reto-sub"></div>
+      <div class="reto-barras" id="reto-barras"></div>
+    </div>
+
+    <div id="lista-cursos"><div class="vacio">Cargando…</div></div>
+  </main>
+</div>
+
+<!-- MODAL: nuevo curso -->
+<div class="modal-fondo" id="m-nuevo">
+  <div class="modal">
+    <h3>Nuevo curso o habilidad</h3>
+    <label>¿Qué van a aprender?</label>
+    <input id="n-nombre" placeholder="ej. Curso de inglés de Platzi" maxlength="80">
+    <div class="fila2">
+      <div><label>Emoji</label><input id="n-emoji" placeholder="📚" maxlength="4"></div>
+      <div><label>¿De quién?</label><select id="n-quien"></select></div>
+    </div>
+    <div class="fila2">
+      <div><label># de lecciones <small style="text-transform:none;letter-spacing:0">(0 si no aplica)</small></label><input id="n-lecciones" type="number" min="0" max="500" value="0" inputmode="numeric"></div>
+      <div><label>Minutos al día</label><input id="n-min" type="number" min="5" max="240" value="20" inputmode="numeric"></div>
+    </div>
+    <label>🎁 Recompensa al terminarlo</label>
+    <input id="n-premio" placeholder="ej. Cena en nuestro restaurante favorito" maxlength="120">
+    <div class="modal-acciones">
+      <button class="btn" onclick="cerrar('m-nuevo')">Cancelar</button>
+      <button class="btn primario" onclick="crearCurso()">Crear curso</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: estudié hoy -->
+<div class="modal-fondo" id="m-estudie">
+  <div class="modal">
+    <h3 id="e-titulo">Estudié hoy 🎉</h3>
+    <label>¿Cuántos minutos?</label>
+    <div class="stepper">
+      <button onclick="stepMin(-5)">−</button>
+      <span class="num" id="e-min">20</span>
+      <button onclick="stepMin(5)">＋</button>
+      <span style="color:var(--stone);font-size:12px;">min</span>
+    </div>
+    <label>¿Lecciones terminadas?</label>
+    <div class="stepper">
+      <button onclick="stepLec(-1)">−</button>
+      <span class="num" id="e-lec">0</span>
+      <button onclick="stepLec(1)">＋</button>
+      <span style="color:var(--stone);font-size:12px;">lección(es)</span>
+    </div>
+    <div class="modal-acciones">
+      <button class="btn" onclick="cerrar('m-estudie')">Cancelar</button>
+      <button class="btn primario" onclick="guardarEstudio()" id="e-guardar">✓ Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CELEBRACIÓN -->
+<div class="celebra" id="celebra">
+  <div class="caja">
+    <div class="big" id="c-emoji">🎉</div>
+    <h2 id="c-titulo">¡Bien hecho!</h2>
+    <p id="c-texto"></p>
+    <div class="premio" id="c-premio" style="display:none"></div>
+    <button onclick="document.getElementById('celebra').classList.remove('abierto')">¡Seguimos! 💪</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let cursos = [], reto = null, personas = [];
+let cursoSel = null, eMin = 20, eLec = 0;
+
+document.addEventListener('DOMContentLoaded', init);
+async function init(){
+  const t = await DD.token(); if(!t) return;
+  personas = ((await DD.fetch('/personas')).personas || []).filter(p=>p.activo!==false);
+  document.getElementById('n-quien').innerHTML =
+    '<option value="ambos">👫 Los dos</option>' +
+    personas.map(p=>`<option value="${p.id}">${esc(nom(p))}</option>`).join('');
+  await Promise.all([cargarCursos(), cargarReto()]);
+}
+function nom(p){ return (p.nombre||'').split(/\s+/)[0]; }
+function pDe(id){ return personas.find(x=>x.id===id); }
+
+async function cargarCursos(){
+  try{ cursos = (await DD.fetch('/cursos')).cursos || []; }catch(e){ cursos=[]; }
+  pintarCursos();
+}
+async function cargarReto(){
+  try{ reto = await DD.fetch('/reto-aprender'); }catch(e){ reto=null; }
+  pintarReto();
+}
+
+/* ── Reto de la semana ── */
+function pintarReto(){
+  const card = document.getElementById('card-reto');
+  if(!reto){ card.style.display='none'; return; }
+  card.style.display='';
+  const modos = [['coop','🤝 Juntos'],['versus','⚔️ Versus'],['off','Sin reto']];
+  document.getElementById('reto-modos').innerHTML = modos.map(([m,txt])=>
+    `<button class="${reto.modo===m?'on':''}" onclick="setModo('${m}')">${txt}</button>`).join('');
+
+  const ps = reto.personas||[];
+  const total = ps.reduce((s,p)=>s+(p.minutos_semana||0),0);
+  const frase = document.getElementById('reto-frase');
+  const sub = document.getElementById('reto-sub');
+  const barras = document.getElementById('reto-barras');
+
+  if(reto.modo==='off'){
+    frase.textContent = 'Cada quien a su ritmo ✨';
+    sub.innerHTML = `Esta semana llevan <b>${total} min</b> de estudio entre los dos.`;
+    barras.innerHTML = nivelesHtml(ps);
+    return;
+  }
+  if(reto.modo==='coop'){
+    const pct = Math.min(100, Math.round(total/reto.meta_min*100));
+    frase.textContent = pct>=100 ? '¡Reto cumplido! 🎉' : `Meta juntos: ${reto.meta_min} min esta semana`;
+    sub.innerHTML = `Van <b>${total} de ${reto.meta_min} min</b> (${pct}%) · <button class="meta-edit" onclick="editarMeta()">cambiar meta ✎</button>`;
+    barras.innerHTML = `
+      <div class="rb"><span style="font-size:15px">👫</span>
+        <span class="track"><span class="fill" style="width:${pct}%;background:linear-gradient(90deg,#EC4899,#8B5CF6)"></span></span>
+        <span class="val">${total} min</span></div>` + nivelesHtml(ps);
+  } else {
+    const max = Math.max(...ps.map(p=>p.minutos_semana||0), 1);
+    const lider = ps.reduce((a,b)=> (b.minutos_semana||0)>(a.minutos_semana||0)?b:a, ps[0]||{});
+    const empate = ps.length===2 && ps[0].minutos_semana===ps[1].minutos_semana;
+    frase.textContent = empate ? 'Van empatados 🤜🤛' : `${nom({nombre:lider.nombre})} va ganando 👑`;
+    sub.textContent = 'Quien más minutos estudie esta semana, gana.';
+    barras.innerHTML = ps.map(p=>{
+      const pct = Math.round((p.minutos_semana||0)/max*100);
+      return `<div class="rb">
+        <span class="av" style="background:${p.color}">${p.foto?`<img src="${p.foto}">`:(p.emoji||'?')}</span>
+        <span class="track"><span class="fill" style="width:${pct}%;background:${p.color}"></span></span>
+        <span class="val">${p.minutos_semana||0} min ${!empate && p.id===lider.id ? '<span class="corona">👑</span>':''}</span>
+      </div>`;
+    }).join('') + nivelesHtml(ps);
+  }
+}
+function nivelesHtml(ps){
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">` +
+    ps.map(p=>`<span class="nivel-chip">${esc(nom({nombre:p.nombre}))}: ${p.nivel?.nombre||'🥚 Novato'} · ${p.nivel?.pts||0} pts</span>`).join('') + `</div>`;
+}
+async function setModo(m){
+  try{ await DD.fetch('/reto-aprender',{method:'PUT',body:JSON.stringify({modo:m,meta_min:reto.meta_min})});
+    await cargarReto(); }catch(e){ toast('No se pudo'); }
+}
+async function editarMeta(){
+  const v = prompt('Meta de minutos juntos esta semana:', reto.meta_min);
+  if(!v) return;
+  try{ await DD.fetch('/reto-aprender',{method:'PUT',body:JSON.stringify({modo:reto.modo,meta_min:+v||300})});
+    await cargarReto(); }catch(e){ toast('No se pudo'); }
+}
+
+/* ── Cursos ── */
+function pintarCursos(){
+  const cont = document.getElementById('lista-cursos');
+  if(!cursos.length){
+    cont.innerHTML = `<div class="vacio"><span class="emoji">🎓</span>Aún no hay cursos.<br>
+      Agrega ese curso que tienen pendiente y pónganle una recompensa 🎁</div>`;
+    return;
+  }
+  const activos = cursos.filter(c=>c.estado!=='terminado');
+  const dones = cursos.filter(c=>c.estado==='terminado');
+  let html = activos.map(cursoHtml).join('');
+  if(dones.length){
+    html += `<div class="card-eyebrow" style="margin:20px 2px 10px;">🏆 Terminados</div>`;
+    html += dones.map(cursoHtml).join('');
+  }
+  cont.innerHTML = html;
+}
+
+function cursoHtml(c){
+  const done = c.estado==='terminado';
+  const dueno = c.persona_id==='ambos' ? '👫 Los dos' : esc(nom(pDe(c.persona_id)||{nombre:'?'}));
+  const total = c.lecciones_total||0, hechas = c.lecciones_hechas||0;
+  const pct = total ? Math.min(100, Math.round(hechas/total*100)) : 0;
+  const hoyISO = new Date().toISOString().slice(0,10);
+  const minHoy = (c.historial||[]).filter(h=>String(h.fecha).slice(0,10)===hoyISO)
+    .reduce((s,h)=>s+(h.minutos||0),0);
+  const misiones = (c.misiones||[]);
+  return `<div class="curso ${done?'done':''}">
+    <div class="cu-head">
+      <div class="cu-emoji">${esc(c.emoji||'📚')}</div>
+      <div class="cu-tx">
+        <div class="cu-nom">${esc(c.nombre)}</div>
+        <div class="cu-meta">
+          <span class="cu-pill">${dueno}</span>
+          ${c.racha ? `<span class="cu-racha">🔥 ${c.racha} día(s)</span>` : ''}
+          <span>${c.min_dia||20} min/día</span>
+          ${minHoy ? `<span style="color:var(--sage);font-weight:700;">✓ hoy: ${minHoy} min</span>` : ''}
+        </div>
+      </div>
+      <button class="cu-del" onclick="borrarCurso('${c.id}')" aria-label="Eliminar">🗑</button>
+    </div>
+    ${total ? `<div class="cu-prog">
+      <div class="track"><span class="fill" style="width:${pct}%"></span></div>
+      <div class="lbl"><span>Lección ${hechas} de ${total}</span><span>${pct}%</span></div>
+    </div>` : ''}
+    ${c.recompensa ? `<div class="cu-premio ${done?'win':''}">🎁 ${done?'¡Se ganaron:':'Al terminar:'} ${esc(c.recompensa)}${done?' — ¡a cobrarla! 🎉':''}</div>` : ''}
+    ${misiones.length ? `<div class="misiones">` + misiones.map((m,i)=>`
+      <label class="mision ${m.hecha?'ok':''}">
+        <input type="checkbox" ${m.hecha?'checked':''} onchange="toggleMision('${c.id}',${i},this.checked)">
+        <span>${esc(m.texto)}</span>
+      </label>`).join('') + `</div>` : ''}
+    ${!done ? `<div class="cu-acciones">
+      <button class="btn btn-estudie" onclick="abrirEstudie('${c.id}')">✓ Estudié hoy</button>
+      <button class="btn ia" onclick="misionesIA('${c.id}', this)">✨ Misiones</button>
+    </div>` : ''}
+  </div>`;
+}
+
+function abrirNuevo(){ abrir('m-nuevo'); setTimeout(()=>document.getElementById('n-nombre').focus(),80); }
+async function crearCurso(){
+  const nombre = document.getElementById('n-nombre').value.trim();
+  if(!nombre){ toast('Ponle nombre al curso'); return; }
+  const body = {
+    nombre,
+    emoji: document.getElementById('n-emoji').value.trim() || '📚',
+    persona_id: document.getElementById('n-quien').value,
+    lecciones_total: +document.getElementById('n-lecciones').value || 0,
+    min_dia: +document.getElementById('n-min').value || 20,
+    recompensa: document.getElementById('n-premio').value.trim(),
+  };
+  try{
+    const nuevo = await DD.fetch('/cursos',{method:'POST',body:JSON.stringify(body)});
+    cursos.push(nuevo); pintarCursos(); cerrar('m-nuevo');
+    document.getElementById('n-nombre').value=''; document.getElementById('n-premio').value='';
+    toast('🎓 Curso creado — ¡a estudiar!');
+  }catch(e){ toast('No se pudo: '+e.message); }
+}
+
+async function borrarCurso(id){
+  const c = cursos.find(x=>x.id===id);
+  if(!confirm(`¿Eliminar «${c?.nombre}» y su historial?`)) return;
+  try{ await DD.fetch('/cursos/'+id,{method:'DELETE'}); cursos=cursos.filter(x=>x.id!==id); pintarCursos(); }
+  catch(e){ toast('No se pudo'); }
+}
+
+/* ── Estudié hoy ── */
+function abrirEstudie(id){
+  cursoSel = cursos.find(c=>c.id===id); if(!cursoSel) return;
+  if(!DD.personaId()){ DD.abrirSelector(true); return; }
+  eMin = cursoSel.min_dia || 20; eLec = 0;
+  document.getElementById('e-titulo').textContent = `${cursoSel.emoji||'📚'} ${cursoSel.nombre}`;
+  document.getElementById('e-min').textContent = eMin;
+  document.getElementById('e-lec').textContent = eLec;
+  abrir('m-estudie');
+}
+function stepMin(d){ eMin = Math.max(5, Math.min(480, eMin+d)); document.getElementById('e-min').textContent = eMin; }
+function stepLec(d){ eLec = Math.max(0, Math.min(50, eLec+d)); document.getElementById('e-lec').textContent = eLec; }
+
+async function guardarEstudio(){
+  if(!cursoSel) return;
+  const btn = document.getElementById('e-guardar'); btn.disabled = true; btn.textContent = 'Guardando…';
+  try{
+    const r = await DD.fetch('/cursos/'+cursoSel.id+'/estudiar',{method:'POST',
+      body:JSON.stringify({persona_id: DD.personaId(), minutos: eMin, lecciones: eLec})});
+    const i = cursos.findIndex(c=>c.id===cursoSel.id);
+    if(i>=0) cursos[i] = r.curso;
+    cerrar('m-estudie'); pintarCursos(); cargarReto();
+    if(r.terminado){
+      document.getElementById('c-emoji').textContent = '🏆';
+      document.getElementById('c-titulo').textContent = '¡CURSO TERMINADO!';
+      document.getElementById('c-texto').textContent = `${r.curso.nombre} · +${r.pts_ganados} pts · ${r.nivel.nombre}`;
+      const pr = document.getElementById('c-premio');
+      if(r.recompensa){ pr.style.display=''; pr.textContent = `🎁 Se ganaron: ${r.recompensa}`; }
+      else pr.style.display='none';
+      document.getElementById('celebra').classList.add('abierto');
+    } else {
+      document.getElementById('c-emoji').textContent = (r.curso.racha||0)>=3 ? '🔥' : '⭐';
+      document.getElementById('c-titulo').textContent = `+${r.pts_ganados} puntos`;
+      document.getElementById('c-texto').textContent =
+        `Racha: ${r.curso.racha} día(s) · Eres ${r.nivel.nombre}` +
+        (r.nivel.siguiente ? ` · te faltan ${r.nivel.faltan} pts para ${r.nivel.siguiente}` : '');
+      document.getElementById('c-premio').style.display='none';
+      document.getElementById('celebra').classList.add('abierto');
+    }
+  }catch(e){ toast('No se pudo: '+e.message); }
+  finally{ btn.disabled=false; btn.textContent='✓ Registrar'; }
+}
+
+/* ── Misiones IA ── */
+async function misionesIA(id, btn){
+  const orig = btn.textContent; btn.textContent='✨ Pensando…'; btn.disabled=true;
+  try{
+    const r = await DD.fetch('/cursos/'+id+'/plan',{method:'POST',body:'{}'});
+    const c = cursos.find(x=>x.id===id); if(c) c.misiones = r.misiones||[];
+    pintarCursos(); toast('✨ Misiones de la semana listas');
+  }catch(e){ toast('No se pudo: '+e.message); }
+  finally{ btn.textContent=orig; btn.disabled=false; }
+}
+async function toggleMision(cid, idx, v){
+  const c = cursos.find(x=>x.id===cid); if(!c || !c.misiones[idx]) return;
+  c.misiones[idx].hecha = v; pintarCursos();
+  try{ await DD.fetch('/cursos/'+cid,{method:'PUT',body:JSON.stringify({misiones:c.misiones})}); }
+  catch(e){ toast('No se pudo guardar'); }
+}
+
+/* util */
+function abrir(id){document.getElementById(id).classList.add('abierto');}
+function cerrar(id){document.getElementById(id).classList.remove('abierto');}
+document.querySelectorAll('.modal-fondo').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('abierto');}));
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+let tt; function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('visible');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('visible'),2800);}
+</script>
+</body>
+</html>
