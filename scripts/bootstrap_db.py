@@ -133,6 +133,7 @@ def ejecutar():
             "ALTER TABLE personas ADD COLUMN IF NOT EXISTS foto TEXT",
             "ALTER TABLE proyectos ADD COLUMN IF NOT EXISTS responsable_id TEXT",
             "ALTER TABLE gastos ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'gasto'",
+            "ALTER TABLE lista_mercado ADD COLUMN IF NOT EXISTS categoria TEXT DEFAULT ''",
         ]:
             try:
                 cur.execute(alter)
@@ -156,6 +157,7 @@ def ejecutar():
             """CREATE TABLE IF NOT EXISTS lista_mercado (
                 id TEXT PRIMARY KEY, item TEXT NOT NULL, cantidad TEXT DEFAULT '',
                 unidad TEXT DEFAULT '', origen TEXT DEFAULT 'manual',
+                categoria TEXT DEFAULT '',
                 comprado BOOLEAN DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW())""",
             """CREATE TABLE IF NOT EXISTS sprints (
                 semana TEXT PRIMARY KEY, lema TEXT DEFAULT '', metas JSONB DEFAULT '[]'::jsonb,

@@ -2944,6 +2944,7 @@ def post_lista_item():
         "cantidad": body.get("cantidad", ""),
         "unidad": body.get("unidad", ""),
         "origen": body.get("origen", "manual"),
+        "categoria": body.get("categoria", ""),
         "comprado": False,
     }
     data["lista_mercado"].append(item)
@@ -3021,7 +3022,8 @@ def generar_lista_mercado():
         nueva.append({
             "id": nuevo_id("merc"), "item": info["item"],
             "cantidad": " + ".join(info["cantidad"]), "unidad": info["unidad"],
-            "origen": "menu", "comprado": comprado_por_item.get(key, False),
+            "origen": "menu", "categoria": "",
+            "comprado": comprado_por_item.get(key, False),
         })
     for d in faltan:
         key = d["item"].strip().lower()
@@ -3031,6 +3033,7 @@ def generar_lista_mercado():
         nueva.append({
             "id": nuevo_id("merc"), "item": d["item"], "cantidad": "",
             "unidad": d.get("unidad", ""), "origen": "despensa",
+            "categoria": d.get("categoria", ""),
             "comprado": comprado_por_item.get(key, False),
         })
 

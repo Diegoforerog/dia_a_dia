@@ -58,11 +58,16 @@
   .prog-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--burnt),var(--indigo));border-radius:99px;transition:width .35s var(--ease);}
 
   /* agregar rápido */
-  .quick{display:flex;gap:8px;margin-bottom:18px;}
-  .quick input{flex:1;font-family:inherit;font-size:16px;border:1.5px solid var(--line);border-radius:13px;padding:14px 16px;background:var(--surface);}
+  .quick{display:flex;gap:8px;margin-bottom:8px;}
+  .quick input{flex:1;font-family:inherit;font-size:16px;border:1.5px solid var(--line);border-radius:13px;padding:14px 16px;background:var(--surface);min-width:0;}
   .quick input:focus{outline:none;border-color:var(--burnt-line);box-shadow:0 0 0 3px var(--burnt-soft);}
   .quick button{border:none;border-radius:13px;padding:0 20px;font-family:inherit;font-size:15px;font-weight:700;color:#fff;
     background:linear-gradient(135deg,var(--burnt),var(--indigo));cursor:pointer;flex-shrink:0;}
+  .quick2{display:flex;gap:8px;margin-bottom:18px;}
+  .quick2 input,.quick2 select{font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;background:var(--surface);color:var(--ink);}
+  .quick2 input{width:110px;min-width:0;}
+  .quick2 select{flex:1;min-width:0;}
+  .quick2 input:focus,.quick2 select:focus{outline:none;border-color:var(--burnt-line);box-shadow:0 0 0 3px var(--burnt-soft);}
 
   .grupo-tit{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--stone);margin:20px 2px 10px;display:flex;align-items:center;gap:8px;}
   .grupo-tit .cuenta{color:var(--mist);font-weight:600;letter-spacing:0;}
@@ -82,6 +87,13 @@
   .it.ok{background:var(--sage-soft);border-color:transparent;}
   .it.ok .marca{background:var(--sage);border-color:var(--sage);}
   .it.ok .nom{text-decoration:line-through;color:var(--stone);font-weight:500;}
+  .cat-chip{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--surface-2);
+    font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;
+    -webkit-tap-highlight-color:transparent;}
+  .cat-chip:active{transform:scale(.92);}
+  .it.ok .cat-chip{opacity:.5;}
+  .edit-cant{color:var(--mist);font-size:11px;margin-left:2px;}
+  .it .sub{cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
   .origen-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
   .origen-dot.menu{background:var(--burnt);}
   .origen-dot.despensa{background:var(--amber);}
@@ -156,6 +168,11 @@
         onkeydown="if(event.key==='Enter')agregar()">
       <button onclick="agregar()">＋</button>
     </div>
+    <div class="quick2">
+      <input id="quick-cant" placeholder="cant. (ej. 2 kg)" autocomplete="off"
+        onkeydown="if(event.key==='Enter')agregar()">
+      <select id="quick-cat" aria-label="Categoría"></select>
+    </div>
 
     <div id="listado"></div>
   </main>
@@ -171,9 +188,33 @@
 <script>
 let items = [];
 
+/* ── Categorías del mercado (con auto-clasificación por nombre) ── */
+const CATS = [
+  {id:'frutas',    emoji:'🥦', nombre:'Frutas y verduras', palabras:['cebolla','tomate','papa','zanahoria','lechuga','platano','banano','manzana','limon','aguacate','cilantro','ajo','pimenton','yuca','naranja','fresa','mango','fruta','verdura','espinaca','brocoli','pepino','mazorca','maracuya','lulo','papaya','sandia','melon','uva','pera','habichuela','arveja','remolacha','apio','calabacin','champiñon','champinon']},
+  {id:'carnes',    emoji:'🥩', nombre:'Carnes y pescado', palabras:['pollo','carne','res','cerdo','pescado','salchicha','jamon','tocineta','chorizo','costilla','pechuga','molida','mojarra','salmon','camaron','tilapia']},
+  {id:'lacteos',   emoji:'🥛', nombre:'Lácteos y huevos', palabras:['leche','queso','yogur','yogurt','mantequilla','crema de leche','huevo','kumis','arequipe','cuajada']},
+  {id:'panaderia', emoji:'🥖', nombre:'Panadería', palabras:['pan','arepa','tortilla','galleta','tostada','croissant','mogolla','almojabana','pandebono']},
+  {id:'despensa',  emoji:'🧂', nombre:'Despensa', palabras:['arroz','pasta','aceite','sal','azucar','harina','cafe','chocolate','lenteja','frijol','garbanzo','atun','sardina','enlatado','salsa','condimento','avena','cereal','panela','mayonesa','mostaza','vinagre','caldo','espagueti','maiz','granola','miel','mermelada','gaseosa','jugo','agua']},
+  {id:'aseo',      emoji:'🧼', nombre:'Aseo', palabras:['jabon','detergente','shampoo','champu','papel higienico','crema dental','cepillo','desodorante','cloro','limpido','esponja','toalla','suavizante','lavaloza','ambientador','pañal','panal','servilleta']},
+  {id:'hogar',     emoji:'🏠', nombre:'Hogar', palabras:['bolsa','papel aluminio','vela','pila','bombillo','fosforo','encendedor']},
+  {id:'otros',     emoji:'✨', nombre:'Otros', palabras:[]},
+];
+const catMap = Object.fromEntries(CATS.map(c=>[c.id,c]));
+
+function normalizar(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+function autoCat(nombre){
+  const n = normalizar(nombre);
+  for(const c of CATS){ if(c.palabras.some(p=>n.includes(p))) return c.id; }
+  return 'otros';
+}
+function catDe(it){ return catMap[it.categoria] ? it.categoria : autoCat(it.item); }
+
 document.addEventListener('DOMContentLoaded', init);
 async function init(){
   const t = await DD.token(); if(!t) return;
+  document.getElementById('quick-cat').innerHTML =
+    '<option value="auto">🪄 Categoría automática</option>' +
+    CATS.map(c=>`<option value="${c.id}">${c.emoji} ${c.nombre}</option>`).join('');
   await cargar();
 }
 async function cargar(){
@@ -212,12 +253,15 @@ function pintar(){
   const hechos = items.filter(i=>i.comprado).sort(porItem);
 
   let html = '';
-  if(pendientes.length){
-    html += `<div class="grupo-tit">Por comprar <span class="cuenta">${pendientes.length}</span></div>`;
-    html += '<div class="items">' + pendientes.map(fila).join('') + '</div>';
+  // Por comprar, agrupado por categoría (en el orden del súper)
+  for(const c of CATS){
+    const del = pendientes.filter(i=>catDe(i)===c.id);
+    if(!del.length) continue;
+    html += `<div class="grupo-tit">${c.emoji} ${c.nombre} <span class="cuenta">${del.length}</span></div>`;
+    html += '<div class="items">' + del.map(fila).join('') + '</div>';
   }
   if(hechos.length){
-    html += `<div class="grupo-tit">En el carrito <span class="cuenta">${hechos.length}</span></div>`;
+    html += `<div class="grupo-tit">✓ En el carrito <span class="cuenta">${hechos.length}</span></div>`;
     html += '<div class="items">' + hechos.map(fila).join('') + '</div>';
   }
   cont.innerHTML = html;
@@ -234,16 +278,45 @@ function pintar(){
 function porItem(a,b){ return String(a.item).localeCompare(String(b.item),'es'); }
 
 function fila(m){
-  const sub = m.cantidad ? `${esc(m.cantidad)} ${esc(m.unidad||'')}`.trim() : '';
+  const cant = `${m.cantidad||''} ${m.unidad||''}`.trim();
   const org = m.origen || 'manual';
+  const cat = catMap[catDe(m)];
+  const orgTxt = org==='menu'?'del menú':org==='despensa'?'despensa':'a mano';
   return `<div class="it ${m.comprado?'ok':''}" onclick="toggle('${m.id}',event)">
     <div class="marca">${m.comprado?'✓':''}</div>
+    <button class="cat-chip" onclick="cicloCat('${m.id}',event)" title="Cambiar categoría">${cat.emoji}</button>
     <div class="cuerpo">
       <div class="nom">${esc(m.item)}</div>
-      ${sub?`<div class="sub"><span class="origen-dot ${org}"></span> ${sub}</div>`:`<div class="sub"><span class="origen-dot ${org}"></span> ${org==='menu'?'del menú':org==='despensa'?'despensa':'a mano'}</div>`}
+      <div class="sub" onclick="editarCant('${m.id}',event)"><span class="origen-dot ${org}"></span> ${cant?esc(cant):orgTxt} <span class="edit-cant">✎</span></div>
     </div>
     <button class="quitar" onclick="borrar('${m.id}',event)" aria-label="Quitar">✕</button>
   </div>`;
+}
+
+/* Tocar el emoji cambia la categoría (rota por la lista) y se guarda */
+async function cicloCat(id,ev){
+  if(ev) ev.stopPropagation();
+  const it = items.find(m=>m.id===id); if(!it) return;
+  const actual = catDe(it);
+  const idx = CATS.findIndex(c=>c.id===actual);
+  const nueva = CATS[(idx+1)%CATS.length].id;
+  it.categoria = nueva; pintar();
+  toast(`${catMap[nueva].emoji} ${catMap[nueva].nombre}`);
+  try{ await DD.fetch('/lista-mercado/'+id,{method:'PUT',body:JSON.stringify({categoria:nueva})}); }
+  catch(e){ toast('No se pudo guardar'); }
+}
+
+/* Tocar la cantidad permite editarla */
+async function editarCant(id,ev){
+  if(ev) ev.stopPropagation();
+  const it = items.find(m=>m.id===id); if(!it) return;
+  const actual = `${it.cantidad||''} ${it.unidad||''}`.trim();
+  const v = prompt('Cantidad (ej. 2 kg, 500 g, 3 und):', actual);
+  if(v===null) return;
+  it.cantidad = v.trim(); it.unidad = '';
+  pintar();
+  try{ await DD.fetch('/lista-mercado/'+id,{method:'PUT',body:JSON.stringify({cantidad:it.cantidad,unidad:''})}); }
+  catch(e){ toast('No se pudo guardar'); }
 }
 
 async function toggle(id,ev){
@@ -259,10 +332,15 @@ async function toggle(id,ev){
 async function agregar(){
   const inp = document.getElementById('quick-item');
   const item = inp.value.trim(); if(!item) return;
-  inp.value=''; inp.focus();
+  const cantInp = document.getElementById('quick-cant');
+  const catSel = document.getElementById('quick-cat');
+  const cantidad = cantInp.value.trim();
+  const categoria = catSel.value==='auto' ? autoCat(item) : catSel.value;
+  inp.value=''; cantInp.value=''; catSel.value='auto'; inp.focus();
   try{
-    const nuevo = await DD.fetch('/lista-mercado',{method:'POST',body:JSON.stringify({item,cantidad:'',origen:'manual'})});
+    const nuevo = await DD.fetch('/lista-mercado',{method:'POST',body:JSON.stringify({item,cantidad,unidad:'',origen:'manual',categoria})});
     items.push(nuevo); pintar();
+    toast(`${catMap[categoria].emoji} Agregado a ${catMap[categoria].nombre}`);
   }catch(e){ toast('No se pudo agregar'); }
 }
 
