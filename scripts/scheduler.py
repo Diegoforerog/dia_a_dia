@@ -272,6 +272,19 @@ def cancelar_recordatorio(rec_id: str):
         pass
 
 
+def _repetir_etiqueta(rep: str) -> str:
+    """'dias:1,3,5' → 'L,X,V'; el resto se muestra tal cual."""
+    if not rep or rep == "no":
+        return ""
+    if rep.startswith("dias:"):
+        letras = {1: "L", 2: "M", 3: "X", 4: "J", 5: "V", 6: "S", 7: "D"}
+        try:
+            return "los " + ",".join(letras[int(x)] for x in rep.split(":", 1)[1].split(",") if x.strip())
+        except (ValueError, KeyError):
+            return "días específicos"
+    return rep
+
+
 def disparar_recordatorio(rec_id: str):
     """Dispara cuando llega la hora. Envía Telegram y maneja repetición."""
     rows = _db.query(
@@ -289,7 +302,7 @@ def disparar_recordatorio(rec_id: str):
     if hora:
         texto += f"\n\n_⏰ {hora}_"
     if r.get("repetir") and r["repetir"] != "no":
-        texto += f"\n_🔁 se repite {r['repetir']}_"
+        texto += f"\n_🔁 se repite {_repetir_etiqueta(r['repetir'])}_"
 
     cuerpo = r["titulo"] + (f" · {hora}" if hora else "")
     _enrutar(r.get("persona_id"), "Recordatorio", cuerpo,
@@ -301,20 +314,38 @@ def disparar_recordatorio(rec_id: str):
 
     # Repetición
     if r.get("repetir") and r["repetir"] != "no":
-        delta = {
-            "diario":   timedelta(days=1),
-            "semanal":  timedelta(weeks=1),
-            "mensual":  timedelta(days=30),
-            "anual":    timedelta(days=365)
-        }.get(r["repetir"])
-        if delta:
+        rep = r["repetir"]
+        siguiente = None
+        if rep.startswith("dias:"):
+            # Días específicos (ISO 1-7): buscar el próximo día marcado
+            try:
+                dias_sel = {int(x) for x in rep.split(":", 1)[1].split(",") if x.strip()}
+            except ValueError:
+                dias_sel = set()
+            if dias_sel:
+                cand = fh + timedelta(days=1)
+                for _ in range(7):
+                    if cand.astimezone(TZ).isoweekday() in dias_sel:
+                        siguiente = cand
+                        break
+                    cand += timedelta(days=1)
+        else:
+            delta = {
+                "diario":   timedelta(days=1),
+                "semanal":  timedelta(weeks=1),
+                "mensual":  timedelta(days=30),
+                "anual":    timedelta(days=365)
+            }.get(rep)
+            if delta:
+                siguiente = fh + delta
+        if siguiente:
             from secrets import token_hex
             nuevo_id = f"rec_{datetime.now().strftime('%Y%m%d%H%M%S')}_{token_hex(3)}"
-            siguiente = fh + delta
             _db.execute("""
-                INSERT INTO recordatorios (id, titulo, mensaje, fecha_hora, repetir, cliente_id, enviado, activo)
-                VALUES (%s,%s,%s,%s,%s,%s,FALSE,TRUE)
-            """, (nuevo_id, r["titulo"], r.get("mensaje",""), siguiente, r["repetir"], r.get("cliente_id")))
+                INSERT INTO recordatorios (id, titulo, mensaje, fecha_hora, repetir, cliente_id, persona_id, enviado, activo)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,FALSE,TRUE)
+            """, (nuevo_id, r["titulo"], r.get("mensaje",""), siguiente, rep,
+                  r.get("cliente_id"), r.get("persona_id")))
             programar_recordatorio(nuevo_id, siguiente)
 
 

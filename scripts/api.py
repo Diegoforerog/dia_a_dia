@@ -1305,7 +1305,7 @@ def get_recordatorios():
 @requiere_auth
 def post_recordatorio():
     body = request.get_json()
-    data = cargar("recordatorios.json")
+    data = cargar("recordatorios.json"); data.setdefault("recordatorios", [])
     nuevo = {
         "id": body.get("id") or nuevo_id("rec"),
         "titulo": body["titulo"],
