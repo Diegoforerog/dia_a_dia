@@ -26,7 +26,7 @@
   body{font-family:var(--font-body);font-size:14px;line-height:1.55;color:var(--ink);background:var(--paper);
     background-image:radial-gradient(circle at 15% 10%,rgba(194,91,44,.025)0%,transparent 45%),radial-gradient(circle at 85% 90%,rgba(74,77,122,.02)0%,transparent 50%);}
   .app{display:grid;grid-template-columns:264px 1fr;min-height:100vh;}
-  .sidebar{position:sticky;top:0;height:100vh;padding:24px 18px;border-right:1px solid #241A38;
+  .sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;scrollbar-gutter:stable;padding:24px 18px;border-right:1px solid #241A38;
     background:linear-gradient(180deg,#3B2D52 0%,#241A38 100%);display:flex;flex-direction:column;gap:22px;color:#E2E8F0;
     --sb-muted:#94A3B8;--sb-text:#E2E8F0;--sb-hover:rgba(255,255,255,.08);}
   .brand{display:flex;flex-direction:column;gap:2px;}
