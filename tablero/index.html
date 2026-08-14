@@ -2476,8 +2476,9 @@ async function generarPlanAhora(e) {
       body: JSON.stringify({ auto_aprobar: false, fecha: fecha })
     });
     if (!r.ok) {
-      const errBody = await r.text();
-      throw new Error(`HTTP ${r.status}: ${errBody.slice(0,100)}`);
+      let motivo = `HTTP ${r.status}`;
+      try { const j = await r.json(); if (j && j.error) motivo = j.error; } catch(_) {}
+      throw new Error(motivo);
     }
     const resp = await r.json();
     if (resp && resp.plan) {
@@ -2488,10 +2489,11 @@ async function generarPlanAhora(e) {
     }
   } catch (err) {
     console.error(err);
-    txt.textContent = '❌ ' + (err.message || '?').slice(0, 40);
+    txt.textContent = '❌ ' + (err.message || '?').slice(0, 70);
+    if (window.DD && DD.toast) DD.toast(err.message || 'No se pudo generar', false);
     btn.disabled = false;
-    btn.querySelector('svg').classList.remove('spinning');
-    setTimeout(() => { txt.textContent = original; }, 5000);
+    const sv = btn.querySelector('svg'); if (sv) sv.classList.remove('spinning');
+    setTimeout(() => { txt.textContent = original; }, 6000);
   }
 }
 

@@ -281,7 +281,7 @@ CLIENTES:
 
 Arma el plan ideal. Cada bloque DEBE caber en un espacio libre (o ser un evento ya existente listado para contexto)."""
 
-    cliente = OpenAI()
+    cliente = OpenAI(timeout=30)
     respuesta = cliente.chat.completions.create(
         model=modelo,
         messages=[

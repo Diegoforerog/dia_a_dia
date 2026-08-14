@@ -2564,8 +2564,14 @@ def generar_plan_endpoint():
         except ValueError:
             return jsonify({"error": f"Fecha inválida: {fecha_str}"}), 400
 
-    ctx = construir_contexto(fecha)
-    plan = generar_plan(ctx)
+    try:
+        ctx = construir_contexto(fecha)
+        plan = generar_plan(ctx)
+    except Exception as e:
+        import traceback
+        print(f"⚠️  generar_plan: {type(e).__name__}: {e}")
+        print(traceback.format_exc()[-500:])
+        return jsonify({"error": f"IA no disponible ({type(e).__name__}): {str(e)[:180]}"}), 502
 
     # Guardar en planes_diarios SOLO si la fecha es hoy o futura
     registro = cargar_registro_dia(ctx["fecha"])
