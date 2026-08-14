@@ -1922,6 +1922,17 @@ async function apiGet(ruta) {
   } catch(e) { return null; }
 }
 
+async function apiPost(ruta, body) {
+  const token = await getToken();
+  const r = await fetch(API_BASE + ruta, {
+    method: 'POST',
+    headers: { 'X-API-Token': token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {})
+  });
+  if (!r.ok) throw new Error('API ' + r.status);
+  return r.json();
+}
+
 function pintarSaludo(plan) {
   if (!plan || !plan.saludo) return;
   document.getElementById('saludo-ai').innerHTML = `
@@ -2009,8 +2020,13 @@ function habitoDeMiPersona(h) {
   return alcance === 'pareja' || h.persona_id === yo;
 }
 
+let _habData = null, _habCumplidos = new Set();
+
 function pintarHabitos(habitosData, registro) {
-  const cumplidos = new Set((registro && registro.habitos_cumplidos) || []);
+  if (habitosData) _habData = habitosData;
+  if (registro) _habCumplidos = new Set(registro.habitos_cumplidos || []);
+  habitosData = _habData || {habitos:[], categorias:[]};
+  const cumplidos = _habCumplidos;
   const dow = isoWeekdayToday();
   const activos = (habitosData.habitos || [])
     .filter(h => habitoAplicaHoy(h, dow) && habitoDeMiPersona(h));
@@ -2046,7 +2062,7 @@ function pintarHabitos(habitosData, registro) {
           const rachaIcon = tipo === 'malo' ? '✨' : '🔥';
           const rachaLabel = tipo === 'malo' ? ' sin caer' : '';
           return `
-          <div class="habit-row ${tipo === 'malo' ? 'malo' : ''}">
+          <div class="habit-row ${tipo === 'malo' ? 'malo' : ''}" onclick="toggleHabitoHoy('${h.id}')" style="cursor:pointer;-webkit-tap-highlight-color:transparent;">
             <div class="habit-info">
               <div class="habit-name">${h.nombre}</div>
               <div class="habit-meta">${h.horario_sugerido} · ${h.duracion_min} min</div>
@@ -2079,6 +2095,21 @@ function pintarHabitos(habitosData, registro) {
   if (kpiPct) kpiPct.textContent = pct + '%';
   if (kpiDet) kpiDet.textContent = `${cumplidos.size}/${activos.length} cumplidos`;
   if (kpiRacha) kpiRacha.textContent = `mejor racha ${mejor}`;
+}
+
+/* Marcar / desmarcar un hábito de HOY desde la pantalla Hoy */
+async function toggleHabitoHoy(id) {
+  const estaba = _habCumplidos.has(id);
+  if (estaba) _habCumplidos.delete(id); else _habCumplidos.add(id);
+  pintarHabitos();                       // re-render optimista (usa refs guardadas)
+  if (!estaba && navigator.vibrate) navigator.vibrate(12);
+  try {
+    await apiPost(`/habitos/${id}/${estaba ? 'descumplir' : 'cumplir'}`, {});
+  } catch (e) {
+    // revertir si falló
+    if (estaba) _habCumplidos.add(id); else _habCumplidos.delete(id);
+    pintarHabitos();
+  }
 }
 
 async function sincronizarCalendariosGoogle(silencioso = true) {
