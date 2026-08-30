@@ -1,0 +1,29 @@
+{
+  "recetas": [
+    {
+      "id": "rec_20260807174248_e3b8cc",
+      "nombre": "Arroz con pollo",
+      "tipo": "almuerzo",
+      "gustos": [],
+      "ingredientes": [
+        {
+          "item": "Arroz",
+          "cantidad": "2",
+          "unidad": "tazas"
+        },
+        {
+          "item": "Pollo",
+          "cantidad": "500",
+          "unidad": "g"
+        },
+        {
+          "item": "Cebolla",
+          "cantidad": "1",
+          "unidad": "und"
+        }
+      ],
+      "pasos": "",
+      "favorita": false
+    }
+  ]
+}

@@ -15,6 +15,13 @@
       "activo": true
     },
     {
+      "id": "msl",
+      "nombre": "MSL",
+      "color": "#00bfff",
+      "descripcion": "ITCA y SDM",
+      "activo": true
+    },
+    {
       "id": "otros_negocios",
       "nombre": "Otros negocios / Clientes",
       "color": "#FBBF24",
@@ -29,10 +36,10 @@
       "activo": true
     },
     {
-      "id": "msl",
-      "nombre": "MSL",
-      "color": "#00bfff",
-      "descripcion": "ITCA y SDM",
+      "id": "nextgencol",
+      "nombre": "NextGen Col",
+      "color": "#4986e7",
+      "descripcion": "Trabajo en NextGen",
       "activo": true
     }
   ]

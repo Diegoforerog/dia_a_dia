@@ -1,0 +1,18 @@
+{
+  "despensa": [
+    {
+      "id": "desp_20260807174248_c2b302",
+      "item": "Arroz",
+      "unidad": "",
+      "estado": "hay",
+      "categoria": ""
+    },
+    {
+      "id": "desp_20260807174248_e74bae",
+      "item": "Cebolla",
+      "unidad": "",
+      "estado": "agotado",
+      "categoria": ""
+    }
+  ]
+}

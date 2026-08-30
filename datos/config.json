@@ -4,35 +4,64 @@
     "zona_horaria": "America/Bogota"
   },
   "horarios": {
-    "inicio_dia": "07:00",
     "fin_dia": "21:00",
+    "inicio_dia": "07:00",
     "bloque_concentracion_min": 45,
     "descanso_entre_bloques_min": 10
   },
   "ia": {
+    "tono": "directo, motivador, en español",
     "modelo": "gpt-4o-mini",
-    "max_tareas_por_dia": 6,
-    "tono": "directo, motivador, en español"
+    "max_tareas_por_dia": 6
   },
   "avisos": {
-    "google_calendar": false,
     "email": false,
+    "telegram": false,
     "tablero_html": true,
-    "telegram": false
+    "google_calendar": false
   },
   "email": {
     "remitente": "",
-    "smtp_servidor": "smtp.gmail.com",
     "smtp_puerto": 587,
-    "destinatario": ""
+    "destinatario": "",
+    "smtp_servidor": "smtp.gmail.com"
   },
   "telegram": {
+    "chat_id": "5654764212",
     "bot_token": "8007254101:AAHNmsRejoHbbfWfJLgHI3jUpOeYRLChTU0",
-    "bot_username": "dia_dia_diego_bot",
-    "chat_id": "5654764212"
+    "bot_username": "dia_dia_diego_bot"
   },
   "n8n": {
     "url": "https://n8n2.nextgencol.com",
     "api_token_env": "N8N_API_TOKEN"
+  },
+  "horario_sueno": {
+    "despertar": "04:00",
+    "dormir": "21:00"
+  },
+  "vapid": {
+    "public": "BA2DBit-5UvAVIezib92MKBfKDnBiOeLuZ1iEDhdy09rEzCbmSYYZ11xt4kGqGD9Ef9ghcpSaK4mDjp_l0peXr4",
+    "private_pem": "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgdCeWXb5IRz7ccRrD\nQhhanDOlssgETyvsiYzNT6rQrw6hRANCAAQNgwYrfuVLwFSHs4m/djCgXyg5wYjn\ni7mdYhA4XctPaxMwm5kmGGddcbeJBqhg/RH/YIXKUmiuJg46f5dKXl6+\n-----END PRIVATE KEY-----\n"
+  },
+  "gustos": {
+    "le_gusta": [
+      "pollo",
+      "ensaladas"
+    ],
+    "no_come": [
+      "hígado"
+    ],
+    "restricciones": [],
+    "preferencias_texto": "cenas ligeras"
+  },
+  "avisos_inteligentes": {
+    "cocinar": true,
+    "habitos": true,
+    "sprint": true,
+    "mercado": true
+  },
+  "reto_aprender": {
+    "modo": "coop",
+    "meta_min": 300
   }
 }

@@ -1,0 +1,70 @@
+{
+  "historias": [
+    {
+      "id": "hist_20260807125034",
+      "proyecto_id": "proy_20260510190623",
+      "epica_id": null,
+      "titulo": "Corregir información",
+      "descripcion": "",
+      "responsable_id": "persona_diego",
+      "prioridad": "media",
+      "estado": "en_progreso",
+      "etiquetas": [],
+      "estimacion_horas": 1.0,
+      "fecha_objetivo": "2026-05-11",
+      "motivo_bloqueo": "",
+      "criterios": [],
+      "subtareas": [
+        {
+          "id": "sub_1786125434346",
+          "titulo": "Revisar textos de la portada",
+          "hecho": false
+        }
+      ],
+      "origen": "actividad:tarea_20260510190850",
+      "orden": 0,
+      "creada": "2026-05-10T19:08:50.733733+00:00",
+      "completada_en": null
+    },
+    {
+      "id": "hist_20260807125034",
+      "proyecto_id": "proy_20260510202951",
+      "epica_id": null,
+      "titulo": "Revisar casos",
+      "descripcion": "",
+      "responsable_id": "persona_diego",
+      "prioridad": "media",
+      "estado": "backlog",
+      "etiquetas": [],
+      "estimacion_horas": 2.0,
+      "fecha_objetivo": "2026-05-12",
+      "motivo_bloqueo": "",
+      "criterios": [],
+      "subtareas": [],
+      "origen": "actividad:tarea_20260510203014",
+      "orden": 1,
+      "creada": "2026-05-10T20:30:14.415828",
+      "completada_en": null
+    },
+    {
+      "id": "hist_20260807125752",
+      "proyecto_id": "proy_20260510190623",
+      "epica_id": null,
+      "titulo": "Publicar la página en producción",
+      "descripcion": "",
+      "responsable_id": "persona_esposa",
+      "prioridad": "alta",
+      "estado": "backlog",
+      "etiquetas": [],
+      "estimacion_horas": null,
+      "fecha_objetivo": null,
+      "motivo_bloqueo": "",
+      "criterios": [],
+      "subtareas": [],
+      "origen": "",
+      "orden": 2,
+      "creada": "2026-08-07T12:57:52.350675",
+      "completada_en": null
+    }
+  ]
+}

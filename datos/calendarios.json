@@ -1,30 +1,40 @@
 {
   "calendarios_gmail": [
     {
-      "id": "ejemplo_dropi",
-      "email": "tu_correo_negocio@gmail.com",
+      "id": "cal_20260511113145",
+      "email": "diego.forero@codway.app",
       "ical_url": "",
-      "nombre_para_mostrar": "Dropshipping",
-      "cliente_asociado": "dropi",
-      "color": "#FF6B35",
-      "activo": false
+      "nombre_para_mostrar": "Codway App",
+      "cliente_asociado": "personal",
+      "color": "#fad165",
+      "activo": true,
+      "persona_id": null
     },
     {
-      "id": "ejemplo_personal",
-      "email": "tu_correo_personal@gmail.com",
+      "id": "cal_20260511105445",
+      "email": "25aff682ba4bc231a41254c0dd3c90c33266875549476164180f50d14235a1b4@group.calendar.google.com",
+      "ical_url": "",
+      "nombre_para_mostrar": "Llamadas Descubrimiento",
+      "cliente_asociado": "nextgencol",
+      "color": "#7bd148",
+      "activo": true
+    },
+    {
+      "id": "cal_20260511104240",
+      "email": "diegoforerogarzon@gmail.com",
       "ical_url": "",
       "nombre_para_mostrar": "Personal",
       "cliente_asociado": "personal",
-      "color": "#4ECDC4",
-      "activo": false
+      "color": "#1badf8",
+      "activo": true
     },
     {
-      "id": "cal_20260510180357",
-      "email": "",
-      "ical_url": "https://calendar.google.com/calendar/ical/diegoforerogarzon%40gmail.com/private-c5e4cd3dec8cb5c5bd573eab659c51a3/basic.ics",
-      "nombre_para_mostrar": "diegoforerogarzon@gmail.com",
-      "cliente_asociado": "personal",
-      "color": "#4a4d7a",
+      "id": "cal_20260511105443",
+      "email": "diego.forero@nextgencol.com",
+      "ical_url": "",
+      "nombre_para_mostrar": "Trabajo NextGen",
+      "cliente_asociado": "nextgencol",
+      "color": "#4986e7",
       "activo": true
     }
   ]

@@ -7,6 +7,7 @@ datos/registros/
 integraciones/credentials.json
 integraciones/token.json
 integraciones/.oauth_state
+integraciones/.oauth_code_verifier
 *.zip
 *.local.json
 node_modules/

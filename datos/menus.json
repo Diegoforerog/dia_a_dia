@@ -1,0 +1,97 @@
+{
+  "menus": [
+    {
+      "semana": "2026-W32",
+      "dias": {
+        "lunes": {
+          "almuerzo": "Arroz con pollo"
+        },
+        "viernes": {
+          "desayuno": "Avena con frutas",
+          "almuerzo": "Arroz con pollo",
+          "cena": "Ensalada de atún"
+        }
+      }
+    },
+    {
+      "semana": "2026-W33",
+      "dias": {
+        "lunes": {
+          "desayuno": "Yogur con frutas y granola",
+          "almuerzo": "Arroz con pollo",
+          "cena": "Ensalada de pollo a la parrilla"
+        },
+        "martes": {
+          "desayuno": "Tostadas integrales con aguacate",
+          "almuerzo": "Ensalada de garbanzos y espinacas",
+          "cena": "Sopa de verduras"
+        },
+        "miércoles": {
+          "desayuno": "Batido de plátano y espinacas",
+          "almuerzo": "Wrap de pollo y vegetales",
+          "cena": "Ensalada César ligera"
+        },
+        "jueves": {
+          "desayuno": "Avena cocida con manzana",
+          "almuerzo": "Arroz con pollo",
+          "cena": "Tortilla de espinacas"
+        },
+        "viernes": {
+          "desayuno": "Smoothie de frutas",
+          "almuerzo": "Pasta integral con pollo y brócoli",
+          "cena": "Ensalada de atún"
+        },
+        "sábado": {
+          "desayuno": "Panqueques de avena",
+          "almuerzo": "Quinoa con verduras asadas",
+          "cena": "Pimientos rellenos de pollo"
+        },
+        "domingo": {
+          "desayuno": "Huevos revueltos con espinacas",
+          "almuerzo": "Ensalada de pollo y quinoa",
+          "cena": "Sopa de lentejas"
+        }
+      }
+    },
+    {
+      "semana": "2026-W34",
+      "dias": {
+        "lunes": {
+          "desayuno": "Yogur con frutas y granola",
+          "almuerzo": "Arroz con pollo",
+          "comida": "Ensalada de espinacas con pollo a la parrilla"
+        },
+        "martes": {
+          "desayuno": "Tostadas integrales con aguacate",
+          "almuerzo": "Ensalada César con pollo",
+          "comida": "Sopa de verduras"
+        },
+        "miércoles": {
+          "desayuno": "Batido de plátano y espinacas",
+          "almuerzo": "Arroz con verduras",
+          "comida": "Ensalada de garbanzos"
+        },
+        "jueves": {
+          "desayuno": "Avena cocida con manzana y canela",
+          "almuerzo": "Pollo al horno con guarnición de verduras",
+          "comida": "Ensalada de tomate y mozzarella"
+        },
+        "viernes": {
+          "desayuno": "Smoothie de frutas",
+          "almuerzo": "Arroz con pollo",
+          "comida": "Ensalada de quinoa y vegetales"
+        },
+        "sábado": {
+          "desayuno": "Tortilla de espinacas",
+          "almuerzo": "Ensalada de atún",
+          "comida": "Pollo salteado con brócoli"
+        },
+        "domingo": {
+          "desayuno": "Pancakes de avena",
+          "almuerzo": "Arroz con pollo",
+          "comida": "Ensalada de rúcula y aguacate"
+        }
+      }
+    }
+  ]
+}

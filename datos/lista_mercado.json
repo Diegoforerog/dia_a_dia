@@ -1,0 +1,20 @@
+{
+  "lista_mercado": [
+    {
+      "id": "merc_20260807174248_365525",
+      "item": "Pollo",
+      "cantidad": "500",
+      "unidad": "g",
+      "origen": "menu",
+      "comprado": false
+    },
+    {
+      "id": "merc_20260807174248_bd8799",
+      "item": "Cebolla",
+      "cantidad": "1",
+      "unidad": "und",
+      "origen": "menu",
+      "comprado": false
+    }
+  ]
+}

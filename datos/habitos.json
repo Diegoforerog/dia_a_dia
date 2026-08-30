@@ -1,10 +1,35 @@
 {
   "categorias": [
-    {"id": "negocio", "nombre": "Rutina de Negocio", "icono": "💼", "color": "#FF6B35"},
-    {"id": "salud", "nombre": "Salud", "icono": "💪", "color": "#10B981"},
-    {"id": "aprendizaje", "nombre": "Aprendizaje", "icono": "📚", "color": "#A78BFA"},
-    {"id": "finanzas", "nombre": "Finanzas", "icono": "💰", "color": "#FBBF24"},
-    {"id": "personal", "nombre": "Personal", "icono": "🧘", "color": "#4ECDC4"}
+    {
+      "id": "negocio",
+      "nombre": "Rutina de Negocio",
+      "icono": "💼",
+      "color": "#FF6B35"
+    },
+    {
+      "id": "salud",
+      "nombre": "Salud",
+      "icono": "💪",
+      "color": "#10B981"
+    },
+    {
+      "id": "aprendizaje",
+      "nombre": "Aprendizaje",
+      "icono": "📚",
+      "color": "#A78BFA"
+    },
+    {
+      "id": "finanzas",
+      "nombre": "Finanzas",
+      "icono": "💰",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "personal",
+      "nombre": "Personal",
+      "icono": "🧘",
+      "color": "#4ECDC4"
+    }
   ],
   "habitos": [
     {
@@ -16,7 +41,9 @@
       "duracion_min": 15,
       "activo": true,
       "racha_actual": 0,
-      "mejor_racha": 0
+      "mejor_racha": 0,
+      "alcance": "personal",
+      "persona_id": "persona_diego"
     },
     {
       "id": "buscar_productos",
@@ -27,7 +54,9 @@
       "duracion_min": 45,
       "activo": true,
       "racha_actual": 0,
-      "mejor_racha": 0
+      "mejor_racha": 0,
+      "alcance": "personal",
+      "persona_id": "persona_diego"
     },
     {
       "id": "ejercicio",
@@ -38,7 +67,9 @@
       "duracion_min": 30,
       "activo": true,
       "racha_actual": 0,
-      "mejor_racha": 0
+      "mejor_racha": 0,
+      "alcance": "personal",
+      "persona_id": "persona_diego"
     },
     {
       "id": "agua",
@@ -49,7 +80,9 @@
       "duracion_min": 0,
       "activo": true,
       "racha_actual": 0,
-      "mejor_racha": 0
+      "mejor_racha": 0,
+      "alcance": "personal",
+      "persona_id": "persona_diego"
     },
     {
       "id": "lectura",
@@ -60,7 +93,9 @@
       "duracion_min": 30,
       "activo": true,
       "racha_actual": 0,
-      "mejor_racha": 0
+      "mejor_racha": 0,
+      "alcance": "personal",
+      "persona_id": "persona_diego"
     },
     {
       "id": "registrar_gastos",
@@ -71,7 +106,39 @@
       "duracion_min": 5,
       "activo": true,
       "racha_actual": 0,
-      "mejor_racha": 0
+      "mejor_racha": 0,
+      "alcance": "personal",
+      "persona_id": "persona_diego"
+    },
+    {
+      "id": "hab_20260807172637_18f287",
+      "categoria_id": "salud",
+      "nombre": "No pedir domicilios",
+      "frecuencia": "diaria",
+      "horario_sugerido": "mañana",
+      "duracion_min": 15,
+      "activo": true,
+      "racha_actual": 0,
+      "mejor_racha": 0,
+      "dias": null,
+      "tipo": "bueno",
+      "alcance": "pareja",
+      "persona_id": null
+    },
+    {
+      "id": "hab_20260807172637_884727",
+      "categoria_id": "salud",
+      "nombre": "Yoga",
+      "frecuencia": "diaria",
+      "horario_sugerido": "mañana",
+      "duracion_min": 15,
+      "activo": true,
+      "racha_actual": 0,
+      "mejor_racha": 0,
+      "dias": null,
+      "tipo": "bueno",
+      "alcance": "personal",
+      "persona_id": "persona_esposa"
     }
   ]
 }

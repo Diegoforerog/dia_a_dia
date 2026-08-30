@@ -1,0 +1,27 @@
+{
+  "personas": [
+    {
+      "id": "persona_diego",
+      "nombre": "Diego Forero",
+      "color": "#2563eb",
+      "emoji": "🧭",
+      "activo": true,
+      "telegram_chat_id": "",
+      "push_subscriptions": [],
+      "orden": 0,
+      "pass_hash": "pbkdf2$120000$t3t0EGVzaaN/H/UT+JFEFw==$cWMi7iskwGKw/bDJWm3JG7Cgj84n0falhUkCLVjQHZc=",
+      "email": ""
+    },
+    {
+      "id": "persona_esposa",
+      "nombre": "Vanessa Paez",
+      "color": "#b0578d",
+      "emoji": "🌸",
+      "activo": true,
+      "telegram_chat_id": "",
+      "push_subscriptions": [],
+      "orden": 1,
+      "pass_hash": "pbkdf2$120000$CmqIjcn2EA96xS0D9+Pg7Q==$BaJ0Xrdiw0pbwCDAxNd2aFsrVjbri+omBMUiCI9CVWo="
+    }
+  ]
+}
