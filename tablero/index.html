@@ -839,7 +839,7 @@
   /* ───── KPI CARDS (Overview hero strip) ───── */
   .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     margin-bottom: 24px;
   }
@@ -849,6 +849,7 @@
     .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
     .kpi-card { padding: 14px; border-radius: 14px; }
     .kpi-card.kpi-plan { grid-column: 1 / -1; }
+    .kpi-card.kpi-racha { grid-column: 1 / -1; }
     .kpi-sub { display: none; }
     .kpi-num { font-size: 26px; }
     .kpi-label { font-size: 10px; }
@@ -938,6 +939,53 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
   }
+  /* ── KPI progress bar ── */
+  .kpi-bar-track {
+    height: 5px;
+    background: var(--line);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: -4px;
+  }
+  .kpi-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width .6s var(--ease-out);
+  }
+
+  /* ── KPI semana dots ── */
+  .kpi-week {
+    display: flex;
+    gap: 4px;
+    align-items: flex-end;
+  }
+  .kpi-week-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+  .kpi-week-dot {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 6px;
+    background: var(--line);
+    border: 1.5px solid var(--line-strong);
+    transition: background .2s, border-color .2s;
+  }
+  .kpi-week-dot.done { background: var(--burnt); border-color: var(--burnt-hover); }
+  .kpi-week-dot.today { box-shadow: 0 0 0 2px var(--burnt-line); }
+  .kpi-week-dot.future { opacity: .35; }
+  .kpi-week-label {
+    font-size: 9px;
+    color: var(--mist);
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .kpi-week-day.today-col .kpi-week-label { color: var(--burnt); }
+
   .kpi-plan {
     cursor: pointer;
     background: linear-gradient(135deg, var(--burnt), var(--burnt-hover));
@@ -1673,6 +1721,7 @@
           </div>
         </div>
         <div class="kpi-num"><span id="kpi-habitos-pct">0%</span></div>
+        <div class="kpi-bar-track"><div class="kpi-bar-fill" id="kpi-habitos-bar" style="width:0%;background:var(--sage)"></div></div>
         <div class="kpi-foot"><span id="kpi-habitos-detalle">0/0 cumplidos</span> · <span id="kpi-habitos-racha">mejor racha 0</span></div>
         <div class="kpi-link-arrow">Ver hábitos →</div>
       </a>
@@ -1691,6 +1740,46 @@
         <div class="kpi-foot" id="kpi-tareas-foot">—</div>
         <div class="kpi-link-arrow">Ver tareas →</div>
       </a>
+
+      <!-- Sprint actual -->
+      <a class="kpi-card clickable kpi-link" href="/tablero/sprint.html" aria-label="Ver sprint">
+        <div class="kpi-head">
+          <div class="kpi-icon" style="background:var(--indigo-soft);color:var(--indigo)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 22V4l13 4-13 4"/><path d="M4 13h9"/></svg>
+          </div>
+          <div>
+            <div class="kpi-label">Sprint actual</div>
+            <div class="kpi-sub" id="kpi-sprint-lema">Metas de la semana</div>
+          </div>
+        </div>
+        <div class="kpi-num"><span id="kpi-sprint-num">—</span> <small id="kpi-sprint-unit">metas</small></div>
+        <div class="kpi-bar-track"><div class="kpi-bar-fill" id="kpi-sprint-bar" style="width:0%;background:var(--indigo)"></div></div>
+        <div class="kpi-foot" id="kpi-sprint-foot">Cargando…</div>
+        <div class="kpi-link-arrow">Ver sprint →</div>
+      </a>
+
+      <!-- Racha semanal -->
+      <div class="kpi-card kpi-racha">
+        <div class="kpi-head">
+          <div class="kpi-icon" style="background:var(--amber-soft);color:var(--amber)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17.7 7.7a7.5 7.5 0 1 1-10.6.1"/><path d="M12 2v6"/></svg>
+          </div>
+          <div>
+            <div class="kpi-label">Racha semanal</div>
+            <div class="kpi-sub">Hábitos esta semana</div>
+          </div>
+        </div>
+        <div class="kpi-week" id="kpi-week-dots">
+          <div class="kpi-week-day" data-dow="1"><div class="kpi-week-dot future"></div><div class="kpi-week-label">L</div></div>
+          <div class="kpi-week-day" data-dow="2"><div class="kpi-week-dot future"></div><div class="kpi-week-label">M</div></div>
+          <div class="kpi-week-day" data-dow="3"><div class="kpi-week-dot future"></div><div class="kpi-week-label">X</div></div>
+          <div class="kpi-week-day" data-dow="4"><div class="kpi-week-dot future"></div><div class="kpi-week-label">J</div></div>
+          <div class="kpi-week-day" data-dow="5"><div class="kpi-week-dot future"></div><div class="kpi-week-label">V</div></div>
+          <div class="kpi-week-day" data-dow="6"><div class="kpi-week-dot future"></div><div class="kpi-week-label">S</div></div>
+          <div class="kpi-week-day" data-dow="7"><div class="kpi-week-dot future"></div><div class="kpi-week-label">D</div></div>
+        </div>
+        <div class="kpi-foot" id="kpi-racha-foot">Cargando…</div>
+      </div>
 
     </div>
 
@@ -2092,9 +2181,11 @@ function pintarHabitos(habitosData, registro) {
   const kpiPct = document.getElementById('kpi-habitos-pct');
   const kpiDet = document.getElementById('kpi-habitos-detalle');
   const kpiRacha = document.getElementById('kpi-habitos-racha');
+  const kpiBar = document.getElementById('kpi-habitos-bar');
   if (kpiPct) kpiPct.textContent = pct + '%';
   if (kpiDet) kpiDet.textContent = `${cumplidos.size}/${activos.length} cumplidos`;
   if (kpiRacha) kpiRacha.textContent = `mejor racha ${mejor}`;
+  if (kpiBar) kpiBar.style.width = pct + '%';
 }
 
 /* Marcar / desmarcar un hábito de HOY desde la pantalla Hoy */
@@ -2443,6 +2534,84 @@ function pintarKPIs(registro, proyectos) {
         document.getElementById('kpi-tareas-foot').textContent = lista.length ? 'Sin urgentes' : 'Sin tareas pendientes';
       }
     } catch(e) {}
+  })();
+
+  // KPI sprint actual
+  (async () => {
+    try {
+      const d = await apiGet('/sprint');
+      if (!d) return;
+      const metas = d.metas || [];
+      const total = metas.length;
+      const hechas = metas.filter(m => m.hecha).length;
+      const racha = d.racha || 0;
+      const lema = d.lema || '';
+      const pctSp = total ? Math.round(hechas / total * 100) : 0;
+      document.getElementById('kpi-sprint-num').textContent = total ? `${hechas}/${total}` : '—';
+      document.getElementById('kpi-sprint-unit').textContent = total ? 'metas' : '';
+      if (lema) document.getElementById('kpi-sprint-lema').textContent = lema;
+      document.getElementById('kpi-sprint-bar').style.width = pctSp + '%';
+      document.getElementById('kpi-sprint-foot').textContent = total
+        ? `${pctSp}% completado · racha ${racha}🔥`
+        : 'Sin metas en el sprint actual';
+    } catch(e) {}
+  })();
+
+  // KPI racha semanal: pinta 7 dots Lun–Dom con los días que tuvieron hábitos
+  (async () => {
+    try {
+      const hoyD = new Date();
+      const todayDow = hoyD.getDay() || 7; // 1=Lun … 7=Dom
+      const isoD = d => d.toISOString().slice(0,10);
+      const lunes = new Date(hoyD);
+      lunes.setDate(hoyD.getDate() - (todayDow - 1));
+
+      const dayWrap = document.querySelectorAll('#kpi-week-dots .kpi-week-day');
+      let diasCon = 0;
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(lunes); d.setDate(lunes.getDate() + i);
+        const dow = i + 1; // 1=Lun…7=Dom
+        const wrap = dayWrap[i];
+        if (!wrap) continue;
+        const dot = wrap.querySelector('.kpi-week-dot');
+
+        if (dow === todayDow) {
+          wrap.classList.add('today-col');
+          dot.classList.add('today');
+          dot.classList.remove('future');
+        } else if (dow < todayDow) {
+          dot.classList.remove('future');
+        }
+
+        if (dow > todayDow) continue; // días futuros: dejar en gris
+
+        let cumplidos = 0;
+        try {
+          // Intentar primero via API (registro del día)
+          const reg = await apiGet('/plan/' + isoD(d));
+          if (reg) cumplidos = (reg.habitos_cumplidos || []).length;
+          else {
+            // Fallback: JSON local
+            const regJson = await leer('../datos/registros/' + isoD(d) + '.json');
+            if (regJson) cumplidos = (regJson.habitos_cumplidos || []).length;
+          }
+        } catch(_) {
+          const regJson = await leer('../datos/registros/' + isoD(d) + '.json');
+          if (regJson) cumplidos = (regJson.habitos_cumplidos || []).length;
+        }
+
+        if (dow === todayDow && _habCumplidos && _habCumplidos.size > 0) {
+          cumplidos = _habCumplidos.size;
+        }
+
+        if (cumplidos > 0) { dot.classList.add('done'); diasCon++; }
+      }
+      document.getElementById('kpi-racha-foot').textContent = `${diasCon}/7 días con hábitos esta semana`;
+    } catch(e) {
+      const el = document.getElementById('kpi-racha-foot');
+      if (el) el.textContent = 'Sin datos de la semana';
+    }
   })();
 }
 

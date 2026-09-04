@@ -2359,6 +2359,16 @@ def get_plan_hoy():
     return jsonify(registro)
 
 
+@app.route("/api/plan/<fecha>", methods=["GET"])
+@requiere_auth
+def get_plan_fecha(fecha):
+    import re
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", fecha):
+        return jsonify({"error": "Formato de fecha inválido"}), 400
+    registro = cargar_registro_dia(fecha)
+    return jsonify(registro)
+
+
 @app.route("/api/plan/semana", methods=["POST"])
 @requiere_auth
 def generar_plan_semana():
