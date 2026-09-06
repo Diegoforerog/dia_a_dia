@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<script>(function(){try{var u=new URL(location.href);var k=u.searchParams.get("k");if(k){localStorage.setItem("organizador_token",k);u.searchParams.delete("k");history.replaceState({},"",u.pathname+u.search+u.hash);}}catch(e){}})();</script>
+<title>LoveSprint — Mis Hábitos</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..600,0..100&family=Inter:wght@400..700&display=swap" rel="stylesheet">
+<script src="/tablero/dd.js" defer></script>
+<style>
+  :root{
+    --paper:#FBFAF6;--paper-deep:#F5F2EA;--surface:#FFFFFF;--surface-2:#F8F6F0;
+    --ink:#0E0D0B;--charcoal:#3A3733;--stone:#7A746B;--mist:#A8A29A;
+    --line:#E8E4DA;--line-soft:#F0ECE2;--line-strong:#D5CFC2;
+    --burnt:#EC4899;--burnt-hover:#DB2777;--burnt-soft:#FCE7F3;--burnt-line:#F9A8D4;
+    --sage:#5C8A6F;--sage-soft:#E8F0EA;--sage-deep:#4A7259;--crimson:#A8392F;--crimson-soft:#F4E5E3;
+    --amber:#B47B1E;--amber-soft:#F8EFDB;--indigo:#8B5CF6;--indigo-soft:#F3E8FF;
+    --font-brand:"Fraunces","Times New Roman",serif;--font-body:"Inter",-apple-system,sans-serif;
+    --ease:cubic-bezier(.4,0,.2,1);
+  }
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased;}
+  html,body{margin:0;padding:0;}
+  body{font-family:var(--font-body);font-size:14px;line-height:1.55;color:var(--ink);background:var(--paper);
+    background-image:radial-gradient(circle at 15% 10%,rgba(236,72,153,.03)0%,transparent 45%),radial-gradient(circle at 85% 90%,rgba(92,138,111,.04)0%,transparent 50%);}
+  .app{display:grid;grid-template-columns:264px 1fr;min-height:100vh;}
+  .sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;scrollbar-gutter:stable;padding:24px 18px;border-right:1px solid #241A38;
+    background:linear-gradient(180deg,#3B2D52 0%,#241A38 100%);display:flex;flex-direction:column;gap:22px;color:#E2E8F0;
+    --sb-muted:#94A3B8;--sb-text:#E2E8F0;--sb-hover:rgba(255,255,255,.08);}
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand-mark{font-family:var(--font-brand);font-style:italic;font-size:28px;line-height:1;letter-spacing:-.02em;color:#fff;}
+  .brand-mark img{width:26px;height:26px;vertical-align:-6px;margin-right:8px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25));}
+  .brand-tag{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sb-muted);font-weight:500;}
+  .nav-section{display:flex;flex-direction:column;gap:2px;}
+  .nav-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sb-muted);padding:0 10px 6px;font-weight:600;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--sb-text);font-size:13.5px;
+    text-decoration:none;transition:background .15s;background:transparent;border:none;cursor:pointer;font-family:inherit;text-align:left;width:100%;font-weight:500;position:relative;}
+  .nav-item:hover{background:var(--sb-hover);color:#fff;}
+  .nav-item.active{background:#fff;color:#241A38;font-weight:600;}
+  .nav-item.active::before{content:"";position:absolute;left:-18px;top:50%;transform:translateY(-50%);width:3px;height:18px;background:#F472B6;border-radius:0 2px 2px 0;}
+  .nav-icon{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+
+  main{padding:34px 40px 100px;min-width:0;max-width:760px;width:100%;}
+  .hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  .greeting{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--burnt);font-weight:700;}
+  h1{font-family:var(--font-brand);font-weight:500;font-size:44px;line-height:1.04;letter-spacing:-.025em;margin:4px 0 4px;}
+  h1 em{font-style:italic;color:var(--burnt);}
+  .hero-sub{color:var(--stone);font-size:14px;margin:0;}
+
+  /* resumen del día */
+  .resumen{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+  .res-card{flex:1;min-width:130px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;}
+  .res-num{font-family:var(--font-brand);font-size:30px;font-weight:600;line-height:1;color:var(--ink);}
+  .res-num small{font-size:15px;color:var(--stone);font-weight:400;}
+  .res-lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--stone);font-weight:600;margin-top:6px;}
+
+  /* filtros por categoría */
+  .filtros{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;margin-bottom:8px;scrollbar-width:none;}
+  .filtros::-webkit-scrollbar{display:none;}
+  .chip{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);
+    background:var(--surface);color:var(--charcoal);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .13s;font-family:inherit;}
+  .chip:hover{border-color:var(--line-strong);}
+  .chip.on{background:#241A38;border-color:#241A38;color:#fff;}
+  .chip .dot{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;}
+
+  /* tarjeta hábito */
+  .hcard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 18px 14px;margin-bottom:14px;
+    cursor:pointer;transition:box-shadow .15s,transform .15s,border-color .15s;}
+  .hcard:hover{box-shadow:0 10px 26px -12px rgba(14,13,11,.16);border-color:var(--line-strong);transform:translateY(-1px);}
+  .hcard-top{display:flex;align-items:flex-start;gap:13px;}
+  .hicon{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+  .hcard-info{flex:1;min-width:0;}
+  .hcard-nombre{font-size:16.5px;font-weight:700;color:var(--ink);line-height:1.2;letter-spacing:-.01em;}
+  .hcard-tags{display:flex;align-items:center;gap:7px;margin-top:5px;flex-wrap:wrap;}
+  .htag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;}
+  .htag-persona{background:var(--surface-2);color:var(--stone);border:1px solid var(--line);}
+  .hhora{font-size:11.5px;color:var(--stone);font-weight:500;}
+  .ring{width:46px;height:46px;flex-shrink:0;position:relative;}
+  .ring svg{transform:rotate(-90deg);}
+  .ring-txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--charcoal);}
+
+  /* 7 días */
+  .semana{display:flex;gap:6px;margin:15px 0 12px;}
+  .dia{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .dia-nom{font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--mist);}
+  .dia-pill{width:100%;aspect-ratio:1;max-height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;background:var(--surface-2);border:1.5px solid var(--line);color:var(--charcoal);transition:all .15s;}
+  .dia-pill.done{background:var(--sage);border-color:var(--sage-deep);color:#fff;}
+  .dia-pill.na{background:transparent;border-style:dashed;border-color:var(--line);color:var(--mist);}
+  .dia.hoy .dia-nom{color:var(--burnt);}
+  .dia.hoy .dia-pill{box-shadow:0 0 0 2px var(--burnt-line);}
+  .dia-pill.done.clickable:active{transform:scale(.92);}
+
+  /* footer tarjeta */
+  .hcard-foot{display:flex;align-items:center;gap:14px;padding-top:11px;border-top:1px solid var(--line-soft);}
+  .foot-estado{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--sage);}
+  .foot-estado.no{color:var(--stone);}
+  .foot-estado svg{width:16px;height:16px;}
+  .foot-racha{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:700;color:var(--amber);}
+  .foot-detalle{margin-left:auto;font-size:11.5px;color:var(--mist);font-weight:600;}
+
+  .vacio{text-align:center;padding:60px 20px;color:var(--stone);}
+  .vacio .emoji{font-size:40px;display:block;margin-bottom:12px;}
+
+  /* FAB */
+  .fab{position:fixed;right:28px;bottom:28px;width:56px;height:56px;border-radius:50%;background:var(--burnt);color:#fff;border:none;
+    font-size:28px;cursor:pointer;box-shadow:0 8px 22px -6px rgba(236,72,153,.6);display:flex;align-items:center;justify-content:center;
+    transition:transform .15s,background .15s;z-index:40;text-decoration:none;}
+  .fab:hover{background:var(--burnt-hover);transform:scale(1.06);}
+
+  /* ═══ DETALLE (overlay) ═══ */
+  .overlay{position:fixed;inset:0;background:rgba(20,15,30,.5);backdrop-filter:blur(3px);z-index:100;display:none;
+    align-items:flex-end;justify-content:center;}
+  .overlay.open{display:flex;}
+  .sheet{background:var(--paper);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:24px 24px 0 0;
+    padding:0 0 40px;animation:slideup .28s var(--ease);}
+  @keyframes slideup{from{transform:translateY(40px);opacity:.4;}to{transform:translateY(0);opacity:1;}}
+  .sheet-head{position:sticky;top:0;background:var(--paper);padding:20px 24px 14px;border-bottom:1px solid var(--line);z-index:2;}
+  .sheet-grip{width:40px;height:4px;background:var(--line-strong);border-radius:99px;margin:0 auto 16px;}
+  .sheet-top{display:flex;align-items:center;gap:14px;}
+  .sheet-close{margin-left:auto;background:var(--surface-2);border:1px solid var(--line);width:34px;height:34px;border-radius:50%;
+    cursor:pointer;font-size:18px;color:var(--stone);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .sheet-nombre{font-family:var(--font-brand);font-size:24px;font-weight:600;line-height:1.1;letter-spacing:-.02em;}
+  .sheet-cat{font-size:12px;color:var(--stone);font-weight:600;margin-top:2px;}
+  .sheet-body{padding:20px 24px 0;}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;}
+  .stat-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;}
+  .stat-box .n{font-family:var(--font-brand);font-size:26px;font-weight:600;line-height:1;color:var(--ink);}
+  .stat-box .l{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--stone);font-weight:600;margin-top:6px;}
+
+  .sec-titulo{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--stone);font-weight:700;margin:0 0 12px;}
+  .det-sec{margin-bottom:24px;}
+
+  /* anillo grande */
+  .ring-big{display:flex;align-items:center;gap:18px;background:linear-gradient(135deg,var(--burnt-soft),var(--sage-soft));
+    border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin-bottom:22px;}
+  .ring-big .rb-ring{width:78px;height:78px;position:relative;flex-shrink:0;}
+  .ring-big .rb-ring svg{transform:rotate(-90deg);}
+  .ring-big .rb-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .ring-big .rb-num{font-family:var(--font-brand);font-size:24px;font-weight:600;line-height:1;color:var(--ink);}
+  .ring-big .rb-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--stone);font-weight:600;}
+  .rb-info .rb-t{font-size:15px;font-weight:700;}
+  .rb-info .rb-s{font-size:13px;color:var(--stone);margin-top:2px;}
+
+  /* heatmap 30 días */
+  .heat{display:grid;grid-template-columns:repeat(15,1fr);gap:5px;}
+  .heat-cell{aspect-ratio:1;border-radius:5px;background:var(--surface-2);border:1px solid var(--line);}
+  .heat-cell.done{background:var(--sage);border-color:var(--sage-deep);}
+  .heat-cell.na{background:transparent;border-style:dashed;opacity:.5;}
+  .heat-cell.hoy{box-shadow:0 0 0 2px var(--burnt-line);}
+  .heat-leg{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-top:10px;font-size:10.5px;color:var(--mist);}
+  .heat-leg .c{width:12px;height:12px;border-radius:4px;border:1px solid var(--line);}
+
+  /* tendencia 12 semanas */
+  .trend{display:flex;align-items:flex-end;gap:5px;height:110px;padding-top:8px;}
+  .trend-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end;}
+  .trend-bar{width:100%;border-radius:5px 5px 3px 3px;background:var(--burnt);min-height:3px;transition:height .4s var(--ease);}
+  .trend-bar.low{background:var(--burnt-line);}
+  .trend-lbl{font-size:8.5px;color:var(--mist);font-weight:600;}
+
+  /* logros */
+  .logros{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}
+  .logro{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 12px;opacity:.45;}
+  .logro.on{opacity:1;border-color:var(--amber);background:var(--amber-soft);}
+  .logro .lem{font-size:22px;}
+  .logro .lt{font-size:12.5px;font-weight:700;line-height:1.15;}
+  .logro .ls{font-size:10.5px;color:var(--stone);}
+
+  @media (max-width:920px){
+    .app{grid-template-columns:1fr;}
+    .sidebar{position:relative;height:auto;flex-direction:row;flex-wrap:wrap;padding:18px 20px;}
+    .nav-section{flex-direction:row;flex-wrap:wrap;}.nav-item{width:auto;}.nav-item.active::before{display:none;}.nav-label{display:none;}
+    main{padding:24px 18px 100px;}
+    h1{font-size:34px;}
+    .heat{grid-template-columns:repeat(10,1fr);}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><img src="/tablero/lovesprint-mark.png" alt="">Love<em>Sprint</em></div>
+      <div class="brand-tag">juntos · organizados · avanzando</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Tablero</div>
+      <a href="/" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span>Hoy</span></a>
+      <a href="/tablero/habitos.html" class="nav-item active"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Mis Hábitos</span></a>
+      <a href="/tablero/progreso.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg><span>Progreso</span></a>
+      <a href="/tablero/nosotros.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg><span>Nosotros</span></a>
+      <a href="/tablero/aprender.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg><span>Aprender</span></a>
+      <a href="/tablero/sprint.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 22V4l13 4-13 4"/><path d="M4 13h9"/></svg><span>Sprint</span></a>
+      <a href="/tablero/agenda.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Agenda</span></a>
+      <a href="/tablero/proyectos.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="8" rx="1"/></svg><span>Proyectos</span></a>
+      <div class="nav-label" style="margin-top:8px;">Casa</div>
+      <a href="/tablero/comidas.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 3v7a3 3 0 0 0 3 3v8M7 3v7M10 3v7M17 3s-2 2-2 5 2 4 2 4v6"/></svg><span>Comidas</span></a>
+      <a href="/tablero/mercado.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Mercado</span></a>
+      <a href="/tablero/gastos.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><span>Gastos</span></a>
+      <div class="nav-label" style="margin-top:8px;">Configurar</div>
+      <a href="/tablero/admin.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4"/></svg><span>Configuración</span></a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <div>
+        <div class="greeting">Mis Hábitos</div>
+        <h1>Los últimos <em>7 días</em></h1>
+        <p class="hero-sub">Toca el día de hoy para marcar. Toca la tarjeta para ver tu evolución.</p>
+      </div>
+    </div>
+
+    <div class="resumen" id="resumen"></div>
+    <div class="filtros" id="filtros"></div>
+    <div id="lista"><div class="vacio">Cargando hábitos…</div></div>
+  </main>
+</div>
+
+<a class="fab" href="/tablero/aprender.html#habitos" title="Nuevo hábito">＋</a>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this)cerrarDetalle()">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script>
+const DIAS_CORTO = ['D','L','M','X','J','V','S']; // getDay(): 0=Dom
+const DIAS_ISO   = {1:'L',2:'M',3:'X',4:'J',5:'V',6:'S',7:'D'};
+let META = {};      // id -> {dias, alcance, persona_id, horario_sugerido, frecuencia, nombre, categoria_id}
+let CATS = [];      // categorías
+let MET  = [];      // métricas por hábito (array)
+let filtroCat = 'todos';
+
+function isoLocal(d){ const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,10); }
+function isoDow(fechaStr){ const d=new Date(fechaStr+'T12:00:00'); return d.getDay()===0?7:d.getDay(); }
+function aplica(h, dow){ const dias=META[h.id]?.dias; if(!dias||!Array.isArray(dias)||!dias.length) return true; return dias.includes(dow); }
+function esMio(h){ const yo=DD.personaId(); const m=META[h.id]||{}; return (m.alcance||'pareja')!=='personal' || m.persona_id===yo; }
+function esc(s){ return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function cargar(){
+  try{
+    const t = await DD.token(); if(!t) return;
+    await DD.cargarPersonas();
+    const [hd, met] = await Promise.all([ DD.fetch('/habitos'), DD.fetch('/metricas/habitos') ]);
+    CATS = hd.categorias || [];
+    META = {}; (hd.habitos||[]).forEach(h=>META[h.id]=h);
+    MET = met.habitos || [];
+  }catch(e){ console.warn(e); document.getElementById('lista').innerHTML='<div class="vacio">No se pudieron cargar los hábitos.</div>'; return; }
+  pintarFiltros();
+  render();
+}
+
+function pintarFiltros(){
+  const usadas = new Set(MET.filter(h=>META[h.id]&&esMio(META[h.id])).map(h=>META[h.id].categoria_id));
+  const cats = CATS.filter(c=>usadas.has(c.id));
+  const html = [`<button class="chip ${filtroCat==='todos'?'on':''}" onclick="setFiltro('todos')">Todos</button>`]
+    .concat(cats.map(c=>`<button class="chip ${filtroCat===c.id?'on':''}" onclick="setFiltro('${c.id}')">
+      <span class="dot" style="background:${c.color}1F;color:${c.color}">${c.icono||'•'}</span>${esc(c.nombre)}</button>`));
+  document.getElementById('filtros').innerHTML = html.join('');
+}
+function setFiltro(id){ filtroCat=id; pintarFiltros(); render(); }
+
+function ringSVG(pct, size, sw, color){
+  const r=(size-sw)/2, c=2*Math.PI*r, off=c*(1-pct/100);
+  return `<svg width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--line)" stroke-width="${sw}"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round"
+      stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/></svg>`;
+}
+
+function render(){
+  const cont = document.getElementById('lista');
+  let lista = MET.filter(h=>META[h.id] && esMio(META[h.id]));
+  if(filtroCat!=='todos') lista = lista.filter(h=>META[h.id].categoria_id===filtroCat);
+
+  // resumen del día
+  const dowHoy = new Date().getDay()||7;
+  const hoyStr = isoLocal(new Date());
+  const aplicanHoy = lista.filter(h=>aplica(META[h.id],dowHoy));
+  const hechosHoy = aplicanHoy.filter(h=>{ const u=h.ultimos_30_dias||[]; const t=u[u.length-1]; return t&&t.fecha===hoyStr&&t.cumplido; }).length;
+  const mejorRacha = Math.max(0,...lista.map(h=>h.racha_actual||0));
+  const pctHoy = aplicanHoy.length ? Math.round(hechosHoy/aplicanHoy.length*100) : 0;
+  document.getElementById('resumen').innerHTML = `
+    <div class="res-card"><div class="res-num">${hechosHoy}<small>/${aplicanHoy.length}</small></div><div class="res-lbl">Hoy cumplidos</div></div>
+    <div class="res-card"><div class="res-num">${pctHoy}<small>%</small></div><div class="res-lbl">Del día</div></div>
+    <div class="res-card"><div class="res-num">${mejorRacha}<small> 🔥</small></div><div class="res-lbl">Mejor racha activa</div></div>`;
+
+  if(!lista.length){ cont.innerHTML=`<div class="vacio"><span class="emoji">✅</span>Sin hábitos en esta vista.</div>`; return; }
+  cont.innerHTML = lista.map(cardHab).join('');
+}
+
+function cardHab(h){
+  const m = META[h.id]; const cat = CATS.find(c=>c.id===m.categoria_id)||{icono:'✨',nombre:'',color:'#7A746B'};
+  const u = h.ultimos_30_dias||[];
+  const ult7 = u.slice(-7);
+  const hoyStr = isoLocal(new Date());
+
+  // 7 días
+  let doneAplic=0, totAplic=0;
+  const dias = ult7.map(d=>{
+    const dow = isoDow(d.fecha); const ap = aplica(m,dow); const dn = new Date(d.fecha+'T12:00:00').getDate();
+    const esHoy = d.fecha===hoyStr;
+    if(ap){ totAplic++; if(d.cumplido) doneAplic++; }
+    let cls='dia-pill'; if(!ap) cls+=' na'; else if(d.cumplido) cls+=' done';
+    if(esHoy && ap) cls+=' clickable';
+    const onclick = (esHoy && ap) ? `onclick="event.stopPropagation();toggleHoy('${h.id}')"` : '';
+    return `<div class="dia ${esHoy?'hoy':''}">
+      <span class="dia-nom">${DIAS_ISO[dow]}</span>
+      <div class="${cls}" ${onclick}>${dn}</div></div>`;
+  }).join('');
+
+  const pct7 = totAplic ? Math.round(doneAplic/totAplic*100) : 0;
+  const hoyItem = u[u.length-1];
+  const doneHoy = hoyItem && hoyItem.fecha===hoyStr && hoyItem.cumplido;
+  const dowHoy = new Date().getDay()||7;
+  const aplicaHoy = aplica(m,dowHoy);
+
+  const persona = m.alcance==='personal' ? (DD.personas.find(p=>p.id===m.persona_id)?.nombre?.split(' ')[0]||'') : 'Pareja';
+  const ringColor = pct7>=100?'var(--sage)':pct7>=50?'var(--burnt)':'var(--amber)';
+
+  return `<div class="hcard" onclick="abrirDetalle('${h.id}')">
+    <div class="hcard-top">
+      <div class="hicon" style="background:${cat.color}1A;color:${cat.color}">${cat.icono||'✨'}</div>
+      <div class="hcard-info">
+        <div class="hcard-nombre">${esc(m.nombre)}</div>
+        <div class="hcard-tags">
+          <span class="htag" style="background:${cat.color}18;color:${cat.color}">${esc(cat.nombre)}</span>
+          <span class="htag htag-persona">${esc(persona)}</span>
+          ${m.horario_sugerido?`<span class="hhora">· ${esc(m.horario_sugerido)}</span>`:''}
+        </div>
+      </div>
+      <div class="ring">${ringSVG(pct7,46,5,ringColor)}<div class="ring-txt">${pct7}%</div></div>
+    </div>
+    <div class="semana">${dias}</div>
+    <div class="hcard-foot">
+      ${aplicaHoy
+        ? (doneHoy
+            ? `<span class="foot-estado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>Completado hoy</span>`
+            : `<span class="foot-estado no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>Pendiente hoy</span>`)
+        : `<span class="foot-estado no">No toca hoy</span>`}
+      ${h.racha_actual>0?`<span class="foot-racha">🔥 ${h.racha_actual} ${h.racha_actual===1?'día':'días'}</span>`:''}
+      <span class="foot-detalle">ver evolución →</span>
+    </div>
+  </div>`;
+}
+
+async function toggleHoy(id){
+  const h = MET.find(x=>x.id===id); if(!h) return;
+  const u = h.ultimos_30_dias||[]; const t = u[u.length-1]; const era = t && t.cumplido;
+  // optimista
+  if(t){ t.cumplido=!era; }
+  h.racha_actual = Math.max(0, (h.racha_actual||0) + (era?-1:1));
+  render();
+  if(!era && navigator.vibrate) navigator.vibrate(12);
+  try{
+    await DD.fetch(`/habitos/${id}/${era?'descumplir':'cumplir'}`,{method:'POST',body:'{}'});
+    const met = await DD.fetch('/metricas/habitos'); MET = met.habitos||[]; render();
+  }catch(e){ if(t){t.cumplido=era;} render(); }
+}
+
+/* ═══ DETALLE ═══ */
+function abrirDetalle(id){
+  const h = MET.find(x=>x.id===id); if(!h) return;
+  const m = META[id]; const cat = CATS.find(c=>c.id===m.categoria_id)||{icono:'✨',nombre:'',color:'#7A746B'};
+  const u = h.ultimos_30_dias||[]; const hoyStr=isoLocal(new Date());
+
+  // heatmap 30 días
+  const heat = u.map(d=>{
+    const dow=isoDow(d.fecha); const ap=aplica(m,dow); const esHoy=d.fecha===hoyStr;
+    let cls='heat-cell'; if(!ap)cls+=' na'; else if(d.cumplido)cls+=' done'; if(esHoy)cls+=' hoy';
+    const nice = new Date(d.fecha+'T12:00:00').toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});
+    return `<div class="${cls}" title="${nice}${d.cumplido?' · ✓':''}"></div>`;
+  }).join('');
+
+  // tendencia 12 semanas
+  const sem = h.semanas||[];
+  const trend = sem.map((s,i)=>{
+    const hpx = Math.max(3, Math.round(s.pct*0.9));
+    const et = new Date(s.semana_inicio+'T12:00:00');
+    return `<div class="trend-col" title="Semana del ${et.toLocaleDateString('es-CO',{day:'numeric',month:'short'})}: ${s.pct}%">
+      <div class="trend-bar ${s.pct<50?'low':''}" style="height:${hpx}px"></div>
+      <span class="trend-lbl">${et.getDate()}/${et.getMonth()+1}</span></div>`;
+  }).join('');
+
+  const mes = h.este_mes||{pct:0,cumplidos:0,total:0};
+  const semAct = h.esta_semana||{pct:0,cumplidos:0,total:0};
+  const persona = m.alcance==='personal' ? (DD.personas.find(p=>p.id===m.persona_id)?.nombre?.split(' ')[0]||'') : 'En pareja';
+
+  const logros = (h.logros||[]).map(l=>`
+    <div class="logro ${l.desbloqueado?'on':''}">
+      <span class="lem">${l.desbloqueado?'🏆':'🔒'}</span>
+      <div><div class="lt">${esc(l.titulo)}</div><div class="ls">${esc(l.descripcion)}</div></div>
+    </div>`).join('');
+
+  document.getElementById('sheet').innerHTML = `
+    <div class="sheet-head">
+      <div class="sheet-grip"></div>
+      <div class="sheet-top">
+        <div class="hicon" style="background:${cat.color}1A;color:${cat.color};width:52px;height:52px;font-size:26px;border-radius:15px">${cat.icono||'✨'}</div>
+        <div><div class="sheet-nombre">${esc(m.nombre)}</div>
+          <div class="sheet-cat">${esc(cat.nombre)} · ${esc(persona)}${m.horario_sugerido?' · '+esc(m.horario_sugerido):''}</div></div>
+        <button class="sheet-close" onclick="cerrarDetalle()">✕</button>
+      </div>
+    </div>
+    <div class="sheet-body">
+      <div class="ring-big">
+        <div class="rb-ring">${ringSVG(semAct.pct,78,8,'var(--burnt)')}
+          <div class="rb-txt"><span class="rb-num">${semAct.pct}%</span><span class="rb-lbl">semana</span></div></div>
+        <div class="rb-info">
+          <div class="rb-t">${h.racha_actual>0?`🔥 ${h.racha_actual} ${h.racha_actual===1?'día':'días'} seguidos`:'Empieza tu racha hoy'}</div>
+          <div class="rb-s">${semAct.cumplidos}/${semAct.total} esta semana · récord ${h.mejor_racha||0} días</div>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-box"><div class="n">${h.racha_actual||0}</div><div class="l">Racha actual</div></div>
+        <div class="stat-box"><div class="n">${h.mejor_racha||0}</div><div class="l">Mejor racha</div></div>
+        <div class="stat-box"><div class="n">${h.total_marcas||0}</div><div class="l">Total veces</div></div>
+      </div>
+
+      <div class="det-sec">
+        <h3 class="sec-titulo">Últimos 30 días</h3>
+        <div class="heat">${heat}</div>
+        <div class="heat-leg"><span class="c" style="background:var(--surface-2)"></span>No<span class="c" style="background:var(--sage);border-color:var(--sage-deep)"></span>Sí</div>
+      </div>
+
+      <div class="det-sec">
+        <h3 class="sec-titulo">Evolución · 12 semanas</h3>
+        <div class="trend">${trend||'<div style="color:var(--mist);font-size:12px">Sin datos aún</div>'}</div>
+      </div>
+
+      <div class="det-sec">
+        <h3 class="sec-titulo">Este mes</h3>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+            <span style="font-weight:700;font-size:15px">${mes.cumplidos} de ${mes.total} días</span>
+            <span style="font-family:var(--font-brand);font-size:22px;font-weight:600;color:var(--sage)">${mes.pct}%</span>
+          </div>
+          <div style="height:8px;background:var(--line);border-radius:99px;overflow:hidden">
+            <div style="height:100%;width:${mes.pct}%;background:var(--sage);border-radius:99px"></div></div>
+        </div>
+      </div>
+
+      ${logros?`<div class="det-sec"><h3 class="sec-titulo">Logros</h3><div class="logros">${logros}</div></div>`:''}
+
+      <a href="/tablero/aprender.html#habitos" class="btn" style="display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--charcoal);font-weight:600;text-decoration:none;font-size:13px;">✏️ Editar hábito</a>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function cerrarDetalle(){ document.getElementById('overlay').classList.remove('open'); document.body.style.overflow=''; }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')cerrarDetalle(); });
+document.addEventListener('dd:persona', ()=>{ pintarFiltros(); render(); });
+
+document.addEventListener('DOMContentLoaded', cargar);
+if(document.readyState!=='loading') cargar();
+</script>
+</body>
+</html>
