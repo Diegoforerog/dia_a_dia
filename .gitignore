@@ -12,3 +12,4 @@ integraciones/.oauth_code_verifier
 *.local.json
 node_modules/
 .venv/
+sincronizar-habitos.js

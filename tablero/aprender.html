@@ -217,11 +217,6 @@
       <button class="btn primario" id="btn-nuevo" onclick="abrirNuevo()">＋ Nuevo curso</button>
     </div>
 
-    <div class="tabs">
-      <button class="tab active" data-panel="cursos" onclick="irPanel('cursos')">🎓 Cursos</button>
-      <button class="tab" data-panel="habitos" onclick="irPanel('habitos')">✅ Hábitos</button>
-    </div>
-
     <!-- PANEL CURSOS -->
     <section class="panel active" id="panel-cursos">
       <div class="card reto" id="card-reto" style="display:none">
@@ -345,8 +340,7 @@ async function init(){
   document.getElementById('n-quien').innerHTML =
     '<option value="ambos">👫 Los dos</option>' +
     personas.map(p=>`<option value="${p.id}">${esc(nom(p))}</option>`).join('');
-  await Promise.all([cargarCursos(), cargarReto(), cargarHabitos()]);
-  if(location.hash === '#habitos') irPanel('habitos');
+  await Promise.all([cargarCursos(), cargarReto()]);
 }
 
 function irPanel(id){

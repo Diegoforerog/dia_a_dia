@@ -168,6 +168,35 @@
   .logro .lt{font-size:12.5px;font-weight:700;line-height:1.15;}
   .logro .ls{font-size:10.5px;color:var(--stone);}
 
+  /* ── Modal crear/editar ── */
+  .modal-fondo{position:fixed;inset:0;background:rgba(20,15,30,.5);backdrop-filter:blur(3px);z-index:120;
+    display:none;align-items:center;justify-content:center;padding:20px;}
+  .modal-fondo.abierto{display:flex;}
+  .modal{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:24px;max-width:460px;width:100%;
+    max-height:92vh;overflow-y:auto;animation:slideup .24s var(--ease);}
+  .modal h3{font-family:var(--font-brand);font-size:22px;font-weight:600;margin:0 0 16px;}
+  .modal label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--stone);margin:0 0 6px;}
+  .modal input,.modal select{width:100%;font-family:inherit;font-size:14.5px;border:1.5px solid var(--line);border-radius:10px;
+    padding:10px 12px;background:var(--surface);color:var(--ink);margin-bottom:14px;}
+  .modal input:focus,.modal select:focus{outline:none;border-color:var(--burnt-line);box-shadow:0 0 0 3px var(--burnt-soft);}
+  .ed-row{display:flex;gap:12px;}
+  .quien-seg{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:14px;}
+  .quien-seg button{flex:1;border:none;background:none;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;
+    color:var(--stone);padding:8px 6px;border-radius:8px;white-space:nowrap;}
+  .quien-seg button.on{background:#241A38;color:#fff;}
+  .dias-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
+  .dias-chips button{width:38px;height:38px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);
+    cursor:pointer;font-family:inherit;font-weight:700;font-size:13px;color:var(--stone);}
+  .dias-chips button.on{background:var(--sage);border-color:var(--sage-deep);color:#fff;}
+  .modal-acciones{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .btn-ed{border:1px solid var(--line);background:var(--surface);color:var(--charcoal);font-family:inherit;font-size:13.5px;
+    font-weight:600;padding:10px 16px;border-radius:10px;cursor:pointer;}
+  .btn-ed.primario{background:var(--burnt);border-color:var(--burnt);color:#fff;}
+  .btn-ed.del{color:var(--crimson);border-color:var(--crimson-soft);background:var(--crimson-soft);}
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#241A38;color:#fff;
+    padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;z-index:200;}
+  .toast.visible{opacity:1;transform:translateX(-50%) translateY(0);}
+
   @media (max-width:920px){
     .app{grid-template-columns:1fr;}
     .sidebar{position:relative;height:auto;flex-direction:row;flex-wrap:wrap;padding:18px 20px;}
@@ -220,11 +249,38 @@
   </main>
 </div>
 
-<a class="fab" href="/tablero/aprender.html#habitos" title="Nuevo hábito">＋</a>
+<button class="fab" onclick="abrirEditor()" title="Nuevo hábito">＋</button>
 
 <div class="overlay" id="overlay" onclick="if(event.target===this)cerrarDetalle()">
   <div class="sheet" id="sheet"></div>
 </div>
+
+<!-- MODAL crear/editar hábito -->
+<div class="modal-fondo" id="m-editor" onclick="if(event.target===this)cerrarEditor()">
+  <div class="modal">
+    <h3 id="ed-titulo">Nuevo hábito</h3>
+    <label>¿Qué hábito?</label>
+    <input id="ed-nombre" placeholder="ej. Beber 2L de agua" maxlength="60">
+    <div class="ed-row">
+      <div style="flex:1"><label>Categoría</label><select id="ed-cat"></select></div>
+      <div style="flex:1"><label>¿De quién es?</label><div class="quien-seg" id="ed-quien"></div></div>
+    </div>
+    <div class="ed-row">
+      <div style="flex:1"><label>Hora</label><input id="ed-hora" placeholder="ej. 7:00 AM"></div>
+      <div style="width:110px"><label>Duración (min)</label><input id="ed-dur" type="number" min="0" placeholder="0"></div>
+    </div>
+    <label>¿Qué días? <small style="text-transform:none;letter-spacing:0;color:var(--stone)">(todos = diario)</small></label>
+    <div class="dias-chips" id="ed-dias"></div>
+    <div class="modal-acciones">
+      <button class="btn-ed del" id="ed-borrar" style="visibility:hidden" onclick="borrarHabito()">Eliminar</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-ed" onclick="cerrarEditor()">Cancelar</button>
+        <button class="btn-ed primario" onclick="guardarHabito()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
 
 <script>
 const DIAS_CORTO = ['D','L','M','X','J','V','S']; // getDay(): 0=Dom
@@ -445,14 +501,78 @@ function abrirDetalle(id){
 
       ${logros?`<div class="det-sec"><h3 class="sec-titulo">Logros</h3><div class="logros">${logros}</div></div>`:''}
 
-      <a href="/tablero/aprender.html#habitos" class="btn" style="display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--charcoal);font-weight:600;text-decoration:none;font-size:13px;">✏️ Editar hábito</a>
+      <button onclick="cerrarDetalle();abrirEditor('${h.id}')" style="display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--charcoal);font-weight:600;cursor:pointer;font-size:13px;font-family:inherit;">✏️ Editar hábito</button>
     </div>`;
   document.getElementById('overlay').classList.add('open');
   document.body.style.overflow='hidden';
 }
 function cerrarDetalle(){ document.getElementById('overlay').classList.remove('open'); document.body.style.overflow=''; }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape')cerrarDetalle(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){cerrarDetalle();cerrarEditor();} });
 document.addEventListener('dd:persona', ()=>{ pintarFiltros(); render(); });
+
+/* ═══ EDITOR crear/editar ═══ */
+let edId=null, edQuien='pareja', edDias=new Set([1,2,3,4,5,6,7]), edTipo='bueno';
+const DIAS_ED=[[1,'L'],[2,'M'],[3,'X'],[4,'J'],[5,'V'],[6,'S'],[7,'D']];
+
+function _renderQuien(){
+  const yo=DD.personaId();
+  const ops=[['pareja','👫 En pareja']].concat((DD.personas||[]).map(p=>[p.id,(p.emoji||'')+' '+(p.nombre||'').split(' ')[0]]));
+  document.getElementById('ed-quien').innerHTML=ops.map(([v,l])=>
+    `<button type="button" class="${edQuien===v?'on':''}" onclick="edQuien='${v}';_renderQuien()">${esc(l)}</button>`).join('');
+}
+function _renderDias(){
+  document.getElementById('ed-dias').innerHTML=DIAS_ED.map(([n,l])=>
+    `<button type="button" class="${edDias.has(n)?'on':''}" onclick="_toggleDia(${n})">${l}</button>`).join('');
+}
+function _toggleDia(n){ if(edDias.has(n))edDias.delete(n); else edDias.add(n); if(edDias.size===0)edDias.add(n); _renderDias(); }
+
+function abrirEditor(id){
+  edId = id || null;
+  const h = id ? MET.find(x=>x.id===id) : null;
+  const m = id ? (META[id]||{}) : {};
+  document.getElementById('ed-titulo').textContent = id ? 'Editar hábito' : 'Nuevo hábito';
+  document.getElementById('ed-nombre').value = m.nombre || '';
+  document.getElementById('ed-cat').innerHTML = CATS.map(c=>`<option value="${c.id}">${c.icono||''} ${esc(c.nombre)}</option>`).join('');
+  if(m.categoria_id) document.getElementById('ed-cat').value = m.categoria_id;
+  document.getElementById('ed-hora').value = m.horario_sugerido || '';
+  document.getElementById('ed-dur').value = m.duracion_min || '';
+  edTipo = m.tipo || 'bueno';
+  edQuien = id ? ((m.alcance||'pareja')==='personal' ? (m.persona_id||'pareja') : 'pareja') : (DD.personaId()||'pareja');
+  edDias = new Set(m.dias && m.dias.length ? m.dias : [1,2,3,4,5,6,7]);
+  document.getElementById('ed-borrar').style.visibility = id ? 'visible' : 'hidden';
+  _renderQuien(); _renderDias();
+  document.getElementById('m-editor').classList.add('abierto');
+  if(!id) setTimeout(()=>document.getElementById('ed-nombre').focus(),80);
+}
+function cerrarEditor(){ document.getElementById('m-editor').classList.remove('abierto'); }
+
+async function guardarHabito(){
+  const nombre=document.getElementById('ed-nombre').value.trim();
+  if(!nombre){ toast('Ponle nombre al hábito'); return; }
+  const body={
+    nombre,
+    categoria_id: document.getElementById('ed-cat').value,
+    alcance: edQuien==='pareja' ? 'pareja' : 'personal',
+    persona_id: edQuien==='pareja' ? null : edQuien,
+    dias: edDias.size===7 ? null : [...edDias].sort((a,b)=>a-b),
+    horario_sugerido: document.getElementById('ed-hora').value.trim() || 'todo el día',
+    duracion_min: parseInt(document.getElementById('ed-dur').value)||0,
+    tipo: edTipo,
+  };
+  try{
+    if(edId) await DD.fetch('/habitos/'+edId,{method:'PUT',body:JSON.stringify(body)});
+    else await DD.fetch('/habitos',{method:'POST',body:JSON.stringify(body)});
+    cerrarEditor(); toast('Hábito guardado ✓'); await cargar();
+  }catch(e){ toast('No se pudo: '+e.message); }
+}
+async function borrarHabito(){
+  if(!edId) return;
+  const m=META[edId]||{};
+  if(!confirm(`¿Eliminar «${m.nombre||'este hábito'}»?`)) return;
+  try{ await DD.fetch('/habitos/'+edId,{method:'DELETE'}); cerrarEditor(); toast('Hábito eliminado'); await cargar(); }
+  catch(e){ toast('No se pudo: '+e.message); }
+}
+let _tt; function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('visible'); clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('visible'),2800); }
 
 document.addEventListener('DOMContentLoaded', cargar);
 if(document.readyState!=='loading') cargar();
