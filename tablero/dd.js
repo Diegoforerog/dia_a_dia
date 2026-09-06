@@ -515,6 +515,40 @@
       if (nom) nom.textContent = p ? p.nombre : '¿Quién eres?';
     },
 
+    /* ── Sidebar de escritorio: MISMO en todas las páginas (fuente única) ── */
+    _montarSidebar() {
+      // admin.html tiene su propia navegación por pestañas: no la tocamos.
+      if (location.pathname.endsWith('/admin.html')) return;
+      const sb = document.querySelector('.sidebar');
+      if (!sb) return;
+      const nav = DD._RUTAS.map(g => `
+        <div class="nav-label">${g.grupo}</div>
+        ${g.items.map(it => `
+          <a class="nav-item ${DD._esActiva(it.href) ? 'active' : ''}" href="${it.href}">
+            ${DD._svg(it.ic, 'nav-icon')}<span>${it.txt}</span>
+          </a>`).join('')}`).join('');
+      sb.innerHTML = `
+        <div class="brand">
+          <div class="brand-mark"><img src="/tablero/lovesprint-mark.png" alt="" style="width:26px;height:26px;vertical-align:-6px;margin-right:8px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">Love<em>Sprint</em></div>
+          <div class="brand-tag">juntos · organizados · avanzando</div>
+        </div>
+        <div class="dd-datecard">
+          <div class="dd-date-num" id="date-num">—</div>
+          <div class="dd-date-meta">
+            <div class="dd-date-wd" id="date-weekday"></div>
+            <div class="dd-date-mo" id="date-month"></div>
+            <div class="dd-date-yr" id="date-year"></div>
+          </div>
+        </div>
+        <nav class="nav-section">${nav}</nav>`;
+      const h = new Date();
+      const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+      const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+      set('date-num', h.getDate()); set('date-weekday', dias[h.getDay()]);
+      set('date-month', meses[h.getMonth()]); set('date-year', h.getFullYear());
+    },
+
     /* ── Chip en el sidebar ── */
     _pintarChip() {
       const nav = document.querySelector('.sidebar .nav-section');
@@ -541,6 +575,16 @@
   /* ── estilos del runtime ── */
   const css = document.createElement('style');
   css.textContent = `
+  /* Tarjeta de fecha del sidebar (consistente en todas las páginas) */
+  .dd-datecard{border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:16px 14px;
+    background:rgba(255,255,255,.06);display:grid;grid-template-columns:auto 1fr;gap:13px;align-items:center;position:relative;overflow:hidden;}
+  .dd-datecard::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:#EC4899;}
+  .dd-date-num{font-family:"Inter",-apple-system,sans-serif;font-weight:600;font-size:34px;line-height:1;color:#fff;letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
+  .dd-date-meta{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .dd-date-wd{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#F472B6;font-weight:700;}
+  .dd-date-mo{font-size:13px;color:#E2E8F0;text-transform:capitalize;font-weight:500;}
+  .dd-date-yr{font-size:11.5px;color:#94A3B8;font-weight:500;font-variant-numeric:tabular-nums;}
+
   .dd-persona-overlay{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;
     background:color-mix(in srgb, #241A38 62%, transparent);backdrop-filter:blur(8px);
     opacity:0;transition:opacity .22s ease;padding:20px;}
@@ -729,6 +773,7 @@
   /* ── arranque ── */
   window.DD = DD;
   document.addEventListener('DOMContentLoaded', async () => {
+    DD._montarSidebar();
     DD._montarShell();
     await DD.cargarPersonas();
     DD._pintarChip();
