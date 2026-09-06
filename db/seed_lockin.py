@@ -57,47 +57,66 @@ def api(method, ruta, body=None):
                                  headers={"X-API-Token": TOKEN, "Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
-            return json.loads(r.read() or "null")
+            return {"ok": True, "code": r.status, "data": json.loads(r.read() or "null")}
     except urllib.error.HTTPError as e:
         print(f"   ⚠️  {method} {ruta} → {e.code} {e.read()[:200]}")
-        return None
+        return {"ok": False, "code": e.code, "data": None}
     except urllib.error.URLError as e:
         print(f"   ⚠️  {method} {ruta} → sin conexión: {e.reason}")
-        return None
+        return {"ok": False, "code": 0, "data": None}
 
 
 def main():
     print(f"→ Servidor: {BASE}  {'(DRY RUN)' if DRY else ''}")
     _probar_conexion()
 
-    # 1. Borrar hábitos existentes
-    actuales = api("GET", "/habitos") or {}
-    viejos = actuales.get("habitos", [])
-    print(f"\n1) Hábitos actuales en el servidor: {len(viejos)}")
-    for h in viejos:
-        print(f"   − borrar: {h.get('nombre')}")
-        if not DRY:
-            api("DELETE", f"/habitos/{h['id']}")
-
-    # 2. Crear los nuevos
+    # 0. Leer el plan ANTES de borrar (en local el borrado vacía este mismo archivo)
     nuevos = json.loads((RAIZ / "datos" / "habitos.json").read_text())["habitos"]
+    if not nuevos:
+        print("✋ datos/habitos.json está vacío. Regenéralo antes de sincronizar.")
+        sys.exit(1)
+
+    # 1. Borrar hábitos existentes
+    r = api("GET", "/habitos")
+    if not r["ok"]:
+        print("✋ No pude LEER los hábitos (token inválido o sin permiso). Nada que hacer.")
+        sys.exit(1)
+    viejos = (r["data"] or {}).get("habitos", [])
+    print(f"\n1) Hábitos actuales en el servidor: {len(viejos)}")
+    del_ok = del_fail = 0
+    for h in viejos:
+        if DRY:
+            print(f"   − borraría: {h.get('nombre')}")
+        else:
+            res = api("DELETE", f"/habitos/{h['id']}")
+            if res["ok"]: del_ok += 1
+            else: del_fail += 1
+    if not DRY:
+        print(f"   Borrados: {del_ok} ok, {del_fail} fallidos")
+
+    # 2. Crear los nuevos (leídos en el paso 0)
     print(f"\n2) Creando {len(nuevos)} hábitos del Lock In:")
+    new_ok = new_fail = 0
     for h in nuevos:
         body = {k: h[k] for k in ("id", "categoria_id", "nombre", "frecuencia", "horario_sugerido",
                                   "duracion_min", "dias", "tipo", "alcance", "persona_id") if k in h}
-        print(f"   + {h['nombre']}  ({h.get('horario_sugerido','')})")
-        if not DRY:
-            api("POST", "/habitos", body)
+        if DRY:
+            print(f"   + crearía: {h['nombre']}  ({h.get('horario_sugerido','')})")
+        else:
+            res = api("POST", "/habitos", body)
+            if res["ok"]: new_ok += 1
+            else: new_fail += 1
+    if not DRY:
+        print(f"   Creados: {new_ok} ok, {new_fail} fallidos")
 
     # 3. Curso Daniel Habif (opcional — no bloquea el resto)
     cursos_resp = api("GET", "/cursos")
-    if cursos_resp is None:
+    if not cursos_resp["ok"]:
         print("\n3) No pude leer /cursos (permisos o versión desplegada distinta).")
-        print("   No pasa nada: los HÁBITOS ya quedaron sincronizados.")
-        print("   Agrega el curso a mano en la app → Aprender → «+ Nuevo curso»:")
+        print("   No pasa nada: agrega el curso a mano en la app → Aprender → «+ Nuevo curso»:")
         print("     Nombre: Curso Daniel Habif  ·  Persona: Diego  ·  min/día: 60")
     else:
-        cursos = cursos_resp.get("cursos", [])
+        cursos = (cursos_resp["data"] or {}).get("cursos", [])
         if any("daniel habif" in (c.get("nombre", "").lower()) for c in cursos):
             print("\n3) Curso 'Daniel Habif' ya existe — no se duplica.")
         else:
@@ -107,7 +126,22 @@ def main():
                                         "persona_id": "persona_diego", "min_dia": 60,
                                         "recompensa": "Crecimiento personal"})
 
-    print("\n✅ Hábitos sincronizados." if not DRY else "\n(DRY RUN — no se cambió nada)")
+    # 4. Verificación final: qué quedó realmente en el servidor
+    if not DRY:
+        fin = api("GET", "/habitos")
+        habs = (fin["data"] or {}).get("habitos", []) if fin["ok"] else []
+        print(f"\n4) VERIFICACIÓN — el servidor ahora tiene {len(habs)} hábitos:")
+        pareja = [h for h in habs if (h.get('alcance') or 'pareja') == 'pareja']
+        print(f"   • De pareja (compartidos): {len(pareja)}")
+        for h in habs[:40]:
+            quien = 'pareja' if (h.get('alcance') or 'pareja') == 'pareja' else (h.get('persona_id') or '?')
+            print(f"     - {h.get('nombre')}  [{quien}]")
+        if len(habs) == len(nuevos):
+            print("\n✅ Sincronización correcta: coincide con el plan del Lock In.")
+        else:
+            print(f"\n⚠️  Se esperaban {len(nuevos)} y hay {len(habs)}. Revisa los errores de arriba.")
+    else:
+        print("\n(DRY RUN — no se cambió nada)")
 
 
 if __name__ == "__main__":
