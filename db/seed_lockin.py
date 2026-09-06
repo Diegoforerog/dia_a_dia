@@ -25,22 +25,15 @@ TOKEN = os.environ.get("API_TOKEN", "")
 DRY = "--dry-run" in sys.argv
 RAIZ = Path(__file__).resolve().parent.parent
 
-if not TOKEN:
-    print("✋ Falta API_TOKEN. Ej: API_TOKEN=... BASE_URL=... python db/seed_lockin.py")
-    sys.exit(1)
-
-if TOKEN.upper() in ("TU-TOKEN", "TU_TOKEN"):
-    print("✋ API_TOKEN sigue con el texto de ejemplo (TU-TOKEN).")
-    print("   Reemplázalo por tu token real (el mismo con el que entras a la app).")
-    print("   Lo sacas en el navegador (F12 → consola):  localStorage.getItem('organizador_token')")
-    print("   o es la variable API_TOKEN del servidor.")
-    sys.exit(1)
-
 if "TU-DOMINIO" in BASE or "tu-dominio" in BASE:
     print(f"✋ BASE_URL sigue con el texto de ejemplo ({BASE}).")
-    print("   Reemplázalo por el dominio real donde abres la app en el teléfono, p.ej.:")
-    print('   BASE_URL="https://miapp.midominio.com" API_TOKEN="..." python3 db/seed_lockin.py --dry-run')
+    print("   Reemplázalo por el dominio real donde abres la app, p.ej.:")
+    print('   BASE_URL="https://lovesprint.nextgencol.com" python3 db/seed_lockin.py')
     sys.exit(1)
+
+# Si el token quedó como placeholder, lo ignoramos y entramos con usuario/contraseña
+if TOKEN.upper() in ("TU-TOKEN", "TU_TOKEN", "PEGA-TU-TOKEN-AQUI"):
+    TOKEN = ""
 
 
 def _probar_conexion():
@@ -54,6 +47,30 @@ def _probar_conexion():
         print(f"✋ No pude conectar a {BASE}")
         print(f"   Motivo: {e.reason}")
         print("   Revisa que el dominio esté bien escrito (con https://) y que la app esté arriba.")
+        sys.exit(1)
+
+
+def _login():
+    """Consigue el token entrando con usuario y contraseña (los de la app)."""
+    import getpass
+    print("\nEntra con tu usuario y contraseña de LoveSprint (los mismos de la app):")
+    usuario = input("   Usuario (tu nombre, ej. Diego): ").strip()
+    password = getpass.getpass("   Contraseña: ")
+    data = json.dumps({"usuario": usuario, "password": password}).encode()
+    req = urllib.request.Request(BASE + "/api/auth/login", data=data, method="POST",
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            d = json.loads(r.read() or "null")
+            print(f"   ✓ Entraste como {d.get('nombre') or usuario}")
+            return d["token"]
+    except urllib.error.HTTPError as e:
+        try: err = json.loads(e.read()).get("error", "")
+        except Exception: err = ""
+        print(f"   ✋ No se pudo entrar: {err or e.code}")
+        sys.exit(1)
+    except urllib.error.URLError as e:
+        print(f"   ✋ Sin conexión: {e.reason}")
         sys.exit(1)
 
 
@@ -74,8 +91,13 @@ def api(method, ruta, body=None):
 
 
 def main():
+    global TOKEN
     print(f"→ Servidor: {BASE}  {'(DRY RUN)' if DRY else ''}")
     _probar_conexion()
+
+    # Si no hay token, entrar con usuario/contraseña
+    if not TOKEN:
+        TOKEN = _login()
 
     # 0. Leer el plan ANTES de borrar (en local el borrado vacía este mismo archivo)
     nuevos = json.loads((RAIZ / "datos" / "habitos.json").read_text())["habitos"]
