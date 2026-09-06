@@ -129,11 +129,23 @@
       <div class="racha" id="racha" title="Semanas de sprint cerradas seguidas"><span class="n" id="racha-n">0</span> semanas 🔥</div>
     </div>
 
-    <div id="contenido"><div class="vacio">Cargando su semana…</div></div>
+    <div class="subtabs" id="subtabs">
+      <button class="stab active" data-t="resumen" onclick="subtab('resumen')">Resumen</button>
+      <button class="stab" data-t="habitos" onclick="subtab('habitos')">Hábitos</button>
+      <button class="stab" data-t="lockin" onclick="subtab('lockin')">El Gran Lock In</button>
+    </div>
+
+    <div id="tab-resumen" class="ntab activa"><div class="vacio">Cargando…</div></div>
+    <div id="tab-habitos" class="ntab"></div>
+    <div id="tab-lockin" class="ntab">
 
     <!-- ═══ EL GRAN LOCK IN ═══ -->
     <style>
-      .lk-sec{margin-top:30px;}
+      .subtabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px;margin:0 0 20px;box-shadow:0 1px 2px rgba(14,13,11,.04);}
+      .stab{flex:1;border:none;background:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--stone);padding:11px 14px;border-radius:10px;transition:all .14s;}
+      .stab.active{background:#241A38;color:#fff;}
+      .ntab{display:none;} .ntab.activa{display:block;}
+      .lk-sec{margin-top:4px;}
       .lk-title{font-family:var(--font-brand);font-size:26px;font-weight:600;letter-spacing:-.02em;margin:0 0 4px;}
       .lk-title em{font-style:italic;color:var(--burnt);}
       .lk-sub{color:var(--stone);font-size:13.5px;margin:0 0 16px;}
@@ -214,6 +226,7 @@
 
       </div>
     </div>
+    </div><!-- fin tab-lockin -->
   </main>
 </div>
 
@@ -240,21 +253,35 @@ function pintar(){
   document.getElementById('saludo').textContent =
     hora<12?'Buenos días, pareja':hora<19?'Buenas tardes, pareja':'Buenas noches, pareja';
 
-  let html='';
+  // ── TAB RESUMEN: casa (comida, mercado, gastos) primero ──
+  const c = D.comida_hoy||{};
+  const platos = ['desayuno','almuerzo','cena','comida'].map(k=>c[k]).filter(Boolean);
+  const merc = D.mercado||{};
+  const g = D.gastos||{};
+  let gastoVal, gastoExtra;
+  if(!g.cantidad){ gastoVal='<small>Sin gastos este mes</small>'; gastoExtra=''; }
+  else if(g.quien_debe){ gastoVal=`${esc(nombreCorto({nombre:g.quien_debe.de_nombre}))} debe ${fmtCOP(g.quien_debe.monto)}`; gastoExtra=`a ${esc(nombreCorto({nombre:g.quien_debe.a_nombre}))} · total ${fmtCOP(g.total)}`; }
+  else { gastoVal='¡A mano! 🤝'; gastoExtra=`total ${fmtCOP(g.total)} este mes`; }
 
-  // ── Foco de la semana ──
-  const pct = sp.total ? Math.round(sp.hechas/sp.total*100) : 0;
-  html += `<div class="card foco">
-    <div class="card-eyebrow">El foco de esta semana <a href="/tablero/sprint.html">abrir sprint →</a></div>
-    <div class="lema ${sp.lema?'':'vacio'}">${sp.lema?esc(sp.lema):'Aún no eligen su foco de la semana'}</div>
-    <div class="prog">
-      <div class="ring" style="--pct:${pct}"><span>${pct}%</span></div>
-      <div class="prog-txt"><strong>${sp.hechas||0} de ${sp.total||0}</strong> metas cumplidas<br>
-        ${sp.total? (sp.hechas===sp.total?'¡Semana redonda! 🎉':'Vamos avanzando, juntos.') : 'Agreguen metas en el Sprint.'}</div>
-    </div>
+  document.getElementById('tab-resumen').innerHTML = `<div class="tres">
+    <a class="mini" href="/tablero/comidas.html">
+      <div class="ico">🍽️</div><div class="tit">Comida de hoy</div>
+      <div class="val">${platos.length?esc(platos.join(' · ')):'<small>Sin menú para hoy</small>'}</div>
+    </a>
+    <a class="mini" href="/tablero/mercado.html">
+      <div class="ico">🛒</div><div class="tit">Al mercado</div>
+      <div class="val">${merc.pendientes||0} <small>por comprar</small></div>
+      <div class="extra">${merc.total?`de ${merc.total} en la lista`:'lista vacía'}</div>
+    </a>
+    <a class="mini" href="/tablero/gastos.html">
+      <div class="ico">💸</div><div class="tit">Gastos del mes</div>
+      <div class="val">${gastoVal}</div>
+      <div class="extra">${gastoExtra}</div>
+    </a>
   </div>`;
 
-  // ── Hábitos de hoy, lado a lado ──
+  // ── TAB HÁBITOS: lado a lado ──
+  let html='';
   html += `<div class="card"><div class="card-eyebrow">Hábitos de hoy</div><div class="grid2">`;
   (D.habitos||[]).forEach(col=>{
     const p = personasMap[col.persona_id] || {color:'#EC4899',nombre:col.nombre};
@@ -274,34 +301,13 @@ function pintar(){
   });
   html += `</div></div>`;
 
-  // ── Tres mini-tarjetas: comida, mercado, gastos ──
-  const c = D.comida_hoy||{};
-  const platos = ['desayuno','almuerzo','cena','comida'].map(k=>c[k]).filter(Boolean);
-  const merc = D.mercado||{};
-  const g = D.gastos||{};
-  let gastoVal, gastoExtra;
-  if(!g.cantidad){ gastoVal='<small>Sin gastos este mes</small>'; gastoExtra=''; }
-  else if(g.quien_debe){ gastoVal=`${esc(nombreCorto({nombre:g.quien_debe.de_nombre}))} debe ${fmtCOP(g.quien_debe.monto)}`; gastoExtra=`a ${esc(nombreCorto({nombre:g.quien_debe.a_nombre}))} · total ${fmtCOP(g.total)}`; }
-  else { gastoVal='¡A mano! 🤝'; gastoExtra=`total ${fmtCOP(g.total)} este mes`; }
+  document.getElementById('tab-habitos').innerHTML = html;
+}
 
-  html += `<div class="tres">
-    <a class="mini" href="/tablero/comidas.html">
-      <div class="ico">🍽️</div><div class="tit">Comida de hoy</div>
-      <div class="val">${platos.length?esc(platos.join(' · ')):'<small>Sin menú para hoy</small>'}</div>
-    </a>
-    <a class="mini" href="/tablero/mercado.html">
-      <div class="ico">🛒</div><div class="tit">Al mercado</div>
-      <div class="val">${merc.pendientes||0} <small>por comprar</small></div>
-      <div class="extra">${merc.total?`de ${merc.total} en la lista`:'lista vacía'}</div>
-    </a>
-    <a class="mini" href="/tablero/gastos.html">
-      <div class="ico">💸</div><div class="tit">Gastos del mes</div>
-      <div class="val">${gastoVal}</div>
-      <div class="extra">${gastoExtra}</div>
-    </a>
-  </div>`;
-
-  document.getElementById('contenido').innerHTML = html;
+/* sub-tabs de Nosotros */
+function subtab(id){
+  document.querySelectorAll('.stab').forEach(b=>b.classList.toggle('active', b.dataset.t===id));
+  document.querySelectorAll('.ntab').forEach(p=>p.classList.toggle('activa', p.id==='tab-'+id));
 }
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}

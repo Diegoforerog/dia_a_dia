@@ -424,7 +424,6 @@
         { href: '/tablero/admin.html#tareas', ic: 'tareas', txt: 'Tareas' },
         { href: '/tablero/admin.html#recordatorios', ic: 'recordatorios', txt: 'Recordatorios' },
         { href: '/tablero/admin.html#calendarios', ic: 'calendarios', txt: 'Calendarios' },
-        { href: '/tablero/admin.html#progreso', ic: 'progreso', txt: 'Métricas' },
         { href: '/tablero/admin.html#config', ic: 'config', txt: 'Configuración' },
       ]},
     ],
