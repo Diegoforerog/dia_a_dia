@@ -406,6 +406,8 @@
     _RUTAS: [
       { grupo: 'Tablero', items: [
         { href: '/', ic: 'hoy', txt: 'Hoy' },
+        { href: '/tablero/habitos.html', ic: 'habitos', txt: 'Mis Hábitos' },
+        { href: '/tablero/progreso.html', ic: 'progreso', txt: 'Progreso' },
         { href: '/tablero/nosotros.html', ic: 'nosotros', txt: 'Nosotros' },
         { href: '/tablero/aprender.html', ic: 'aprender', txt: 'Aprender' },
         { href: '/tablero/sprint.html', ic: 'sprint', txt: 'Sprint' },
@@ -422,7 +424,7 @@
         { href: '/tablero/admin.html#tareas', ic: 'tareas', txt: 'Tareas' },
         { href: '/tablero/admin.html#recordatorios', ic: 'recordatorios', txt: 'Recordatorios' },
         { href: '/tablero/admin.html#calendarios', ic: 'calendarios', txt: 'Calendarios' },
-        { href: '/tablero/admin.html#progreso', ic: 'progreso', txt: 'Progreso' },
+        { href: '/tablero/admin.html#progreso', ic: 'progreso', txt: 'Métricas' },
         { href: '/tablero/admin.html#config', ic: 'config', txt: 'Configuración' },
       ]},
     ],
@@ -474,9 +476,9 @@
       tb.id = 'dd-tabbar'; tb.className = 'dd-tabbar';
       const tabs = [
         { href: '/', ic: 'hoy', txt: 'Hoy' },
+        { href: '/tablero/habitos.html', ic: 'habitos', txt: 'Hábitos' },
+        { href: '/tablero/progreso.html', ic: 'progreso', txt: 'Progreso' },
         { href: '/tablero/nosotros.html', ic: 'nosotros', txt: 'Nosotros' },
-        { href: '/tablero/agenda.html', ic: 'agenda', txt: 'Agenda' },
-        { href: '/tablero/mercado.html', ic: 'mercado', txt: 'Mercado' },
       ];
       tb.innerHTML = tabs.map(t =>
         `<a class="dd-tab ${DD._esActiva(t.href) ? 'active' : ''}" href="${t.href}">${DD._svg(t.ic)}<span>${t.txt}</span></a>`

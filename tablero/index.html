@@ -2170,13 +2170,15 @@ function pintarHabitos(habitosData, registro) {
   });
   document.getElementById('habitos').innerHTML = html || '<div class="empty">Aún no tienes hábitos activos.</div>';
 
-  const pct = activos.length ? Math.round(cumplidos.size / activos.length * 100) : 0;
+  /* solo contar los que aplican hoy y son de esta persona (evita >100%) */
+  const hechosHoy = activos.filter(h => cumplidos.has(h.id)).length;
+  const pct = activos.length ? Math.round(hechosHoy / activos.length * 100) : 0;
   document.getElementById('pct-habitos').textContent = pct + '%';
   const mejor = Math.max(0, ...activos.map(h => h.mejor_racha || 0));
   document.getElementById('mejor-racha').textContent = mejor;
 
   /* sidebar summary */
-  document.getElementById('sum-habitos').textContent = `${cumplidos.size}/${activos.length}`;
+  document.getElementById('sum-habitos').textContent = `${hechosHoy}/${activos.length}`;
   document.getElementById('sum-racha').textContent = mejor;
 
   /* KPI habitos */
@@ -2185,7 +2187,7 @@ function pintarHabitos(habitosData, registro) {
   const kpiRacha = document.getElementById('kpi-habitos-racha');
   const kpiBar = document.getElementById('kpi-habitos-bar');
   if (kpiPct) kpiPct.textContent = pct + '%';
-  if (kpiDet) kpiDet.textContent = `${cumplidos.size}/${activos.length} cumplidos`;
+  if (kpiDet) kpiDet.textContent = `${hechosHoy}/${activos.length} cumplidos`;
   if (kpiRacha) kpiRacha.textContent = `mejor racha ${mejor}`;
   if (kpiBar) kpiBar.style.width = pct + '%';
 }
