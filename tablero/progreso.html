@@ -264,6 +264,34 @@ function render(){
   const cont=document.getElementById('contenido');
   if(!mine.length){ cont.innerHTML='<div class="vacio">No hay hábitos para mostrar todavía.</div>'; document.getElementById('streak-badge').innerHTML='<span class="fire">🔥</span> 0 días'; return; }
 
+  // ¿hay algún dato de cumplimiento? si no, estado vacío amable
+  const totalMarcas = mine.reduce((s,h)=>s+(h.total_marcas||0),0);
+  if(totalMarcas===0){
+    document.getElementById('streak-badge').innerHTML='<span class="fire">🔥</span> 0 días';
+    cont.innerHTML=`
+      <div class="card" style="text-align:center;padding:48px 26px;">
+        <div style="font-size:52px;line-height:1;margin-bottom:6px">📈</div>
+        <h2 style="font-family:var(--font-brand);font-size:24px;font-weight:600;margin:0 0 8px">Tu evolución empieza hoy</h2>
+        <p style="color:var(--stone);font-size:14px;max-width:44ch;margin:0 auto 22px;line-height:1.55">
+          Aún no han marcado hábitos, por eso no hay nada que graficar todavía.
+          Marca tus hábitos cada día y aquí verás las barras llenarse, la línea subir y tu racha crecer. 💪</p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <a href="/tablero/habitos.html" style="background:var(--sage);color:#fff;text-decoration:none;font-weight:700;font-size:14px;padding:11px 20px;border-radius:12px;box-shadow:0 6px 16px -4px rgba(92,138,111,.5)">Ir a marcar hábitos</a>
+          <a href="/" style="background:var(--surface);color:var(--charcoal);text-decoration:none;font-weight:600;font-size:14px;padding:11px 20px;border-radius:12px;border:1px solid var(--line)">Ver mi día</a>
+        </div>
+        <div style="margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;opacity:.75">
+          <span style="font-size:12px;color:var(--mist)">Cuando haya datos verás:</span>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;font-size:12px;color:var(--stone)">
+          <span style="background:var(--surface-2);border:1px solid var(--line);border-radius:99px;padding:5px 12px">📊 Cumplimiento diario</span>
+          <span style="background:var(--surface-2);border:1px solid var(--line);border-radius:99px;padding:5px 12px">📈 Evolución 12 semanas</span>
+          <span style="background:var(--surface-2);border:1px solid var(--line);border-radius:99px;padding:5px 12px">🔥 Racha</span>
+          <span style="background:var(--surface-2);border:1px solid var(--line);border-radius:99px;padding:5px 12px">🍩 Por categoría</span>
+        </div>
+      </div>`;
+    return;
+  }
+
   // barras según periodo
   let bars=[],barLabels=[],barTitulo='',barUnidad='diario';
   if(periodo==='semana'){ const d=porDia(7); bars=d.map(x=>x.pct); barLabels=d.map(x=>DIAS_ISO[x.dow]); barTitulo='Cumplimiento diario · esta semana'; barUnidad='diario'; }
