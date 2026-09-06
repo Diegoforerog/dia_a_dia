@@ -1620,7 +1620,7 @@
     <div class="sidebar-summary">
       <div>
         <div class="summary-title">Resumen del día</div>
-        <div class="summary-row"><span>Plan generado</span><strong id="sum-plan">—</strong></div>
+        <div class="summary-row"><span>Progreso de hoy</span><strong id="sum-plan">—</strong></div>
         <div class="summary-row"><span>Hábitos cumplidos</span><strong id="sum-habitos">0/0</strong></div>
         <div class="summary-row"><span>Mejor racha</span><strong id="sum-racha">0</strong></div>
       </div>
@@ -1644,7 +1644,7 @@
       <div>
         <div class="greeting" id="greeting">Buenos días</div>
         <h1>Tu día <em id="today-day">hoy</em></h1>
-        <p id="hero-sub" data-mode="hoy">Aquí está lo que la IA preparó para tu jornada. Puedes revisarlo, aprobarlo y dejarte llevar por el ritmo del día.</p>
+        <p id="hero-sub" data-mode="hoy">Tu ritual del día. Marca cada hábito a medida que lo cumples y mira cómo avanza tu racha.</p>
       </div>
       <div class="hero-status" id="status">
         <span class="status-dot"></span>
@@ -1671,31 +1671,8 @@
     <!-- VISTA HOY (default) -->
     <div id="vista-hoy" class="vista-modo activa">
 
-    <!-- KPIs ARRIBA — 4 cards clickables -->
+    <!-- KPIs ARRIBA -->
     <div class="kpi-grid">
-
-      <div class="kpi-card kpi-plan clickable" id="kpi-plan-card" onclick="kpiPlanClick(event)">
-        <div class="kpi-head">
-          <div class="kpi-icon" style="background:rgba(255,255,255,.18);color:var(--paper)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <div>
-            <div class="kpi-label">Plan del día</div>
-            <div class="kpi-sub">Lo que tienes que hacer hoy</div>
-          </div>
-        </div>
-        <div class="kpi-num"><span id="kpi-plan-num">—</span> <small id="kpi-plan-unit">bloques</small></div>
-        <div class="kpi-foot" id="kpi-plan-foot">Sin generar todavía</div>
-        <div class="kpi-action" id="kpi-plan-action">
-          <div class="kpi-fecha-row">
-            <input type="date" id="kpi-plan-fecha" class="kpi-fecha-input" onclick="event.stopPropagation()">
-            <button class="kpi-btn" onclick="generarPlanAhora(event)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v9h-9"/></svg>
-              <span id="kpi-plan-btn-text">✨ Generar</span>
-            </button>
-          </div>
-        </div>
-      </div>
 
       <a class="kpi-card clickable kpi-link" href="/tablero/agenda.html" aria-label="Ver agenda completa">
         <div class="kpi-head">
@@ -1712,7 +1689,7 @@
         <div class="kpi-link-arrow">Ver agenda →</div>
       </a>
 
-      <a class="kpi-card clickable kpi-link" href="/tablero/aprender.html#habitos" aria-label="Ver hábitos">
+      <a class="kpi-card clickable kpi-link" href="/tablero/habitos.html" aria-label="Ver hábitos">
         <div class="kpi-head">
           <div class="kpi-icon" style="background:var(--sage-soft);color:var(--sage)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 4-7.5"/><path d="M3 4v5h5"/></svg>
@@ -1787,19 +1764,49 @@
 
     <div class="grid">
 
-      <!-- COLUMNA IZQUIERDA: PLAN -->
+      <!-- COLUMNA IZQUIERDA: HÁBITOS DE HOY -->
       <div>
         <div class="card">
           <div class="card-head">
             <div>
-              <div class="card-eyebrow">Plan del día</div>
-              <h2>Agenda priorizada</h2>
+              <div class="card-eyebrow">Tu rutina</div>
+              <h2>Hábitos de hoy</h2>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <a href="/tablero/habitos.html" style="font-size:12px;color:var(--burnt);text-decoration:none;border-bottom:1px solid var(--burnt-line);">todos →</a>
+              <a href="/tablero/progreso.html" style="font-size:12px;color:var(--sage);text-decoration:none;border-bottom:1px solid var(--sage-soft);">progreso →</a>
             </div>
           </div>
-          <div id="saludo-ai"></div>
-          <div id="bloques"></div>
-          <div id="advertencia"></div>
-          <div id="cierre"></div>
+          <style>
+            .hh-cat{margin-bottom:20px;}
+            .hh-cat:last-child{margin-bottom:0;}
+            .hh-cat-head{display:flex;align-items:center;gap:9px;margin-bottom:11px;}
+            .hh-cat-ico{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+            .hh-cat-nom{font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--ink);}
+            .hh-cat-cnt{margin-left:auto;font-size:11px;font-weight:700;color:var(--stone);font-variant-numeric:tabular-nums;}
+            .hh-card{border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:9px;transition:border-color .15s,box-shadow .15s;background:var(--surface);}
+            .hh-card:last-child{margin-bottom:0;}
+            .hh-card.done{background:var(--sage-soft);border-color:transparent;}
+            .hh-top{display:flex;align-items:center;gap:11px;}
+            .hh-info{flex:1;min-width:0;}
+            .hh-nom{font-size:14.5px;font-weight:700;color:var(--ink);line-height:1.2;}
+            .hh-card.done .hh-nom{color:var(--sage-deep);}
+            .hh-meta{font-size:11.5px;color:var(--stone);font-weight:500;margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+            .hh-hora{font-weight:700;color:var(--charcoal);}
+            .hh-streak{color:var(--amber);font-weight:700;}
+            .hh-check{width:30px;height:30px;border-radius:50%;border:2px solid var(--line-strong);flex-shrink:0;cursor:pointer;
+              display:flex;align-items:center;justify-content:center;background:var(--surface);transition:all .15s;-webkit-tap-highlight-color:transparent;}
+            .hh-check:hover{border-color:var(--sage);}
+            .hh-check.done{background:var(--sage);border-color:var(--sage-deep);}
+            .hh-check svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0;}
+            .hh-check.done svg{opacity:1;}
+            .hh-dots{display:flex;gap:4px;margin-top:9px;}
+            .hh-dot{flex:1;height:7px;border-radius:99px;background:var(--line);}
+            .hh-dot.on{background:var(--sage);}
+            .hh-dot.na{background:transparent;border:1px dashed var(--line-strong);}
+            .hh-dot.today{box-shadow:0 0 0 1.5px var(--burnt-line);}
+          </style>
+          <div id="habitos-hoy"><div class="empty">Cargando hábitos…</div></div>
         </div>
       </div>
 
@@ -1847,26 +1854,6 @@
             <a href="/tablero/proyectos.html" style="font-size:12px;color:var(--burnt);text-decoration:none;border-bottom:1px solid var(--burnt-line);">ver tablero →</a>
           </div>
           <div id="trabajo-hoy"><div class="empty">Cargando…</div></div>
-        </div>
-
-        <div class="card">
-          <div class="card-head">
-            <div>
-              <div class="card-eyebrow">Rutina</div>
-              <h2>Hábitos por categoría</h2>
-            </div>
-          </div>
-          <div id="habitos"></div>
-          <div class="stat-row">
-            <div class="stat">
-              <div class="stat-num" id="pct-habitos">0%</div>
-              <div class="stat-label">Cumplidos</div>
-            </div>
-            <div class="stat">
-              <div class="stat-num" id="mejor-racha">0</div>
-              <div class="stat-label">Mejor racha</div>
-            </div>
-          </div>
         </div>
 
         <div class="card">
@@ -2113,6 +2100,10 @@ function habitoDeMiPersona(h) {
 
 let _habData = null, _habCumplidos = new Set();
 
+window._MET = {};  // id -> métrica (rachas, últimos 30 días)
+function _isoDowStr(fs){ const d=new Date(fs+'T12:00:00'); return d.getDay()===0?7:d.getDay(); }
+function _isoLocal(d){ const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,10); }
+
 function pintarHabitos(habitosData, registro) {
   if (habitosData) _habData = habitosData;
   if (registro) _habCumplidos = new Set(registro.habitos_cumplidos || []);
@@ -2124,8 +2115,8 @@ function pintarHabitos(habitosData, registro) {
   const cats = habitosData.categorias || [];
   const catMap = {};
   cats.forEach(c => catMap[c.id] = c);
+  const hoyStr = _isoLocal(new Date());
 
-  /* agrupar por categoría preservando orden de cats */
   const grupos = {};
   activos.forEach(h => {
     const cid = h.categoria_id || '_sin';
@@ -2141,45 +2132,55 @@ function pintarHabitos(habitosData, registro) {
     const cat = catMap[cid] || {icono:'•', nombre:'Sin categoría', color:'#7A746B'};
     const cumplidosCat = lista.filter(h => cumplidos.has(h.id)).length;
     html += `
-      <div class="cat-group">
-        <div class="cat-header">
-          <div class="cat-icono" style="background:${cat.color}1A;color:${cat.color}">${cat.icono}</div>
-          <span class="cat-nombre">${cat.nombre}</span>
-          <span class="cat-count">${cumplidosCat}/${lista.length}</span>
+      <div class="hh-cat">
+        <div class="hh-cat-head">
+          <div class="hh-cat-ico" style="background:${cat.color}1A;color:${cat.color}">${cat.icono}</div>
+          <span class="hh-cat-nom">${cat.nombre}</span>
+          <span class="hh-cat-cnt">${cumplidosCat}/${lista.length}</span>
         </div>
         ${lista.map(h => {
           const hecho = cumplidos.has(h.id);
+          const met = window._MET[h.id] || {};
+          const racha = (met.racha_actual != null ? met.racha_actual : (h.racha_actual||0));
           const tipo = h.tipo || 'bueno';
           const rachaIcon = tipo === 'malo' ? '✨' : '🔥';
-          const rachaLabel = tipo === 'malo' ? ' sin caer' : '';
+          // tira 7 días
+          const ult7 = (met.ultimos_30_dias || []).slice(-7);
+          let dots = '';
+          if (ult7.length){
+            dots = '<div class="hh-dots">' + ult7.map(d=>{
+              const dd = _isoDowStr(d.fecha); const ap = habitoAplicaHoy(h, dd); const esHoy = d.fecha===hoyStr;
+              const done = esHoy ? hecho : d.cumplido;
+              let cls='hh-dot'; if(!ap)cls+=' na'; else if(done)cls+=' on'; if(esHoy)cls+=' today';
+              return `<span class="${cls}"></span>`;
+            }).join('') + '</div>';
+          }
+          const dur = h.duracion_min ? ` · ${h.duracion_min} min` : '';
           return `
-          <div class="habit-row ${tipo === 'malo' ? 'malo' : ''}" onclick="toggleHabitoHoy('${h.id}')" style="cursor:pointer;-webkit-tap-highlight-color:transparent;">
-            <div class="habit-info">
-              <div class="habit-name">${h.nombre}</div>
-              <div class="habit-meta">${h.horario_sugerido} · ${h.duracion_min} min</div>
+          <div class="hh-card ${hecho?'done':''}">
+            <div class="hh-top" onclick="toggleHabitoHoy('${h.id}')" style="cursor:pointer;-webkit-tap-highlight-color:transparent;">
+              <div class="hh-info">
+                <div class="hh-nom">${h.nombre}</div>
+                <div class="hh-meta"><span class="hh-hora">${h.horario_sugerido||''}</span>${dur}${racha>0?` · <span class="hh-streak">${rachaIcon} ${racha}</span>`:''}</div>
+              </div>
+              <div class="hh-check ${hecho?'done':''}"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
             </div>
-            <div class="habit-side">
-              ${h.racha_actual > 0 ? `<span class="streak-pill">${rachaIcon} ${h.racha_actual}${rachaLabel}</span>` : ''}
-              <span class="check-box ${hecho ? 'done' : ''}" title="${tipo==='malo'?'Marcar = caí hoy':'Marcar = lo hice'}">
-                ${hecho ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
-              </span>
-            </div>
+            ${dots}
           </div>`;
         }).join('')}
       </div>`;
   });
-  document.getElementById('habitos').innerHTML = html || '<div class="empty">Aún no tienes hábitos activos.</div>';
+  const cont = document.getElementById('habitos-hoy');
+  if (cont) cont.innerHTML = html || '<div class="empty">Aún no tienes hábitos para hoy. <a href="/tablero/aprender.html#habitos" style="color:var(--burnt)">Crea el primero →</a></div>';
 
   /* solo contar los que aplican hoy y son de esta persona (evita >100%) */
   const hechosHoy = activos.filter(h => cumplidos.has(h.id)).length;
   const pct = activos.length ? Math.round(hechosHoy / activos.length * 100) : 0;
-  document.getElementById('pct-habitos').textContent = pct + '%';
-  const mejor = Math.max(0, ...activos.map(h => h.mejor_racha || 0));
-  document.getElementById('mejor-racha').textContent = mejor;
+  const mejor = Math.max(0, ...activos.map(h => (window._MET[h.id]?.racha_actual) || h.racha_actual || 0));
 
   /* sidebar summary */
-  document.getElementById('sum-habitos').textContent = `${hechosHoy}/${activos.length}`;
-  document.getElementById('sum-racha').textContent = mejor;
+  const sh = document.getElementById('sum-habitos'); if (sh) sh.textContent = `${hechosHoy}/${activos.length}`;
+  const sr = document.getElementById('sum-racha'); if (sr) sr.textContent = mejor;
 
   /* KPI habitos */
   const kpiPct = document.getElementById('kpi-habitos-pct');
@@ -2190,6 +2191,16 @@ function pintarHabitos(habitosData, registro) {
   if (kpiDet) kpiDet.textContent = `${hechosHoy}/${activos.length} cumplidos`;
   if (kpiRacha) kpiRacha.textContent = `mejor racha ${mejor}`;
   if (kpiBar) kpiBar.style.width = pct + '%';
+
+  /* estado del día basado en hábitos */
+  const sp = document.getElementById('sum-plan'); if (sp) sp.textContent = pct + '%';
+  const stTxt = document.getElementById('status-text');
+  const stDot = document.querySelector('#status .status-dot');
+  if (stTxt) {
+    if (!activos.length) { stTxt.textContent = 'Sin hábitos para hoy'; if(stDot) stDot.className='status-dot'; }
+    else if (pct >= 100) { stTxt.textContent = '¡Día completo! 🎉'; if(stDot) stDot.className='status-dot on'; }
+    else { stTxt.textContent = `${hechosHoy}/${activos.length} hábitos hoy`; if(stDot) stDot.className='status-dot warn'; }
+  }
 }
 
 /* Marcar / desmarcar un hábito de HOY desde la pantalla Hoy */
@@ -2200,6 +2211,8 @@ async function toggleHabitoHoy(id) {
   if (!estaba && navigator.vibrate) navigator.vibrate(12);
   try {
     await apiPost(`/habitos/${id}/${estaba ? 'descumplir' : 'cumplir'}`, {});
+    /* refrescar métricas para rachas/dots exactos */
+    try { const met = await apiGet('/metricas/habitos'); window._MET = {}; (met&&met.habitos||[]).forEach(m=>window._MET[m.id]=m); pintarHabitos(); } catch(_){}
   } catch (e) {
     // revertir si falló
     if (estaba) _habCumplidos.add(id); else _habCumplidos.delete(id);
@@ -2398,6 +2411,13 @@ function pintarStatus(registro) {
   let habitosData = await apiGet('/habitos');
   if (!habitosData) habitosData = await leer('../datos/habitos.json');
 
+  /* métricas de hábitos (rachas + últimos 30 días para la tira de 7) */
+  try {
+    const met = await apiGet('/metricas/habitos');
+    window._MET = {};
+    (met && met.habitos || []).forEach(m => window._MET[m.id] = m);
+  } catch(e) { window._MET = {}; }
+
   let registro = await apiGet('/plan/hoy');
   if (!registro || (!registro.plan_generado && !registro.fecha)) {
     registro = await leer(`../datos/registros/${hoy}.json`);
@@ -2410,11 +2430,8 @@ function pintarStatus(registro) {
 
   const listaClientes = clientesData.clientes || clientesData.empresas || [];
 
-  pintarSaludo(registro && registro.plan_generado);
-  pintarPlan(registro && registro.plan_generado, listaClientes);
   pintarHabitos(habitosData || {habitos:[], categorias:[]}, registro);
   pintarCasaRapida();
-  pintarStatus(registro);
   pintarEventosHoy();
   /* auto-sync silencioso: detecta calendarios nuevos compartidos en Google */
   sincronizarCalendariosGoogle(true).then(r => {
@@ -2495,32 +2512,6 @@ document.addEventListener('dd:persona', () => {
 });
 
 function pintarKPIs(registro, proyectos) {
-  // KPI plan
-  const plan = registro && registro.plan_generado;
-  const kpiNum = document.getElementById('kpi-plan-num');
-  const kpiUnit = document.getElementById('kpi-plan-unit');
-  const kpiFoot = document.getElementById('kpi-plan-foot');
-  const kpiAction = document.getElementById('kpi-plan-action');
-  // Set default date picker to today
-  const fechaInput = document.getElementById('kpi-plan-fecha');
-  if (fechaInput && !fechaInput.value) {
-    fechaInput.value = new Date().toISOString().slice(0,10);
-  }
-  if (plan && plan.bloques && plan.bloques.length) {
-    kpiNum.textContent = plan.bloques.length;
-    kpiUnit.textContent = 'bloques';
-    if (registro.aprobado) kpiFoot.textContent = '✓ Plan aprobado · regenera abajo si quieres';
-    else kpiFoot.textContent = 'Sin aprobar · regenera abajo si quieres';
-    document.getElementById('kpi-plan-btn-text').textContent = '🔄 Regenerar';
-  } else {
-    kpiNum.textContent = '0';
-    kpiUnit.textContent = '';
-    kpiFoot.textContent = 'Elige un día y dale a Generar';
-    document.getElementById('kpi-plan-btn-text').textContent = '✨ Generar';
-  }
-  // El picker SIEMPRE visible
-  if (kpiAction) kpiAction.style.display = 'block';
-
   // KPI tareas: pedir por API y actualizar
   (async () => {
     try {

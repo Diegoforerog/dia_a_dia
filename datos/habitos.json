@@ -421,21 +421,6 @@
       "persona_id": "persona_diego"
     },
     {
-      "id": "gl_d_curso",
-      "categoria_id": "aprendizaje",
-      "nombre": "Curso Daniel Habif",
-      "frecuencia": "diaria",
-      "horario_sugerido": "9:00 PM",
-      "duracion_min": 60,
-      "activo": true,
-      "racha_actual": 0,
-      "mejor_racha": 0,
-      "dias": null,
-      "tipo": "bueno",
-      "alcance": "personal",
-      "persona_id": "persona_diego"
-    },
-    {
       "id": "gl_d_apagon",
       "categoria_id": "personal",
       "nombre": "Apagón de pantallas",

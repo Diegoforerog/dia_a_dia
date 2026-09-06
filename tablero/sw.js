@@ -5,11 +5,13 @@
    - API: siempre red (nunca cachear datos).
    - Push: listo para la Fase 2 (avisos por persona). */
 
-const VERSION = 'ls-v29';
+const VERSION = 'ls-v30';
 const SHELL = [
   '/',
   '/tablero/login.html',
   '/tablero/index.html',
+  '/tablero/habitos.html',
+  '/tablero/progreso.html',
   '/tablero/nosotros.html',
   '/tablero/aprender.html',
   '/tablero/sprint.html',
