@@ -30,8 +30,19 @@ except ImportError:
     TZ = pytz.timezone("America/Bogota")
 
 import db as _db  # módulo local
-BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+
+def _cfg_telegram():
+    """Lee bot_token / chat_id desde config.json (fallback si no hay env vars)."""
+    try:
+        from comun import cargar
+        tg = (cargar("config.json") or {}).get("telegram", {}) or {}
+        return tg.get("bot_token", ""), str(tg.get("chat_id", "") or "")
+    except Exception:
+        return "", ""
+
+_CFG_TOKEN, _CFG_CHAT = _cfg_telegram()
+BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "") or _CFG_TOKEN
+CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "") or _CFG_CHAT
 
 # ─────────────────────────────────────────────────────────
 # Inicialización del scheduler
@@ -148,6 +159,17 @@ def iniciar():
         )
     except Exception as e:
         print(f"⚠️  No se pudo programar ritual de sprint: {e}")
+    # Avisos de hábitos -10 min: programar los de hoy + reprogramar cada día a las 00:05
+    try:
+        from apscheduler.triggers.cron import CronTrigger as _Cron2
+        s.add_job(
+            programar_habitos_hoy,
+            _Cron2(hour=0, minute=5, timezone=TZ),
+            id="_prog_habitos_diario", replace_existing=True, misfire_grace_time=3600
+        )
+    except Exception as e:
+        print(f"⚠️  No se pudo programar cron de hábitos: {e}")
+    programar_habitos_hoy()   # los de hoy, ya
     # Re-programar recordatorios pendientes
     reprogramar_recordatorios_pendientes()
     print("⚙️  Scheduler iniciado · jobs:", len(s.get_jobs()))
@@ -629,6 +651,82 @@ def _asegurar_tabla_resumen_persona():
         print(f"⚠️  tabla resumen_persona_enviado: {e}")
 
 
+import re as _re_hab
+def _parse_hora_habito(s):
+    """'7:00 AM' / '9:30 PM' / '12:00 PM' → (h24, min). None si no es una hora clara."""
+    if not s:
+        return None
+    m = _re_hab.search(r'(\d{1,2}):(\d{2})\s*([ap])\.?\s*m', str(s).strip().lower())
+    if not m:
+        return None
+    h, mi, ap = int(m.group(1)), int(m.group(2)), m.group(3)
+    if h == 12:
+        h = 0
+    if ap == 'p':
+        h += 12
+    if h > 23 or mi > 59:
+        return None
+    return h, mi
+
+
+def avisar_habito(payload: dict):
+    """Dispara 10 min antes de un hábito con hora fija (si no está ya cumplido)."""
+    try:
+        from comun import cargar_registro_dia
+        if payload.get("hid") in set(cargar_registro_dia().get("habitos_cumplidos", [])):
+            return  # ya lo marcaron, no molestar
+    except Exception:
+        pass
+    nombre = payload.get("nombre", "hábito")
+    hora = payload.get("hora", "")
+    dur = payload.get("duracion_min") or 0
+    texto = f"⏰ *En 10 min: {nombre}*\n\n🕐 {hora}"
+    if dur:
+        texto += f" · {dur} min"
+    _enrutar(payload.get("persona_id"),
+             f"En 10 min: {nombre}", f"{nombre} · {hora}",
+             url="/tablero/habitos.html",
+             tag=f"hab_{str(payload.get('hid',''))[:24]}",
+             telegram_texto=texto)
+
+
+def programar_habitos_hoy():
+    """Programa un aviso -10 min para cada hábito de hoy que tenga hora fija."""
+    try:
+        from comun import cargar
+        ahora = datetime.now(TZ)
+        dia_iso = ahora.isoweekday()
+        s = get_scheduler()
+        n = 0
+        for h in cargar("habitos.json").get("habitos", []):
+            if not h.get("activo", True):
+                continue
+            dias = h.get("dias")
+            if dias and isinstance(dias, list) and dia_iso not in dias:
+                continue
+            hm = _parse_hora_habito(h.get("horario_sugerido"))
+            if not hm:
+                continue  # "todo el día", "post-entreno", etc. no tienen hora exacta
+            run_at = ahora.replace(hour=hm[0], minute=hm[1], second=0, microsecond=0) - timedelta(minutes=10)
+            if run_at <= ahora:
+                continue  # ya pasó la ventana de aviso
+            alcance = h.get("alcance", "pareja")
+            persona_id = h.get("persona_id") if alcance == "personal" else None
+            payload = {"hid": h.get("id"), "nombre": h.get("nombre", "hábito"),
+                       "hora": h.get("horario_sugerido", ""),
+                       "duracion_min": h.get("duracion_min") or 0,
+                       "persona_id": persona_id}
+            job_id = f"hab_{h.get('id')}_{ahora.date().isoformat()}"
+            s.add_job(avisar_habito, "date", run_date=run_at, args=[payload],
+                      id=job_id, replace_existing=True, misfire_grace_time=300)
+            n += 1
+        print(f"🔔 Hábitos programados hoy (-10 min): {n}")
+        return n
+    except Exception as e:
+        print(f"⚠️  programar_habitos_hoy: {e}")
+        return 0
+
+
 def _habitos_de_hoy(ahora, persona_id=None):
     """Hábitos activos que tocan hoy. Si se da persona_id: sus personales + los
     de pareja. Sin persona: todos (comportamiento clásico)."""
@@ -715,6 +813,9 @@ def revisar_avisos_inteligentes():
         dow = ahora.isoweekday()   # 1=lunes .. 7=domingo
         personas = [p for p in cargar("personas.json").get("personas", []) if p.get("activo", True)]
         configuradas = [p for p in personas if p.get("telegram_chat_id") or p.get("push_subscriptions")]
+        # Si nadie tiene canal propio pero hay chat global, usar todas (caen al chat global)
+        if not configuradas and CHAT_ID:
+            configuradas = personas
         import avisos
 
         # 1) Hora de cocinar — almuerzo 11:00–12:30, cena 18:00–19:30

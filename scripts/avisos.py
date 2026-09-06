@@ -157,8 +157,18 @@ def _enviar_push(persona: dict, titulo: str, cuerpo: str, url: str = "/", tag: s
     return ok
 
 
+def _cfg_telegram():
+    """bot_token / chat_id global desde config.json (fallback sin env vars)."""
+    try:
+        from comun import cargar
+        tg = (cargar("config.json") or {}).get("telegram", {}) or {}
+        return tg.get("bot_token", ""), str(tg.get("chat_id", "") or "")
+    except Exception:
+        return "", ""
+
+
 def _enviar_telegram(chat_id: str, texto: str, parse_mode: str = "Markdown") -> bool:
-    token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "") or _cfg_telegram()[0]
     if not token or not chat_id:
         return False
     import urllib.request
@@ -186,7 +196,8 @@ def avisar_persona(persona_id: str, titulo: str, cuerpo: str,
         return {"push": 0, "telegram": False, "error": "persona no encontrada"}
     push_ok = _enviar_push(persona, titulo, cuerpo, url, tag)
     tg = telegram_texto if telegram_texto is not None else f"*{titulo}*\n{cuerpo}"
-    chat = persona.get("telegram_chat_id") or ""
+    # chat de la persona; si no tiene, cae al chat global de config.json
+    chat = persona.get("telegram_chat_id") or _cfg_telegram()[1] or ""
     tg_ok = _enviar_telegram(chat, tg) if chat else False
     return {"push": push_ok, "telegram": tg_ok}
 
