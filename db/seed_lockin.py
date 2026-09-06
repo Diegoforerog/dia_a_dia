@@ -29,6 +29,13 @@ if not TOKEN:
     print("✋ Falta API_TOKEN. Ej: API_TOKEN=... BASE_URL=... python db/seed_lockin.py")
     sys.exit(1)
 
+if TOKEN.upper() in ("TU-TOKEN", "TU_TOKEN"):
+    print("✋ API_TOKEN sigue con el texto de ejemplo (TU-TOKEN).")
+    print("   Reemplázalo por tu token real (el mismo con el que entras a la app).")
+    print("   Lo sacas en el navegador (F12 → consola):  localStorage.getItem('organizador_token')")
+    print("   o es la variable API_TOKEN del servidor.")
+    sys.exit(1)
+
 if "TU-DOMINIO" in BASE or "tu-dominio" in BASE:
     print(f"✋ BASE_URL sigue con el texto de ejemplo ({BASE}).")
     print("   Reemplázalo por el dominio real donde abres la app en el teléfono, p.ej.:")
