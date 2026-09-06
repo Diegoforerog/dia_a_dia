@@ -29,6 +29,26 @@ if not TOKEN:
     print("✋ Falta API_TOKEN. Ej: API_TOKEN=... BASE_URL=... python db/seed_lockin.py")
     sys.exit(1)
 
+if "TU-DOMINIO" in BASE or "tu-dominio" in BASE:
+    print(f"✋ BASE_URL sigue con el texto de ejemplo ({BASE}).")
+    print("   Reemplázalo por el dominio real donde abres la app en el teléfono, p.ej.:")
+    print('   BASE_URL="https://miapp.midominio.com" API_TOKEN="..." python3 db/seed_lockin.py --dry-run')
+    sys.exit(1)
+
+
+def _probar_conexion():
+    """Falla temprano con un mensaje claro si la URL/red no responde."""
+    try:
+        req = urllib.request.Request(BASE + "/api/health", method="GET")
+        urllib.request.urlopen(req, timeout=15)
+    except urllib.error.HTTPError:
+        pass  # responde algo → el host existe, seguimos
+    except urllib.error.URLError as e:
+        print(f"✋ No pude conectar a {BASE}")
+        print(f"   Motivo: {e.reason}")
+        print("   Revisa que el dominio esté bien escrito (con https://) y que la app esté arriba.")
+        sys.exit(1)
+
 
 def api(method, ruta, body=None):
     url = BASE + "/api" + ruta
@@ -41,10 +61,14 @@ def api(method, ruta, body=None):
     except urllib.error.HTTPError as e:
         print(f"   ⚠️  {method} {ruta} → {e.code} {e.read()[:200]}")
         return None
+    except urllib.error.URLError as e:
+        print(f"   ⚠️  {method} {ruta} → sin conexión: {e.reason}")
+        return None
 
 
 def main():
     print(f"→ Servidor: {BASE}  {'(DRY RUN)' if DRY else ''}")
+    _probar_conexion()
 
     # 1. Borrar hábitos existentes
     actuales = api("GET", "/habitos") or {}
