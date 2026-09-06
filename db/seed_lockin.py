@@ -89,18 +89,25 @@ def main():
         if not DRY:
             api("POST", "/habitos", body)
 
-    # 3. Curso Daniel Habif
-    cursos = (api("GET", "/cursos") or {}).get("cursos", [])
-    if any("daniel habif" in (c.get("nombre", "").lower()) for c in cursos):
-        print("\n3) Curso 'Daniel Habif' ya existe — no se duplica.")
+    # 3. Curso Daniel Habif (opcional — no bloquea el resto)
+    cursos_resp = api("GET", "/cursos")
+    if cursos_resp is None:
+        print("\n3) No pude leer /cursos (permisos o versión desplegada distinta).")
+        print("   No pasa nada: los HÁBITOS ya quedaron sincronizados.")
+        print("   Agrega el curso a mano en la app → Aprender → «+ Nuevo curso»:")
+        print("     Nombre: Curso Daniel Habif  ·  Persona: Diego  ·  min/día: 60")
     else:
-        print("\n3) Agregando curso 'Curso Daniel Habif' (Diego)")
-        if not DRY:
-            api("POST", "/cursos", {"nombre": "Curso Daniel Habif", "emoji": "🎤",
-                                    "persona_id": "persona_diego", "min_dia": 60,
-                                    "recompensa": "Crecimiento personal"})
+        cursos = cursos_resp.get("cursos", [])
+        if any("daniel habif" in (c.get("nombre", "").lower()) for c in cursos):
+            print("\n3) Curso 'Daniel Habif' ya existe — no se duplica.")
+        else:
+            print("\n3) Agregando curso 'Curso Daniel Habif' (Diego)")
+            if not DRY:
+                api("POST", "/cursos", {"nombre": "Curso Daniel Habif", "emoji": "🎤",
+                                        "persona_id": "persona_diego", "min_dia": 60,
+                                        "recompensa": "Crecimiento personal"})
 
-    print("\n✅ Listo." if not DRY else "\n(DRY RUN — no se cambió nada)")
+    print("\n✅ Hábitos sincronizados." if not DRY else "\n(DRY RUN — no se cambió nada)")
 
 
 if __name__ == "__main__":
