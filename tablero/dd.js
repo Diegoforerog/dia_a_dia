@@ -307,20 +307,31 @@
     async activarPushActual() {
       const pid = DD.personaId();
       if (!pid) { DD.abrirSelector(true); return; }
+      // Feedback SIEMPRE visible (en iPhone el toast a veces no se ve): usamos alert.
       try {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) { DD.toast('Este navegador no soporta avisos', false); return; }
-        const permiso = await Notification.requestPermission();
-        if (permiso !== 'granted') { DD.toast('Diste "no" al permiso de avisos', false); return; }
+        if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+          alert('Tu iPhone no expone los avisos web aquí.\n\nAsegúrate de:\n1) Abrir la app desde el ícono de la pantalla de inicio (no desde Safari).\n2) Tener iOS 16.4 o más nuevo.\n\n(De todos modos los recordatorios te llegan por Telegram.)');
+          return;
+        }
+        let permiso = Notification.permission;
+        if (permiso === 'denied') {
+          alert('Los avisos están BLOQUEADOS para esta app en iPhone.\n\nActívalos así:\nAjustes ▸ (busca "LoveSprint") ▸ Notificaciones ▸ Permitir notificaciones.\n\nSi no aparece, borra la app de la pantalla de inicio, vuelve a agregarla desde Safari y entra de nuevo.');
+          return;
+        }
+        if (permiso !== 'granted') {
+          permiso = await Notification.requestPermission();
+          if (permiso !== 'granted') { alert('No diste permiso de avisos. Puedes activarlo luego en Ajustes ▸ LoveSprint ▸ Notificaciones.'); return; }
+        }
         const reg = await navigator.serviceWorker.ready;
         const { clave, disponible } = await DD.fetch('/push/clave-publica');
-        if (!disponible || !clave) { DD.toast('El servidor no tiene avisos configurados', false); return; }
+        if (!disponible || !clave) { alert('El servidor no tiene los avisos configurados (VAPID). Avísale a Diego.'); return; }
         let sub = await reg.pushManager.getSubscription();
         if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: DD._urlB64ToUint8(clave) });
         await DD.fetch('/push/suscribir', { method: 'POST', body: JSON.stringify({ persona_id: pid, subscription: sub.toJSON() }) });
         await DD.fetch('/push/prueba', { method: 'POST', body: JSON.stringify({ persona_id: pid }) });
-        DD.toast('✓ Avisos activados — te mandamos una prueba', true);
+        alert('✓ ¡Avisos activados! Te mandamos una notificación de prueba ahora.');
         const b = document.getElementById('dd-banner-avisos'); if (b) b.remove();
-      } catch (e) { DD.toast('No se pudo: ' + e.message, false); }
+      } catch (e) { alert('No se pudo activar: ' + (e && e.message ? e.message : e) + '\n\nTranquilo: los recordatorios igual llegan por Telegram.'); }
     },
     async _bannerAvisos() {
       const esHoy = location.pathname === '/' || location.pathname.endsWith('/index.html');
