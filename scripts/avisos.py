@@ -196,8 +196,8 @@ def avisar_persona(persona_id: str, titulo: str, cuerpo: str,
         return {"push": 0, "telegram": False, "error": "persona no encontrada"}
     push_ok = _enviar_push(persona, titulo, cuerpo, url, tag)
     tg = telegram_texto if telegram_texto is not None else f"*{titulo}*\n{cuerpo}"
-    # chat de la persona; si no tiene, cae al chat global de config.json
-    chat = persona.get("telegram_chat_id") or _cfg_telegram()[1] or ""
+    # SOLO el chat propio de la persona (nada se manda al chat de otra persona)
+    chat = persona.get("telegram_chat_id") or ""
     tg_ok = _enviar_telegram(chat, tg) if chat else False
     return {"push": push_ok, "telegram": tg_ok}
 

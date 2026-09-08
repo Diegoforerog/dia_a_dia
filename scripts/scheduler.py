@@ -670,27 +670,41 @@ def _parse_hora_habito(s):
 
 
 def avisar_habito(payload: dict):
-    """Dispara 10 min antes de un hábito con hora fija (si no está ya cumplido)."""
-    try:
-        from comun import cargar_registro_dia
-        hid = str(payload.get("hid") or "")
-        cumplidos = cargar_registro_dia().get("habitos_cumplidos", [])
-        # cumplido si aparece la clave simple o cualquiera 'hid@persona' (pareja)
-        if hid and any(k == hid or k.startswith(hid + "@") for k in cumplidos):
-            return  # ya lo marcó alguien, no molestar
-    except Exception:
-        pass
+    """Dispara 10 min antes de un hábito. Cada persona recibe SOLO en su propio bot:
+    - personal → solo su dueño.
+    - pareja → a cada persona (con canal propio) que aún no lo haya marcado."""
+    from comun import cargar, cargar_registro_dia
+    hid = str(payload.get("hid") or "")
     nombre = payload.get("nombre", "hábito")
     hora = payload.get("hora", "")
     dur = payload.get("duracion_min") or 0
-    texto = f"⏰ *En 10 min: {nombre}*\n\n🕐 {hora}"
-    if dur:
-        texto += f" · {dur} min"
-    _enrutar(payload.get("persona_id"),
-             f"En 10 min: {nombre}", f"{nombre} · {hora}",
-             url="/tablero/habitos.html",
-             tag=f"hab_{str(payload.get('hid',''))[:24]}",
-             telegram_texto=texto)
+    texto = f"⏰ *En 10 min: {nombre}*\n\n🕐 {hora}" + (f" · {dur} min" if dur else "")
+    cuerpo = f"{nombre} · {hora}"
+    tag = f"hab_{hid[:24]}"
+    try:
+        cumplidos = set(cargar_registro_dia().get("habitos_cumplidos", []))
+    except Exception:
+        cumplidos = set()
+    import avisos
+    pid = payload.get("persona_id")
+    if pid:
+        # personal: solo su dueño, si no lo ha marcado
+        if hid in cumplidos:
+            return
+        avisos.avisar_persona(pid, f"En 10 min: {nombre}", cuerpo,
+                              url="/tablero/habitos.html", tag=tag, telegram_texto=texto)
+        return
+    # pareja: cada persona con canal propio, si ESA persona aún no lo marcó
+    try:
+        personas = [p for p in cargar("personas.json").get("personas", [])
+                    if p.get("activo", True) and p.get("telegram_chat_id")]
+    except Exception:
+        personas = []
+    for p in personas:
+        if f"{hid}@{p['id']}" in cumplidos:
+            continue
+        avisos.avisar_persona(p["id"], f"En 10 min: {nombre}", cuerpo,
+                              url="/tablero/habitos.html", tag=tag, telegram_texto=texto)
 
 
 def programar_habitos_hoy():
@@ -815,10 +829,8 @@ def revisar_avisos_inteligentes():
         hm = ahora.hour * 60 + ahora.minute
         dow = ahora.isoweekday()   # 1=lunes .. 7=domingo
         personas = [p for p in cargar("personas.json").get("personas", []) if p.get("activo", True)]
+        # Solo personas con su PROPIO canal (nada se envía al chat de otra persona)
         configuradas = [p for p in personas if p.get("telegram_chat_id") or p.get("push_subscriptions")]
-        # Si nadie tiene canal propio pero hay chat global, usar todas (caen al chat global)
-        if not configuradas and CHAT_ID:
-            configuradas = personas
         import avisos
 
         # 1) Hora de cocinar — almuerzo 11:00–12:30, cena 18:00–19:30
