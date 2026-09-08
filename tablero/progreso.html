@@ -185,7 +185,8 @@ async function cargar(){
   try{
     const t=await DD.token(); if(!t) return;
     await DD.cargarPersonas();
-    const [hd,met]=await Promise.all([DD.fetch('/habitos'),DD.fetch('/metricas/habitos')]);
+    const _pid=DD.personaId()||'';
+    const [hd,met]=await Promise.all([DD.fetch('/habitos'),DD.fetch('/metricas/habitos?persona='+encodeURIComponent(_pid))]);
     CATS=hd.categorias||[]; META={}; (hd.habitos||[]).forEach(h=>META[h.id]=h);
     MET=met.habitos||[];
   }catch(e){ console.warn(e); document.getElementById('contenido').innerHTML='<div class="vacio">No se pudo cargar el progreso.</div>'; return; }
@@ -389,7 +390,7 @@ function render(){
   });
 }
 
-document.addEventListener('dd:persona',render);
+document.addEventListener('dd:persona',cargar);
 document.addEventListener('DOMContentLoaded',cargar);
 if(document.readyState!=='loading') cargar();
 </script>

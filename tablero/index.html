@@ -2093,6 +2093,8 @@ let _habData = null, _habCumplidos = new Set();
 window._MET = {};  // id -> métrica (rachas, últimos 30 días)
 function _isoDowStr(fs){ const d=new Date(fs+'T12:00:00'); return d.getDay()===0?7:d.getDay(); }
 function _isoLocal(d){ const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,10); }
+/* clave de cumplido POR PERSONA: pareja → id@persona; personal → id */
+function _claveHab(h){ const yo=(window.DD&&DD.personaId&&DD.personaId())||''; return (h.alcance||'pareja')==='personal' ? h.id : (yo ? h.id+'@'+yo : h.id); }
 
 function pintarHabitos(habitosData, registro) {
   if (habitosData) _habData = habitosData;
@@ -2120,7 +2122,7 @@ function pintarHabitos(habitosData, registro) {
     const lista = grupos[cid];
     if (!lista || !lista.length) return;
     const cat = catMap[cid] || {icono:'•', nombre:'Sin categoría', color:'#7A746B'};
-    const cumplidosCat = lista.filter(h => cumplidos.has(h.id)).length;
+    const cumplidosCat = lista.filter(h => cumplidos.has(_claveHab(h))).length;
     html += `
       <div class="hh-cat">
         <div class="hh-cat-head">
@@ -2129,7 +2131,7 @@ function pintarHabitos(habitosData, registro) {
           <span class="hh-cat-cnt">${cumplidosCat}/${lista.length}</span>
         </div>
         ${lista.map(h => {
-          const hecho = cumplidos.has(h.id);
+          const hecho = cumplidos.has(_claveHab(h));
           const met = window._MET[h.id] || {};
           const racha = (met.racha_actual != null ? met.racha_actual : (h.racha_actual||0));
           const tipo = h.tipo || 'bueno';
@@ -2164,7 +2166,7 @@ function pintarHabitos(habitosData, registro) {
   if (cont) cont.innerHTML = html || '<div class="empty">Aún no tienes hábitos para hoy. <a href="/tablero/aprender.html#habitos" style="color:var(--burnt)">Crea el primero →</a></div>';
 
   /* solo contar los que aplican hoy y son de esta persona (evita >100%) */
-  const hechosHoy = activos.filter(h => cumplidos.has(h.id)).length;
+  const hechosHoy = activos.filter(h => cumplidos.has(_claveHab(h))).length;
   const pct = activos.length ? Math.round(hechosHoy / activos.length * 100) : 0;
   const mejor = Math.max(0, ...activos.map(h => (window._MET[h.id]?.racha_actual) || h.racha_actual || 0));
 
@@ -2193,19 +2195,21 @@ function pintarHabitos(habitosData, registro) {
   }
 }
 
-/* Marcar / desmarcar un hábito de HOY desde la pantalla Hoy */
+/* Marcar / desmarcar un hábito de HOY desde la pantalla Hoy (por persona) */
 async function toggleHabitoHoy(id) {
-  const estaba = _habCumplidos.has(id);
-  if (estaba) _habCumplidos.delete(id); else _habCumplidos.add(id);
-  pintarHabitos();                       // re-render optimista (usa refs guardadas)
+  const h = (_habData && _habData.habitos || []).find(x => x.id === id) || {id, alcance:'pareja'};
+  const clave = _claveHab(h);
+  const yo = (window.DD && DD.personaId && DD.personaId()) || '';
+  const estaba = _habCumplidos.has(clave);
+  if (estaba) _habCumplidos.delete(clave); else _habCumplidos.add(clave);
+  pintarHabitos();                       // re-render optimista
   if (!estaba && navigator.vibrate) navigator.vibrate(12);
   try {
-    await apiPost(`/habitos/${id}/${estaba ? 'descumplir' : 'cumplir'}`, {});
+    await apiPost(`/habitos/${id}/${estaba ? 'descumplir' : 'cumplir'}`, {persona_id: yo});
     /* refrescar métricas para rachas/dots exactos */
-    try { const met = await apiGet('/metricas/habitos'); window._MET = {}; (met&&met.habitos||[]).forEach(m=>window._MET[m.id]=m); pintarHabitos(); } catch(_){}
+    try { const met = await apiGet('/metricas/habitos?persona=' + encodeURIComponent(yo)); window._MET = {}; (met&&met.habitos||[]).forEach(m=>window._MET[m.id]=m); pintarHabitos(); } catch(_){}
   } catch (e) {
-    // revertir si falló
-    if (estaba) _habCumplidos.add(id); else _habCumplidos.delete(id);
+    if (estaba) _habCumplidos.add(clave); else _habCumplidos.delete(clave);
     pintarHabitos();
   }
 }
@@ -2401,9 +2405,9 @@ function pintarStatus(registro) {
   let habitosData = await apiGet('/habitos');
   if (!habitosData) habitosData = await leer('../datos/habitos.json');
 
-  /* métricas de hábitos (rachas + últimos 30 días para la tira de 7) */
+  /* métricas de hábitos (rachas + últimos 30 días para la tira de 7) — por persona */
   try {
-    const met = await apiGet('/metricas/habitos');
+    const met = await apiGet('/metricas/habitos?persona=' + encodeURIComponent((window.DD&&DD.personaId&&DD.personaId())||''));
     window._MET = {};
     (met && met.habitos || []).forEach(m => window._MET[m.id] = m);
   } catch(e) { window._MET = {}; }
@@ -2496,9 +2500,14 @@ async function pintarTrabajoHoy(){
 document.addEventListener('dd:persona', ()=>pintarTrabajoHoy());
 
 /* Al cambiar de persona (chip del sidebar), repintar hábitos y KPI del día */
-document.addEventListener('dd:persona', () => {
+document.addEventListener('dd:persona', async () => {
   const d = window.__DATA__;
   if (d && d.habitos) pintarHabitos(d.habitos, d.registro);
+  /* refrescar métricas de la nueva persona (rachas/dots por persona) */
+  try {
+    const met = await apiGet('/metricas/habitos?persona=' + encodeURIComponent((window.DD&&DD.personaId&&DD.personaId())||''));
+    window._MET = {}; (met&&met.habitos||[]).forEach(m=>window._MET[m.id]=m); pintarHabitos();
+  } catch(_){}
 });
 
 function pintarKPIs(registro, proyectos) {

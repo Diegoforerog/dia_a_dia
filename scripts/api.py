@@ -758,25 +758,43 @@ def put_habito(hid):
     return jsonify({"error": "Hábito no encontrado"}), 404
 
 
+def _clave_cumplido(hid, persona_id, alcance=None):
+    """Clave de cumplimiento POR PERSONA.
+    - Hábito de pareja: '<hid>@<persona>' (cada uno marca el suyo).
+    - Hábito personal: '<hid>' (ya pertenece a una sola persona)."""
+    if alcance is None:
+        h = next((x for x in cargar("habitos.json").get("habitos", []) if x.get("id") == hid), None)
+        alcance = (h or {}).get("alcance", "pareja")
+    if alcance == "personal":
+        return hid
+    return f"{hid}@{persona_id}" if persona_id else hid
+
+
 @app.route("/api/habitos/<hid>/cumplir", methods=["POST"])
 @requiere_auth
 def cumplir_habito(hid):
-    """Marca como cumplido HOY."""
+    """Marca como cumplido HOY (por persona en los de pareja)."""
+    body = request.get_json(silent=True) or {}
+    persona_id = body.get("persona_id") or request.args.get("persona_id") or ""
+    clave = _clave_cumplido(hid, persona_id)
     registro = cargar_registro_dia()
-    if hid not in registro["habitos_cumplidos"]:
-        registro["habitos_cumplidos"].append(hid)
+    if clave not in registro["habitos_cumplidos"]:
+        registro["habitos_cumplidos"].append(clave)
     guardar_registro_dia(registro)
-    return jsonify({"ok": True, "habito_id": hid, "fecha": registro["fecha"]})
+    return jsonify({"ok": True, "habito_id": hid, "clave": clave, "fecha": registro["fecha"]})
 
 
 @app.route("/api/habitos/<hid>/descumplir", methods=["POST"])
 @requiere_auth
 def descumplir_habito(hid):
-    """Quita la marca de cumplido de HOY (deshacer un toque accidental)."""
+    """Quita la marca de cumplido de HOY (por persona en los de pareja)."""
+    body = request.get_json(silent=True) or {}
+    persona_id = body.get("persona_id") or request.args.get("persona_id") or ""
+    clave = _clave_cumplido(hid, persona_id)
     registro = cargar_registro_dia()
-    registro["habitos_cumplidos"] = [h for h in registro.get("habitos_cumplidos", []) if h != hid]
+    registro["habitos_cumplidos"] = [h for h in registro.get("habitos_cumplidos", []) if h != clave]
     guardar_registro_dia(registro)
-    return jsonify({"ok": True, "habito_id": hid, "fecha": registro["fecha"]})
+    return jsonify({"ok": True, "habito_id": hid, "clave": clave, "fecha": registro["fecha"]})
 
 
 @app.route("/api/habitos/<hid>", methods=["DELETE"])
@@ -1433,8 +1451,10 @@ _LOGROS_PROYECTO = [
 @app.route("/api/metricas/habitos", methods=["GET"])
 @requiere_auth
 def metricas_habitos():
-    """Devuelve métricas detalladas por hábito + agregadas."""
+    """Devuelve métricas detalladas por hábito + agregadas.
+    ?persona=<id>: cuenta el cumplimiento de ESA persona en los hábitos de pareja."""
     from datetime import timedelta
+    persona = request.args.get("persona") or ""
     habitos_data = cargar("habitos.json")
     cats = {c["id"]: c for c in habitos_data.get("categorias", [])}
     activos = [h for h in habitos_data.get("habitos", []) if h.get("activo")]
@@ -1474,7 +1494,8 @@ def metricas_habitos():
     mejor_racha_global = 0
 
     for h in activos:
-        completados = cumplidos_por_habito.get(h["id"], set())
+        _clave = _clave_cumplido(h["id"], persona, h.get("alcance", "pareja"))
+        completados = cumplidos_por_habito.get(_clave, set())
         cat = cats.get(h.get("categoria_id"), {"nombre": "—", "icono": "•", "color": "#888"})
 
         # últimos 30 días con flag de cumplido
@@ -3478,10 +3499,11 @@ def _habitos_hoy_estado(persona_id=None):
             if alc == "personal" and h.get("persona_id") != persona_id:
                 continue
         cat = cats.get(h.get("categoria_id"), {})
+        clave = _clave_cumplido(h["id"], persona_id, h.get("alcance", "pareja"))
         out.append({
             "id": h["id"], "nombre": h.get("nombre", ""),
             "icono": cat.get("icono") or "•",
-            "hecho": h["id"] in cumplidos,
+            "hecho": clave in cumplidos,
         })
     return out
 

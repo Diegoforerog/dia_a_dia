@@ -300,7 +300,8 @@ async function cargar(){
   try{
     const t = await DD.token(); if(!t) return;
     await DD.cargarPersonas();
-    const [hd, met] = await Promise.all([ DD.fetch('/habitos'), DD.fetch('/metricas/habitos') ]);
+    const _pid = DD.personaId() || '';
+    const [hd, met] = await Promise.all([ DD.fetch('/habitos'), DD.fetch('/metricas/habitos?persona='+encodeURIComponent(_pid)) ]);
     CATS = hd.categorias || [];
     META = {}; (hd.habitos||[]).forEach(h=>META[h.id]=h);
     MET = met.habitos || [];
@@ -411,8 +412,9 @@ async function toggleHoy(id){
   render();
   if(!era && navigator.vibrate) navigator.vibrate(12);
   try{
-    await DD.fetch(`/habitos/${id}/${era?'descumplir':'cumplir'}`,{method:'POST',body:'{}'});
-    const met = await DD.fetch('/metricas/habitos'); MET = met.habitos||[]; render();
+    const pid = DD.personaId() || '';
+    await DD.fetch(`/habitos/${id}/${era?'descumplir':'cumplir'}`,{method:'POST',body:JSON.stringify({persona_id:pid})});
+    const met = await DD.fetch('/metricas/habitos?persona='+encodeURIComponent(pid)); MET = met.habitos||[]; render();
   }catch(e){ if(t){t.cumplido=era;} render(); }
 }
 
@@ -508,7 +510,7 @@ function abrirDetalle(id){
 }
 function cerrarDetalle(){ document.getElementById('overlay').classList.remove('open'); document.body.style.overflow=''; }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){cerrarDetalle();cerrarEditor();} });
-document.addEventListener('dd:persona', ()=>{ pintarFiltros(); render(); });
+document.addEventListener('dd:persona', ()=>{ cargar(); });
 
 /* ═══ EDITOR crear/editar ═══ */
 let edId=null, edQuien='pareja', edDias=new Set([1,2,3,4,5,6,7]), edTipo='bueno';

@@ -673,8 +673,11 @@ def avisar_habito(payload: dict):
     """Dispara 10 min antes de un hábito con hora fija (si no está ya cumplido)."""
     try:
         from comun import cargar_registro_dia
-        if payload.get("hid") in set(cargar_registro_dia().get("habitos_cumplidos", [])):
-            return  # ya lo marcaron, no molestar
+        hid = str(payload.get("hid") or "")
+        cumplidos = cargar_registro_dia().get("habitos_cumplidos", [])
+        # cumplido si aparece la clave simple o cualquiera 'hid@persona' (pareja)
+        if hid and any(k == hid or k.startswith(hid + "@") for k in cumplidos):
+            return  # ya lo marcó alguien, no molestar
     except Exception:
         pass
     nombre = payload.get("nombre", "hábito")
@@ -903,7 +906,10 @@ def revisar_avisos_inteligentes():
         if on("habitos") and 20*60 <= hm < 22*60:
             cumplidos = set(cargar_registro_dia().get("habitos_cumplidos", []))
             for p in configuradas:
-                pendientes = [h for h in _habitos_de_hoy(ahora, p["id"]) if h.get("id") and h["id"] not in cumplidos]
+                # pendiente si NO está la clave personal (hid) ni la de pareja (hid@persona)
+                pendientes = [h for h in _habitos_de_hoy(ahora, p["id"])
+                              if h.get("id") and h["id"] not in cumplidos
+                              and f"{h['id']}@{p['id']}" not in cumplidos]
                 if pendientes and _marcar_aviso_intel(hoy, p["id"], "habitos"):
                     lista = ", ".join(h["nombre"] for h in pendientes[:3])
                     _enrutar(p["id"], "✅ Hábitos de hoy",
