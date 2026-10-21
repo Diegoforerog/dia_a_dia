@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<script>(function(){try{var u=new URL(location.href);var k=u.searchParams.get("k");if(k){localStorage.setItem("organizador_token",k);u.searchParams.delete("k");history.replaceState({},"",u.pathname+u.search+u.hash);}}catch(e){}})();</script>
+<title>LoveSprint — Seguimiento</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..600,0..100&family=Inter:wght@400..700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FBFAF6;--paper-deep:#F5F2EA;--surface:#FFFFFF;--surface-2:#F8F6F0;
+  --ink:#0E0D0B;--charcoal:#3A3733;--stone:#7A746B;--mist:#A8A29A;
+  --line:#E8E4DA;--line-soft:#F0ECE2;--line-strong:#D5CFC2;
+  --burnt:#EC4899;--burnt-hover:#DB2777;--burnt-soft:#FCE7F3;--burnt-line:#F9A8D4;
+  --sage:#5C8A6F;--sage-soft:#E8F0EA;--crimson:#A8392F;--crimson-soft:#F4E5E3;
+  --amber:#B47B1E;--amber-soft:#F8EFDB;--indigo:#8B5CF6;--indigo-soft:#F3E8FF;
+  --font-brand:"Fraunces","Times New Roman",serif;--font-body:"Inter",-apple-system,sans-serif;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*{box-sizing:border-box;-webkit-font-smoothing:antialiased;}
+html,body{margin:0;padding:0;}
+body{font-family:var(--font-body);font-size:14px;line-height:1.55;color:var(--ink);background:var(--paper);
+  background-image:radial-gradient(circle at 15% 10%,rgba(236,72,153,.03)0%,transparent 45%),radial-gradient(circle at 85% 90%,rgba(155,93,229,.03)0%,transparent 50%);}
+.app{display:grid;grid-template-columns:264px 1fr;min-height:100vh;}
+
+/* ── sidebar ── */
+.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;scrollbar-gutter:stable;padding:24px 18px;border-right:1px solid #241A38;
+  background:linear-gradient(180deg,#3B2D52 0%,#241A38 100%);display:flex;flex-direction:column;gap:22px;color:#E2E8F0;
+  --sb-muted:#94A3B8;--sb-text:#E2E8F0;--sb-hover:rgba(255,255,255,.08);}
+.brand{display:flex;flex-direction:column;gap:2px;}
+.brand-mark{font-family:var(--font-brand);font-style:italic;font-size:28px;line-height:1;letter-spacing:-.02em;color:#fff;}
+.brand-tag{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sb-muted);font-weight:500;}
+.nav-section{display:flex;flex-direction:column;gap:2px;}
+.nav-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sb-muted);padding:0 10px 6px;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--sb-text);font-size:13.5px;
+  text-decoration:none;transition:background .15s;background:transparent;border:none;cursor:pointer;font-family:inherit;text-align:left;width:100%;font-weight:500;position:relative;}
+.nav-item:hover{background:var(--sb-hover);color:#fff;}
+.nav-item.active{background:#fff;color:#241A38;font-weight:600;}
+.nav-item.active::before{content:"";position:absolute;left:-18px;top:50%;transform:translateY(-50%);width:3px;height:18px;background:#F472B6;border-radius:0 2px 2px 0;}
+.nav-icon{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+
+/* ── main ── */
+main{padding:34px 34px 80px;min-width:0;max-width:780px;}
+.hero{margin-bottom:22px;}
+.greeting{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--stone);font-weight:600;}
+h1{font-family:var(--font-brand);font-weight:500;font-size:44px;line-height:1.04;letter-spacing:-.025em;margin:4px 0 2px;}
+h1 em{font-style:italic;color:var(--burnt);}
+.hero-sub{font-size:13.5px;color:var(--stone);}
+
+/* ── nav semana ── */
+.sem-nav{display:flex;align-items:center;gap:10px;margin-bottom:22px;}
+.sem-titulo{font-family:var(--font-brand);font-size:18px;font-weight:500;flex:1;text-align:center;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:10px;font-family:inherit;font-size:13px;font-weight:600;
+  cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--charcoal);transition:all .15s;}
+.btn:hover{border-color:var(--line-strong);background:var(--surface-2);}
+.btn.primario{background:var(--burnt);border-color:var(--burnt);color:#fff;}
+.btn.primario:hover{background:var(--burnt-hover);}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* ── resumen semáforo ── */
+.resumen{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.res-chip{flex:1;min-width:90px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-align:center;}
+.res-chip .rc-n{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;}
+.res-chip .rc-et{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--stone);margin-top:2px;}
+.res-chip.verde{background:#E8F5EE;border-color:#9FD4B6;}
+.res-chip.amarillo{background:#FFF8E8;border-color:#F5C97A;}
+.res-chip.rojo{background:#FDE8E8;border-color:#FCA5A5;}
+
+/* ── tarjeta de proyecto ── */
+.proy-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 22px;margin-bottom:14px;transition:box-shadow .15s;}
+.proy-card:hover{box-shadow:0 4px 20px rgba(15,23,42,.06);}
+.proy-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;}
+.proy-dot{width:10px;height:10px;border-radius:50%;background:var(--mist);flex-shrink:0;margin-top:5px;}
+
+/* semáforo */
+.semaforo{display:flex;gap:6px;margin-left:auto;flex-shrink:0;}
+.sem-btn{width:34px;height:34px;border-radius:50%;border:2.5px solid transparent;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:all .15s;background:var(--surface-2);}
+.sem-btn:hover{transform:scale(1.1);}
+.sem-btn[data-v="verde"].on{border-color:#27A35A;background:#D1FAE5;}
+.sem-btn[data-v="amarillo"].on{border-color:#D97706;background:#FEF3C7;}
+.sem-btn[data-v="rojo"].on{border-color:#DC2626;background:#FEE2E2;}
+.sem-btn:not(.on){opacity:.35;}
+
+.proy-nombre{font-weight:700;font-size:16px;margin:0;}
+.proy-cliente{font-size:11.5px;color:var(--stone);margin-top:1px;}
+
+.campos{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.campo-label{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--stone);margin-bottom:5px;}
+textarea{font-family:var(--font-body);font-size:13.5px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  background:var(--paper);color:var(--ink);width:100%;resize:none;line-height:1.5;transition:border-color .15s,box-shadow .15s;}
+textarea:focus{outline:none;border-color:var(--burnt-line);box-shadow:0 0 0 3px var(--burnt-soft);background:var(--surface);}
+textarea::placeholder{color:var(--mist);}
+
+.bloqueo-row{margin-top:10px;display:none;}
+.bloqueo-row.show{display:block;}
+.bloqueo-row .campo-label{color:var(--crimson);}
+.bloqueo-row textarea{border-color:color-mix(in srgb,var(--crimson) 35%,transparent);background:var(--crimson-soft);}
+
+/* ── agregar proyecto ── */
+.add-proy{border:1.5px dashed var(--line);background:transparent;border-radius:18px;padding:16px 22px;margin-bottom:14px;
+  display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s;width:100%;font-family:inherit;color:var(--stone);}
+.add-proy:hover{border-color:var(--burnt-line);background:var(--burnt-soft);color:var(--burnt);}
+.add-proy svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:100;display:none;align-items:center;justify-content:center;padding:16px;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:20px;padding:28px;width:100%;max-width:440px;box-shadow:0 24px 60px rgba(15,23,42,.25);}
+.modal h2{font-family:var(--font-brand);font-size:26px;font-weight:500;margin:0 0 18px;}
+.modal .campo{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.modal .campo label{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--stone);}
+.modal .campo input,.modal .campo select{font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);color:var(--ink);}
+.modal .campo input:focus,.modal .campo select:focus{outline:none;border-color:var(--burnt-line);box-shadow:0 0 0 3px var(--burnt-soft);}
+.modal-btns{display:flex;gap:8px;margin-top:6px;}
+.modal-btns .btn{flex:1;justify-content:center;}
+
+/* ── guardar / cerrar semana ── */
+.acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;}
+.btn.grande{padding:13px 22px;font-size:15px;border-radius:14px;}
+.btn.guardar-sem{background:linear-gradient(135deg,#3B2D52,#241A38);border:none;color:#fff;}
+.btn.guardar-sem:hover{opacity:.9;}
+
+/* ── historial ── */
+.hist-toggle{display:flex;align-items:center;gap:8px;color:var(--stone);font-size:13px;font-weight:600;cursor:pointer;padding:8px 0;border:none;background:none;font-family:inherit;}
+.hist-toggle svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;transition:transform .2s;}
+.hist-toggle.open svg{transform:rotate(90deg);}
+.hist-lista{display:none;margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+.hist-lista.open{display:flex;}
+.hist-item{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .15s;}
+.hist-item:hover{border-color:var(--burnt-line);}
+.hist-item .hi-sem{font-weight:700;font-size:13.5px;}
+.hist-item .hi-sub{font-size:12px;color:var(--stone);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.dot.verde{background:#27A35A;} .dot.amarillo{background:#D97706;} .dot.rojo{background:#DC2626;} .dot.sin{background:var(--mist);}
+
+/* toast */
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#241A38;color:#fff;border-radius:12px;padding:11px 20px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:999;max-width:90vw;text-align:center;}
+.toast.visible{opacity:1;transform:translateX(-50%);}
+
+@media(max-width:920px){
+  .app{grid-template-columns:1fr;}
+  .sidebar{position:relative;height:auto;flex-direction:row;flex-wrap:wrap;padding:18px 20px;}
+  .nav-section{flex-direction:row;flex-wrap:wrap;flex:1 1 100%;}
+  .nav-item{width:auto;}.nav-item.active::before{display:none;}.nav-label{display:none;}
+  main{padding:22px 16px 60px;}h1{font-size:32px;}
+  .campos{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <img src="/tablero/lovesprint-mark.png" alt="LoveSprint" style="width:26px;height:26px;vertical-align:-6px;margin-right:8px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">
+        Love<em>Sprint</em>
+      </div>
+      <div class="brand-tag">juntos · organizados · avanzando</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Tablero</div>
+      <a href="/" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span>Hoy</span></a>
+      <a href="/tablero/nosotros.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg><span>Nosotros</span></a>
+      <a href="/tablero/sprint.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 22V4l13 4-13 4"/><path d="M4 13h9"/></svg><span>Sprint</span></a>
+      <a href="/tablero/seguimiento.html" class="nav-item active">
+        <svg class="nav-icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Seguimiento</span>
+      </a>
+      <a href="/tablero/agenda.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Agenda</span></a>
+      <a href="/tablero/proyectos.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="8" rx="1"/></svg><span>Proyectos</span></a>
+      <a href="/tablero/aprender.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg><span>Aprender</span></a>
+      <div class="nav-label" style="margin-top:8px;">Casa</div>
+      <a href="/tablero/comidas.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 3v7a3 3 0 0 0 3 3v8M7 3v7M10 3v7M17 3s-2 2-2 5 2 4 2 4v6"/></svg><span>Comidas</span></a>
+      <a href="/tablero/mercado.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Mercado</span></a>
+      <a href="/tablero/gastos.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><span>Gastos</span></a>
+      <a href="/tablero/luz_adriana.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Luz Adriana</span></a>
+      <div class="nav-label" style="margin-top:8px;">Configurar</div>
+      <a href="/tablero/admin.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4"/></svg><span>Configuración</span></a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+    <div class="hero">
+      <div class="greeting">Revisión semanal · cada sábado</div>
+      <h1><em>Seguimiento</em> de proyectos</h1>
+      <div class="hero-sub">¿Cómo va cada proyecto? Un semáforo, dos líneas, y listo.</div>
+    </div>
+
+    <!-- Nav semana -->
+    <div class="sem-nav">
+      <button class="btn" onclick="cambiarSemana(-1)">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="sem-titulo" id="semTitulo">—</div>
+      <button class="btn" onclick="cambiarSemana(1)">
+        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+    <!-- Resumen semáforo -->
+    <div class="resumen" id="resumen"></div>
+
+    <!-- Proyectos -->
+    <div id="proyectosContainer"></div>
+
+    <!-- Botón agregar proyecto -->
+    <button class="add-proy" onclick="abrirModal()">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Agregar proyecto al seguimiento</span>
+    </button>
+
+    <!-- Guardar -->
+    <div class="acciones">
+      <button class="btn grande guardar-sem" onclick="guardarSemana()">
+        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Guardar esta semana
+      </button>
+    </div>
+
+    <!-- Historial -->
+    <div style="margin-top:28px;">
+      <button class="hist-toggle" id="histToggle" onclick="toggleHist()">
+        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        Historial de semanas
+      </button>
+      <div class="hist-lista" id="histLista"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal agregar proyecto -->
+<div class="overlay" id="overlay" onclick="cerrarModalOutside(event)">
+  <div class="modal">
+    <h2>Nuevo <em>proyecto</em></h2>
+    <div class="campo">
+      <label>Nombre del proyecto</label>
+      <input type="text" id="mNombre" placeholder="Ej: Página web Klientia">
+    </div>
+    <div class="campo">
+      <label>Cliente / área</label>
+      <input type="text" id="mCliente" placeholder="Ej: Klientia, Personal, MSL…">
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn primario" onclick="agregarProyecto()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STORE ────────────────────────────────────────────────────────────────────
+const PROY_KEY   = 'seg_proyectos_v1';
+const SEM_KEY    = 'seg_semanas_v1';
+
+function cP(){ try{ return JSON.parse(localStorage.getItem(PROY_KEY))||proyectosDefault(); }catch(e){ return proyectosDefault(); }}
+function cS(){ try{ return JSON.parse(localStorage.getItem(SEM_KEY))||{}; }catch(e){ return {}; }}
+function gP(d){ localStorage.setItem(PROY_KEY,JSON.stringify(d)); }
+function gS(d){ localStorage.setItem(SEM_KEY,JSON.stringify(d)); }
+
+function proyectosDefault(){
+  return [
+    { id:'p_salud',    nombre:'Salud y bienestar', cliente:'Personal',  activo:true },
+    { id:'p_pwebag',   nombre:'Página Web',        cliente:'Agéntico',  activo:true },
+    { id:'p_cgrmsl',   nombre:'CGR',               cliente:'MSL',       activo:true }
+  ];
+}
+
+// ─── SEMANA ───────────────────────────────────────────────────────────────────
+function isoSemana(d){
+  const dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  const day=dt.getUTCDay()||7; dt.setUTCDate(dt.getUTCDate()+4-day);
+  const y=new Date(Date.UTC(dt.getUTCFullYear(),0,1));
+  return `${dt.getUTCFullYear()}-W${String(Math.ceil((((dt-y)/86400000)+1)/7)).padStart(2,'0')}`;
+}
+function lunesDe(iso){
+  const[y,w]=iso.split('-W').map(Number);
+  const s=new Date(Date.UTC(y,0,1+(w-1)*7));
+  const day=s.getUTCDay()||7;
+  const l=new Date(s); l.setUTCDate(s.getUTCDate()-day+1); return l;
+}
+function tituloSem(iso){
+  const l=lunesDe(iso);
+  const sa=new Date(l); sa.setUTCDate(l.getUTCDate()+5);
+  const f=x=>x.toLocaleDateString('es-CO',{day:'numeric',month:'short',timeZone:'UTC'});
+  const cur=isoSemana(new Date());
+  const pre=iso===cur?'Esta semana · ':'';
+  return pre+`${f(l)} — ${f(sa)}`;
+}
+
+let semana = isoSemana(new Date());
+
+function cambiarSemana(d){
+  const l=lunesDe(semana); l.setUTCDate(l.getUTCDate()+d*7);
+  semana=isoSemana(l); render();
+}
+
+// ─── DATOS DE LA SEMANA ───────────────────────────────────────────────────────
+function datosSem(sem){
+  const todas=cS(); return todas[sem]||{proyectos:{}};
+}
+function setSemProy(sem,pid,campo,val){
+  const todas=cS();
+  if(!todas[sem]) todas[sem]={proyectos:{}};
+  if(!todas[sem].proyectos[pid]) todas[sem].proyectos[pid]={semaforo:'',avance:'',sigue:'',bloqueo:''};
+  todas[sem].proyectos[pid][campo]=val;
+  gS(todas);
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render(){
+  document.getElementById('semTitulo').textContent = tituloSem(semana);
+  const proyectos = cP().filter(p=>p.activo);
+  const datos = datosSem(semana);
+
+  // resumen semáforo
+  let cv=0,ca=0,cr=0,cs=0;
+  proyectos.forEach(p=>{
+    const sem=(datos.proyectos[p.id]||{}).semaforo||'';
+    if(sem==='verde') cv++; else if(sem==='amarillo') ca++; else if(sem==='rojo') cr++; else cs++;
+  });
+  document.getElementById('resumen').innerHTML=`
+    <div class="res-chip verde"><div class="rc-n">${cv}</div><div class="rc-et">🟢 Bien</div></div>
+    <div class="res-chip amarillo"><div class="rc-n">${ca}</div><div class="rc-et">🟡 Atascado</div></div>
+    <div class="res-chip rojo"><div class="rc-n">${cr}</div><div class="rc-et">🔴 Parado</div></div>
+    <div class="res-chip" style="background:var(--surface-2);"><div class="rc-n">${cs}</div><div class="rc-et">⚪ Sin revisar</div></div>
+  `;
+
+  // tarjetas de proyectos
+  const cont = document.getElementById('proyectosContainer');
+  if(proyectos.length===0){
+    cont.innerHTML='<div style="text-align:center;padding:32px;color:var(--mist);font-style:italic;">Aún no hay proyectos. Agrega uno abajo.</div>';
+    return;
+  }
+  cont.innerHTML = proyectos.map(p=>{
+    const pd = (datos.proyectos[p.id])||{semaforo:'',avance:'',sigue:'',bloqueo:''};
+    const esRojo = pd.semaforo==='rojo';
+    const COLOR_MAP={verde:'#27A35A',amarillo:'#D97706',rojo:'#DC2626'};
+    const dotColor = COLOR_MAP[pd.semaforo]||'var(--mist)';
+    return `
+    <div class="proy-card" id="pc_${p.id}">
+      <div class="proy-header">
+        <div class="proy-dot" style="background:${dotColor}"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="proy-nombre">${esc(p.nombre)}</div>
+          <div class="proy-cliente">${esc(p.cliente)}</div>
+        </div>
+        <div class="semaforo">
+          <button class="sem-btn ${pd.semaforo==='verde'?'on':''}" data-v="verde" title="Todo bien" onclick="setSem('${p.id}','verde',this)">🟢</button>
+          <button class="sem-btn ${pd.semaforo==='amarillo'?'on':''}" data-v="amarillo" title="Con dificultades" onclick="setSem('${p.id}','amarillo',this)">🟡</button>
+          <button class="sem-btn ${pd.semaforo==='rojo'?'on':''}" data-v="rojo" title="Parado / bloqueado" onclick="setSem('${p.id}','rojo',this)">🔴</button>
+        </div>
+        <button onclick="archivarProy('${p.id}')" title="Archivar proyecto" style="background:none;border:none;cursor:pointer;color:var(--mist);padding:6px;border-radius:8px;margin-left:4px;font-size:15px;" onmouseover="this.style.color='var(--crimson)'" onmouseout="this.style.color='var(--mist)'">×</button>
+      </div>
+      <div class="campos">
+        <div>
+          <div class="campo-label">✅ ¿Qué avanzamos esta semana?</div>
+          <textarea rows="3" placeholder="Lo que logramos…" oninput="autoGuardar('${p.id}','avance',this.value)">${esc(pd.avance)}</textarea>
+        </div>
+        <div>
+          <div class="campo-label">🎯 ¿Qué sigue la próxima semana?</div>
+          <textarea rows="3" placeholder="El siguiente paso concreto…" oninput="autoGuardar('${p.id}','sigue',this.value)">${esc(pd.sigue)}</textarea>
+        </div>
+      </div>
+      <div class="bloqueo-row${esRojo?' show':''}" id="bl_${p.id}">
+        <div class="campo-label">🚧 ¿Qué lo está bloqueando?</div>
+        <textarea rows="2" placeholder="¿Qué necesita para avanzar?" oninput="autoGuardar('${p.id}','bloqueo',this.value)">${esc(pd.bloqueo)}</textarea>
+      </div>
+    </div>`;
+  }).join('');
+
+  renderHistorial();
+}
+
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function setSem(pid, val, btn){
+  // toggle si ya estaba on
+  const todos = btn.closest('.semaforo').querySelectorAll('.sem-btn');
+  const yaOn = btn.classList.contains('on');
+  todos.forEach(b=>b.classList.remove('on'));
+  const nuevo = yaOn ? '' : val;
+  if(!yaOn) btn.classList.add('on');
+
+  setSemProy(semana, pid, 'semaforo', nuevo);
+
+  // color del dot
+  const card = document.getElementById('pc_'+pid);
+  const dot = card.querySelector('.proy-dot');
+  const COLOR_MAP={verde:'#27A35A',amarillo:'#D97706',rojo:'#DC2626'};
+  dot.style.background = COLOR_MAP[nuevo]||'var(--mist)';
+
+  // mostrar/ocultar campo bloqueo
+  const blRow = document.getElementById('bl_'+pid);
+  blRow.classList.toggle('show', nuevo==='rojo');
+
+  renderResumen();
+  toast(nuevo==='verde'?'🟢 Proyecto al día':nuevo==='amarillo'?'🟡 Marcado con dificultades':nuevo==='rojo'?'🔴 Marcado como bloqueado':'⚪ Semáforo quitado');
+}
+
+function renderResumen(){
+  const proyectos=cP().filter(p=>p.activo);
+  const datos=datosSem(semana);
+  let cv=0,ca=0,cr=0,cs=0;
+  proyectos.forEach(p=>{
+    const s=(datos.proyectos[p.id]||{}).semaforo||'';
+    if(s==='verde')cv++;else if(s==='amarillo')ca++;else if(s==='rojo')cr++;else cs++;
+  });
+  document.getElementById('resumen').innerHTML=`
+    <div class="res-chip verde"><div class="rc-n">${cv}</div><div class="rc-et">🟢 Bien</div></div>
+    <div class="res-chip amarillo"><div class="rc-n">${ca}</div><div class="rc-et">🟡 Atascado</div></div>
+    <div class="res-chip rojo"><div class="rc-n">${cr}</div><div class="rc-et">🔴 Parado</div></div>
+    <div class="res-chip" style="background:var(--surface-2);"><div class="rc-n">${cs}</div><div class="rc-et">⚪ Sin revisar</div></div>
+  `;
+}
+
+let autoTimer={};
+function autoGuardar(pid, campo, val){
+  clearTimeout(autoTimer[pid+campo]);
+  autoTimer[pid+campo]=setTimeout(()=>{ setSemProy(semana,pid,campo,val); }, 400);
+}
+
+function guardarSemana(){
+  // forzar lectura de todos los textareas
+  document.querySelectorAll('.proy-card').forEach(card=>{
+    const pid = card.id.replace('pc_','');
+    const tas = card.querySelectorAll('textarea');
+    if(tas[0]) setSemProy(semana,pid,'avance',tas[0].value);
+    if(tas[1]) setSemProy(semana,pid,'sigue',tas[1].value);
+    if(tas[2]) setSemProy(semana,pid,'bloqueo',tas[2].value);
+  });
+  const todas=cS();
+  if(!todas[semana]) todas[semana]={proyectos:{}};
+  todas[semana].guardado=new Date().toISOString();
+  gS(todas);
+  toast('✅ Semana guardada');
+  renderHistorial();
+}
+
+// ─── HISTORIAL ────────────────────────────────────────────────────────────────
+function renderHistorial(){
+  const todas=cS();
+  const sems=Object.keys(todas).sort((a,b)=>b.localeCompare(a)).slice(0,12);
+  const lista=document.getElementById('histLista');
+  if(sems.length===0){ lista.innerHTML='<div style="color:var(--mist);font-style:italic;font-size:13px;padding:4px 0;">Aún no hay semanas guardadas.</div>'; return; }
+  const proyectos=cP();
+  lista.innerHTML=sems.map(s=>{
+    const d=todas[s]; let cv=0,ca=0,cr=0,cs=0;
+    proyectos.forEach(p=>{
+      const sem=(d.proyectos&&d.proyectos[p.id]||{}).semaforo||'';
+      if(sem==='verde')cv++;else if(sem==='amarillo')ca++;else if(sem==='rojo')cr++;else cs++;
+    });
+    const activos=proyectos.filter(p=>p.activo).length;
+    return `<div class="hist-item" onclick="irSemana('${s}')">
+      <div class="hi-sem">${tituloSem(s)} ${s===semana?'<span style="font-size:11px;color:var(--burnt);font-weight:700;">← actual</span>':''}</div>
+      <div class="hi-sub">
+        ${cv?`<span><span class="dot verde"></span> ${cv} bien</span>`:''}
+        ${ca?`<span><span class="dot amarillo"></span> ${ca} atascado</span>`:''}
+        ${cr?`<span><span class="dot rojo"></span> ${cr} parado</span>`:''}
+        ${cs?`<span><span class="dot sin"></span> ${cs} sin revisar</span>`:''}
+        ${d.guardado?`<span style="color:var(--mist)">✓ guardada</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function irSemana(s){ semana=s; render(); window.scrollTo({top:0,behavior:'smooth'}); }
+function toggleHist(){
+  const t=document.getElementById('histToggle');
+  const l=document.getElementById('histLista');
+  t.classList.toggle('open');
+  l.classList.toggle('open');
+}
+
+// ─── PROYECTOS ────────────────────────────────────────────────────────────────
+function abrirModal(){ document.getElementById('overlay').classList.add('open'); document.getElementById('mNombre').focus(); }
+function cerrarModal(){ document.getElementById('overlay').classList.remove('open'); document.getElementById('mNombre').value=''; document.getElementById('mCliente').value=''; }
+function cerrarModalOutside(e){ if(e.target===document.getElementById('overlay')) cerrarModal(); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') cerrarModal(); });
+
+function agregarProyecto(){
+  const nombre=document.getElementById('mNombre').value.trim();
+  const cliente=document.getElementById('mCliente').value.trim();
+  if(!nombre){ document.getElementById('mNombre').focus(); return; }
+  const proyectos=cP();
+  proyectos.push({ id:'p_'+Date.now(), nombre, cliente:cliente||'General', activo:true });
+  gP(proyectos);
+  cerrarModal();
+  render();
+  toast('✅ Proyecto agregado');
+}
+
+function archivarProy(pid){
+  const proyectos=cP();
+  const p=proyectos.find(x=>x.id===pid);
+  if(!p) return;
+  if(!confirm(`¿Archivar "${p.nombre}"? No aparecerá en futuros seguimientos.`)) return;
+  p.activo=false;
+  gP(proyectos);
+  render();
+  toast('📦 Proyecto archivado');
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('visible');
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('visible'),2600);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', render);
+</script>
+</body>
+</html>
