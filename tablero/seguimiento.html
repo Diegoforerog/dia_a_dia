@@ -142,35 +142,42 @@ textarea::placeholder{color:var(--mist);}
 .tab-panel{display:none;} .tab-panel.on{display:block;}
 
 /* ── diario ── */
-.dia-nav{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+.dia-nav{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
 .dia-titulo{font-family:var(--font-brand);font-size:20px;font-weight:500;flex:1;text-align:center;text-transform:capitalize;}
 .dia-hoy-btn{font-size:11.5px;padding:5px 12px;border-radius:999px;background:var(--burnt-soft);border:1px solid var(--burnt-line);color:var(--burnt);font-weight:700;cursor:pointer;font-family:inherit;}
-.dia-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.dia-col{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;}
-.dia-col-head{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
-.dia-col-head.hecho{color:var(--sage);}
-.dia-col-head.toca{color:var(--indigo);}
-.act-lista{display:flex;flex-direction:column;gap:6px;min-height:40px;}
-.act-item{display:flex;align-items:flex-start;gap:9px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--paper);transition:background .12s;}
+
+/* tarjeta de proyecto diario */
+.dp-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:14px;}
+.dp-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.dp-dot{width:9px;height:9px;border-radius:50%;background:var(--mist);flex-shrink:0;}
+.dp-nombre{font-weight:700;font-size:15px;flex:1;}
+.dp-cliente{font-size:11.5px;color:var(--stone);}
+.dp-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.dp-col-head{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.dp-col-head.hecho{color:var(--sage);}
+.dp-col-head.toca{color:var(--indigo);}
+.act-lista{display:flex;flex-direction:column;gap:5px;min-height:10px;}
+.act-item{display:flex;align-items:flex-start;gap:8px;padding:7px 9px;border-radius:9px;border:1px solid var(--line);background:var(--paper);transition:background .12s;}
 .act-item.done{background:var(--sage-soft);border-color:transparent;}
 .act-item.done .act-txt{text-decoration:line-through;color:var(--stone);}
-.act-cb{width:17px;height:17px;border-radius:5px;border:2px solid var(--line-strong);flex-shrink:0;cursor:pointer;appearance:none;-webkit-appearance:none;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .12s;}
+.act-cb{width:16px;height:16px;border-radius:4px;border:2px solid var(--line-strong);flex-shrink:0;cursor:pointer;appearance:none;-webkit-appearance:none;margin-top:2px;transition:all .12s;position:relative;}
 .act-cb:checked{background:var(--sage);border-color:var(--sage);}
-.act-cb:checked::after{content:'✓';color:#fff;font-size:10px;font-weight:700;display:block;text-align:center;line-height:1;}
-.act-txt{flex:1;font-size:13.5px;line-height:1.4;word-break:break-word;}
-.act-del{background:none;border:none;color:var(--mist);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:6px;flex-shrink:0;opacity:0;}
+.act-cb:checked::after{content:'✓';color:#fff;font-size:9px;font-weight:700;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
+.act-txt{flex:1;font-size:13px;line-height:1.4;word-break:break-word;}
+.act-del{background:none;border:none;color:var(--mist);cursor:pointer;font-size:13px;padding:1px 5px;border-radius:6px;flex-shrink:0;opacity:0;line-height:1;}
 .act-item:hover .act-del{opacity:1;}
 .act-del:hover{color:var(--crimson);}
-.dia-add{display:flex;gap:8px;margin-top:10px;}
-.dia-add input{flex:1;font-family:inherit;font-size:13.5px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--paper);color:var(--ink);}
+.dia-add{display:flex;gap:6px;margin-top:8px;}
+.dia-add input{flex:1;font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--paper);color:var(--ink);}
 .dia-add input:focus{outline:none;border-color:var(--burnt-line);box-shadow:0 0 0 3px var(--burnt-soft);}
 .dia-add input::placeholder{color:var(--mist);}
-.dia-add .btn-add{padding:9px 13px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:18px;color:var(--stone);transition:all .15s;flex-shrink:0;}
+.dia-add .btn-add{padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:16px;color:var(--stone);transition:all .15s;flex-shrink:0;}
 .dia-add .btn-add:hover{border-color:var(--burnt-line);color:var(--burnt);background:var(--burnt-soft);}
-.dia-vacio{color:var(--mist);font-style:italic;font-size:13px;padding:6px 2px;}
+.dia-vacio{color:var(--mist);font-style:italic;font-size:12.5px;padding:4px 2px;}
 .sem-divider{border:none;border-top:1.5px solid var(--line);margin:28px 0 22px;}
 .sem-section-label{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--stone);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
 .sem-section-label::after{content:'';flex:1;height:1px;background:var(--line);}
+@media(max-width:920px){.dp-cols{grid-template-columns:1fr;}}
 
 /* toast */
 .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#241A38;color:#fff;border-radius:12px;padding:11px 20px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:999;max-width:90vw;text-align:center;}
@@ -246,32 +253,8 @@ textarea::placeholder{color:var(--mist);}
         </button>
       </div>
 
-      <div class="dia-cols">
-        <!-- Hicimos -->
-        <div class="dia-col">
-          <div class="dia-col-head hecho">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            ¿Qué hicimos hoy?
-          </div>
-          <div class="act-lista" id="listaHecho"></div>
-          <div class="dia-add">
-            <input type="text" id="inputHecho" placeholder="Actividad completada…" onkeydown="if(event.key==='Enter') agregarAct('hecho')">
-            <button class="btn-add" onclick="agregarAct('hecho')">＋</button>
-          </div>
-        </div>
-        <!-- Toca hacer -->
-        <div class="dia-col">
-          <div class="dia-col-head toca">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            ¿Qué toca hacer?
-          </div>
-          <div class="act-lista" id="listaToca"></div>
-          <div class="dia-add">
-            <input type="text" id="inputToca" placeholder="Pendiente o próximo paso…" onkeydown="if(event.key==='Enter') agregarAct('toca')">
-            <button class="btn-add" onclick="agregarAct('toca')">＋</button>
-          </div>
-        </div>
-      </div>
+      <!-- Proyectos del día -->
+      <div id="diarioProyectos"></div>
 
     </div><!-- /tab-diario -->
 
@@ -619,6 +602,7 @@ function toast(msg){
 // ─── DIARIO ───────────────────────────────────────────────────────────────────
 const DIA_NOMBRES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 const MES_NOMBRES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const PROY_COLORS = ['#EC4899','#8B5CF6','#0EA5E9','#F59E0B','#10B981','#EF4444','#6366F1'];
 
 let diaActual = hoyStr();
 
@@ -636,64 +620,104 @@ function cambiarDia(delta){
 function cD(){ try{ return JSON.parse(localStorage.getItem(DIA_KEY))||{}; }catch(e){ return {}; }}
 function gD(data){ localStorage.setItem(DIA_KEY, JSON.stringify(data)); }
 
-function datosDia(fecha){ const d=cD(); return d[fecha]||{hecho:[],toca:[]}; }
-
 function renderDiario(){
   const d=new Date(diaActual+'T12:00:00');
   const hoy=hoyStr();
-  const esHoy=diaActual===hoy;
   const ayer=new Date(d); ayer.setDate(d.getDate()-1);
   const ayerStr=`${ayer.getFullYear()}-${String(ayer.getMonth()+1).padStart(2,'0')}-${String(ayer.getDate()).padStart(2,'0')}`;
-  const esAyer=diaActual===ayerStr;
-  const label=esHoy?'Hoy, ':esAyer?'Ayer, ':'';
+  const label=diaActual===hoy?'Hoy, ':diaActual===ayerStr?'Ayer, ':'';
   document.getElementById('diaTitulo').textContent=
     `${label}${DIA_NOMBRES[d.getDay()]} ${d.getDate()} de ${MES_NOMBRES[d.getMonth()]}`;
 
-  const datos=datosDia(diaActual);
-  renderListaAct('listaHecho', datos.hecho, 'hecho');
-  renderListaAct('listaToca',  datos.toca,  'toca');
-}
-
-function renderListaAct(listaId, items, tipo){
-  const cont=document.getElementById(listaId);
-  if(!items||items.length===0){
-    cont.innerHTML=`<div class="dia-vacio">${tipo==='hecho'?'Agrega lo que hiciste hoy…':'Agrega lo que falta por hacer…'}</div>`;
+  const proyectos = cP().filter(p=>p.activo);
+  const cont = document.getElementById('diarioProyectos');
+  if(proyectos.length===0){
+    cont.innerHTML='<div style="text-align:center;padding:32px;color:var(--mist);font-style:italic;">Sin proyectos activos. Agrégalos en el tab Semanal.</div>';
     return;
   }
-  cont.innerHTML=items.map((it,i)=>`
+  const store=cD();
+  cont.innerHTML = proyectos.map((p,pi)=>{
+    const color=PROY_COLORS[pi%PROY_COLORS.length];
+    const pd=(store[diaActual]&&store[diaActual][p.id])||{hecho:[],toca:[]};
+    return `
+    <div class="dp-card">
+      <div class="dp-header">
+        <div class="dp-dot" style="background:${color}"></div>
+        <div class="dp-nombre">${esc(p.nombre)}</div>
+        <div class="dp-cliente">${esc(p.cliente)}</div>
+      </div>
+      <div class="dp-cols">
+        <div>
+          <div class="dp-col-head hecho">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Hicimos hoy
+          </div>
+          <div class="act-lista" id="ah_${p.id}">${renderActItems(pd.hecho,p.id,'hecho')}</div>
+          <div class="dia-add">
+            <input type="text" id="ih_${p.id}" placeholder="Qué se hizo…"
+              onkeydown="if(event.key==='Enter') agregarActProy('${p.id}','hecho')">
+            <button class="btn-add" onclick="agregarActProy('${p.id}','hecho')">＋</button>
+          </div>
+        </div>
+        <div>
+          <div class="dp-col-head toca">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Toca hacer
+          </div>
+          <div class="act-lista" id="at_${p.id}">${renderActItems(pd.toca,p.id,'toca')}</div>
+          <div class="dia-add">
+            <input type="text" id="it_${p.id}" placeholder="Qué falta o sigue…"
+              onkeydown="if(event.key==='Enter') agregarActProy('${p.id}','toca')">
+            <button class="btn-add" onclick="agregarActProy('${p.id}','toca')">＋</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderActItems(items, pid, tipo){
+  if(!items||items.length===0)
+    return `<div class="dia-vacio">${tipo==='hecho'?'Sin actividades aún…':'Sin pendientes aún…'}</div>`;
+  return items.map((it,i)=>`
     <div class="act-item${it.done?' done':''}">
-      <input type="checkbox" class="act-cb" ${it.done?'checked':''} onchange="toggleAct('${tipo}',${i},this.checked)">
+      <input type="checkbox" class="act-cb" ${it.done?'checked':''}
+        onchange="toggleActProy('${pid}','${tipo}',${i},this.checked)">
       <span class="act-txt">${esc(it.texto)}</span>
-      <button class="act-del" onclick="borrarAct('${tipo}',${i})" title="Quitar">×</button>
+      <button class="act-del" onclick="borrarActProy('${pid}','${tipo}',${i})" title="Quitar">×</button>
     </div>`).join('');
 }
 
-function agregarAct(tipo){
-  const inputId = tipo==='hecho'?'inputHecho':'inputToca';
+function agregarActProy(pid, tipo){
+  const inputId=tipo==='hecho'?`ih_${pid}`:`it_${pid}`;
   const texto=document.getElementById(inputId).value.trim();
   if(!texto) return;
-  const d=cD();
-  if(!d[diaActual]) d[diaActual]={hecho:[],toca:[]};
-  d[diaActual][tipo].push({texto, done:false});
-  gD(d);
+  const store=cD();
+  if(!store[diaActual]) store[diaActual]={};
+  if(!store[diaActual][pid]) store[diaActual][pid]={hecho:[],toca:[]};
+  store[diaActual][pid][tipo].push({texto, done:false});
+  gD(store);
   document.getElementById(inputId).value='';
-  renderDiario();
+  document.getElementById(tipo==='hecho'?`ah_${pid}`:`at_${pid}`).innerHTML =
+    renderActItems(store[diaActual][pid][tipo], pid, tipo);
 }
 
-function toggleAct(tipo, idx, val){
-  const d=cD();
-  if(!d[diaActual]||!d[diaActual][tipo]) return;
-  d[diaActual][tipo][idx].done=val;
-  gD(d);
-  renderDiario();
+function toggleActProy(pid, tipo, idx, val){
+  const store=cD();
+  if(!store[diaActual]||!store[diaActual][pid]) return;
+  store[diaActual][pid][tipo][idx].done=val;
+  gD(store);
+  const item=event.target.closest('.act-item');
+  if(item){ item.classList.toggle('done',val); item.querySelector('.act-txt').style.textDecoration=val?'line-through':''; }
 }
 
-function borrarAct(tipo, idx){
-  const d=cD();
-  if(!d[diaActual]||!d[diaActual][tipo]) return;
-  d[diaActual][tipo].splice(idx,1);
-  gD(d);
-  renderDiario();
+function borrarActProy(pid, tipo, idx){
+  const store=cD();
+  if(!store[diaActual]||!store[diaActual][pid]) return;
+  store[diaActual][pid][tipo].splice(idx,1);
+  gD(store);
+  document.getElementById(tipo==='hecho'?`ah_${pid}`:`at_${pid}`).innerHTML =
+    renderActItems(store[diaActual][pid][tipo], pid, tipo);
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
