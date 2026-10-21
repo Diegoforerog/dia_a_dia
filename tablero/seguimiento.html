@@ -135,6 +135,43 @@ textarea::placeholder{color:var(--mist);}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
 .dot.verde{background:#27A35A;} .dot.amarillo{background:#D97706;} .dot.rojo{background:#DC2626;} .dot.sin{background:var(--mist);}
 
+/* ── tabs ── */
+.tabs{display:flex;gap:4px;background:var(--paper-deep);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:24px;width:fit-content;}
+.tab-btn{padding:8px 20px;border-radius:9px;border:none;background:none;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--stone);cursor:pointer;transition:all .15s;}
+.tab-btn.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(15,23,42,.08);}
+.tab-panel{display:none;} .tab-panel.on{display:block;}
+
+/* ── diario ── */
+.dia-nav{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+.dia-titulo{font-family:var(--font-brand);font-size:20px;font-weight:500;flex:1;text-align:center;text-transform:capitalize;}
+.dia-hoy-btn{font-size:11.5px;padding:5px 12px;border-radius:999px;background:var(--burnt-soft);border:1px solid var(--burnt-line);color:var(--burnt);font-weight:700;cursor:pointer;font-family:inherit;}
+.dia-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.dia-col{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;}
+.dia-col-head{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.dia-col-head.hecho{color:var(--sage);}
+.dia-col-head.toca{color:var(--indigo);}
+.act-lista{display:flex;flex-direction:column;gap:6px;min-height:40px;}
+.act-item{display:flex;align-items:flex-start;gap:9px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--paper);transition:background .12s;}
+.act-item.done{background:var(--sage-soft);border-color:transparent;}
+.act-item.done .act-txt{text-decoration:line-through;color:var(--stone);}
+.act-cb{width:17px;height:17px;border-radius:5px;border:2px solid var(--line-strong);flex-shrink:0;cursor:pointer;appearance:none;-webkit-appearance:none;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .12s;}
+.act-cb:checked{background:var(--sage);border-color:var(--sage);}
+.act-cb:checked::after{content:'✓';color:#fff;font-size:10px;font-weight:700;display:block;text-align:center;line-height:1;}
+.act-txt{flex:1;font-size:13.5px;line-height:1.4;word-break:break-word;}
+.act-del{background:none;border:none;color:var(--mist);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:6px;flex-shrink:0;opacity:0;}
+.act-item:hover .act-del{opacity:1;}
+.act-del:hover{color:var(--crimson);}
+.dia-add{display:flex;gap:8px;margin-top:10px;}
+.dia-add input{flex:1;font-family:inherit;font-size:13.5px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--paper);color:var(--ink);}
+.dia-add input:focus{outline:none;border-color:var(--burnt-line);box-shadow:0 0 0 3px var(--burnt-soft);}
+.dia-add input::placeholder{color:var(--mist);}
+.dia-add .btn-add{padding:9px 13px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:18px;color:var(--stone);transition:all .15s;flex-shrink:0;}
+.dia-add .btn-add:hover{border-color:var(--burnt-line);color:var(--burnt);background:var(--burnt-soft);}
+.dia-vacio{color:var(--mist);font-style:italic;font-size:13px;padding:6px 2px;}
+.sem-divider{border:none;border-top:1.5px solid var(--line);margin:28px 0 22px;}
+.sem-section-label{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--stone);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.sem-section-label::after{content:'';flex:1;height:1px;background:var(--line);}
+
 /* toast */
 .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#241A38;color:#fff;border-radius:12px;padding:11px 20px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:999;max-width:90vw;text-align:center;}
 .toast.visible{opacity:1;transform:translateX(-50%);}
@@ -185,50 +222,103 @@ textarea::placeholder{color:var(--mist);}
   <!-- MAIN -->
   <main>
     <div class="hero">
-      <div class="greeting">Revisión semanal · cada sábado</div>
-      <h1><em>Seguimiento</em> de proyectos</h1>
-      <div class="hero-sub">¿Cómo va cada proyecto? Un semáforo, dos líneas, y listo.</div>
+      <div class="greeting">Diario · Semanal · Proyectos</div>
+      <h1><em>Seguimiento</em></h1>
     </div>
 
-    <!-- Nav semana -->
-    <div class="sem-nav">
-      <button class="btn" onclick="cambiarSemana(-1)">
-        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <div class="sem-titulo" id="semTitulo">—</div>
-      <button class="btn" onclick="cambiarSemana(1)">
-        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn on" onclick="switchTab('diario',this)">📅 Diario</button>
+      <button class="tab-btn" onclick="switchTab('semanal',this)">📊 Semanal</button>
     </div>
 
-    <!-- Resumen semáforo -->
-    <div class="resumen" id="resumen"></div>
+    <!-- ══ TAB DIARIO ══ -->
+    <div class="tab-panel on" id="tab-diario">
 
-    <!-- Proyectos -->
-    <div id="proyectosContainer"></div>
+      <div class="dia-nav">
+        <button class="btn" onclick="cambiarDia(-1)">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="dia-titulo" id="diaTitulo">—</div>
+        <button class="dia-hoy-btn" onclick="irAHoy()">Hoy</button>
+        <button class="btn" onclick="cambiarDia(1)">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
 
-    <!-- Botón agregar proyecto -->
-    <button class="add-proy" onclick="abrirModal()">
-      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      <span>Agregar proyecto al seguimiento</span>
-    </button>
+      <div class="dia-cols">
+        <!-- Hicimos -->
+        <div class="dia-col">
+          <div class="dia-col-head hecho">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            ¿Qué hicimos hoy?
+          </div>
+          <div class="act-lista" id="listaHecho"></div>
+          <div class="dia-add">
+            <input type="text" id="inputHecho" placeholder="Actividad completada…" onkeydown="if(event.key==='Enter') agregarAct('hecho')">
+            <button class="btn-add" onclick="agregarAct('hecho')">＋</button>
+          </div>
+        </div>
+        <!-- Toca hacer -->
+        <div class="dia-col">
+          <div class="dia-col-head toca">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            ¿Qué toca hacer?
+          </div>
+          <div class="act-lista" id="listaToca"></div>
+          <div class="dia-add">
+            <input type="text" id="inputToca" placeholder="Pendiente o próximo paso…" onkeydown="if(event.key==='Enter') agregarAct('toca')">
+            <button class="btn-add" onclick="agregarAct('toca')">＋</button>
+          </div>
+        </div>
+      </div>
 
-    <!-- Guardar -->
-    <div class="acciones">
-      <button class="btn grande guardar-sem" onclick="guardarSemana()">
-        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Guardar esta semana
+    </div><!-- /tab-diario -->
+
+    <!-- ══ TAB SEMANAL ══ -->
+    <div class="tab-panel" id="tab-semanal">
+
+      <!-- Nav semana -->
+      <div class="sem-nav">
+        <button class="btn" onclick="cambiarSemana(-1)">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="sem-titulo" id="semTitulo">—</div>
+        <button class="btn" onclick="cambiarSemana(1)">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+
+      <!-- Resumen semáforo -->
+      <div class="resumen" id="resumen"></div>
+
+      <!-- Proyectos -->
+      <div id="proyectosContainer"></div>
+
+      <!-- Botón agregar proyecto -->
+      <button class="add-proy" onclick="abrirModal()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Agregar proyecto al seguimiento</span>
       </button>
-    </div>
 
-    <!-- Historial -->
-    <div style="margin-top:28px;">
-      <button class="hist-toggle" id="histToggle" onclick="toggleHist()">
-        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-        Historial de semanas
-      </button>
-      <div class="hist-lista" id="histLista"></div>
-    </div>
+      <!-- Guardar -->
+      <div class="acciones">
+        <button class="btn grande guardar-sem" onclick="guardarSemana()">
+          <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Guardar esta semana
+        </button>
+      </div>
+
+      <!-- Historial -->
+      <div style="margin-top:28px;">
+        <button class="hist-toggle" id="histToggle" onclick="toggleHist()">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          Historial de semanas
+        </button>
+        <div class="hist-lista" id="histLista"></div>
+      </div>
+
+    </div><!-- /tab-semanal -->
   </main>
 </div>
 
@@ -254,9 +344,20 @@ textarea::placeholder{color:var(--mist);}
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(nombre, btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('tab-'+nombre).classList.add('on');
+  if(nombre==='semanal') render();
+  if(nombre==='diario') renderDiario();
+}
+
 // ─── STORE ────────────────────────────────────────────────────────────────────
 const PROY_KEY   = 'seg_proyectos_v1';
 const SEM_KEY    = 'seg_semanas_v1';
+const DIA_KEY    = 'seg_diario_v1';
 
 function cP(){ try{ return JSON.parse(localStorage.getItem(PROY_KEY))||proyectosDefault(); }catch(e){ return proyectosDefault(); }}
 function cS(){ try{ return JSON.parse(localStorage.getItem(SEM_KEY))||{}; }catch(e){ return {}; }}
@@ -515,8 +616,88 @@ function toast(msg){
   t._t=setTimeout(()=>t.classList.remove('visible'),2600);
 }
 
+// ─── DIARIO ───────────────────────────────────────────────────────────────────
+const DIA_NOMBRES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const MES_NOMBRES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+let diaActual = hoyStr();
+
+function hoyStr(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function irAHoy(){ diaActual=hoyStr(); renderDiario(); }
+function cambiarDia(delta){
+  const d=new Date(diaActual+'T12:00:00'); d.setDate(d.getDate()+delta);
+  diaActual=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  renderDiario();
+}
+
+function cD(){ try{ return JSON.parse(localStorage.getItem(DIA_KEY))||{}; }catch(e){ return {}; }}
+function gD(data){ localStorage.setItem(DIA_KEY, JSON.stringify(data)); }
+
+function datosDia(fecha){ const d=cD(); return d[fecha]||{hecho:[],toca:[]}; }
+
+function renderDiario(){
+  const d=new Date(diaActual+'T12:00:00');
+  const hoy=hoyStr();
+  const esHoy=diaActual===hoy;
+  const ayer=new Date(d); ayer.setDate(d.getDate()-1);
+  const ayerStr=`${ayer.getFullYear()}-${String(ayer.getMonth()+1).padStart(2,'0')}-${String(ayer.getDate()).padStart(2,'0')}`;
+  const esAyer=diaActual===ayerStr;
+  const label=esHoy?'Hoy, ':esAyer?'Ayer, ':'';
+  document.getElementById('diaTitulo').textContent=
+    `${label}${DIA_NOMBRES[d.getDay()]} ${d.getDate()} de ${MES_NOMBRES[d.getMonth()]}`;
+
+  const datos=datosDia(diaActual);
+  renderListaAct('listaHecho', datos.hecho, 'hecho');
+  renderListaAct('listaToca',  datos.toca,  'toca');
+}
+
+function renderListaAct(listaId, items, tipo){
+  const cont=document.getElementById(listaId);
+  if(!items||items.length===0){
+    cont.innerHTML=`<div class="dia-vacio">${tipo==='hecho'?'Agrega lo que hiciste hoy…':'Agrega lo que falta por hacer…'}</div>`;
+    return;
+  }
+  cont.innerHTML=items.map((it,i)=>`
+    <div class="act-item${it.done?' done':''}">
+      <input type="checkbox" class="act-cb" ${it.done?'checked':''} onchange="toggleAct('${tipo}',${i},this.checked)">
+      <span class="act-txt">${esc(it.texto)}</span>
+      <button class="act-del" onclick="borrarAct('${tipo}',${i})" title="Quitar">×</button>
+    </div>`).join('');
+}
+
+function agregarAct(tipo){
+  const inputId = tipo==='hecho'?'inputHecho':'inputToca';
+  const texto=document.getElementById(inputId).value.trim();
+  if(!texto) return;
+  const d=cD();
+  if(!d[diaActual]) d[diaActual]={hecho:[],toca:[]};
+  d[diaActual][tipo].push({texto, done:false});
+  gD(d);
+  document.getElementById(inputId).value='';
+  renderDiario();
+}
+
+function toggleAct(tipo, idx, val){
+  const d=cD();
+  if(!d[diaActual]||!d[diaActual][tipo]) return;
+  d[diaActual][tipo][idx].done=val;
+  gD(d);
+  renderDiario();
+}
+
+function borrarAct(tipo, idx){
+  const d=cD();
+  if(!d[diaActual]||!d[diaActual][tipo]) return;
+  d[diaActual][tipo].splice(idx,1);
+  gD(d);
+  renderDiario();
+}
+
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', render);
+document.addEventListener('DOMContentLoaded', ()=>{ renderDiario(); });
 </script>
 </body>
 </html>
