@@ -1,27 +1,36 @@
 {
   "proyectos": [
     {
-      "id": "personal_salud",
-      "cliente_id": "personal",
-      "nombre": "Salud y bienestar",
-      "estado": "activo",
-      "prioridad": "media",
-      "deadline": null,
-      "descripcion": "Ejercicio, alimentación, médico"
-    },
-    {
-      "id": "proy_20260510190623",
-      "cliente_id": "agentico",
-      "nombre": "Pagina Web",
+      "id": "proy_autorico",
+      "cliente_id": "autorico",
+      "nombre": "Autorico",
       "estado": "activo",
       "prioridad": "alta",
-      "deadline": "2026-05-11",
-      "descripcion": "Se debe crear la página web, corregir y publicar."
+      "deadline": null,
+      "descripcion": ""
     },
     {
-      "id": "proy_20260510202951",
+      "id": "proy_semply",
+      "cliente_id": "semply",
+      "nombre": "Semply",
+      "estado": "activo",
+      "prioridad": "alta",
+      "deadline": null,
+      "descripcion": ""
+    },
+    {
+      "id": "proy_cranesfp",
+      "cliente_id": "cranesfp",
+      "nombre": "Cranes FP",
+      "estado": "activo",
+      "prioridad": "alta",
+      "deadline": null,
+      "descripcion": ""
+    },
+    {
+      "id": "proy_msl",
       "cliente_id": "msl",
-      "nombre": "CGR",
+      "nombre": "MSL",
       "estado": "activo",
       "prioridad": "media",
       "deadline": null,
