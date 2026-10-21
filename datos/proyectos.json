@@ -35,6 +35,24 @@
       "prioridad": "media",
       "deadline": null,
       "descripcion": ""
+    },
+    {
+      "id": "proy_saluha",
+      "cliente_id": "saluha",
+      "nombre": "Saluha",
+      "estado": "activo",
+      "prioridad": "alta",
+      "deadline": null,
+      "descripcion": ""
+    },
+    {
+      "id": "proy_dvmarket",
+      "cliente_id": "dvmarket",
+      "nombre": "D&V Market",
+      "estado": "activo",
+      "prioridad": "alta",
+      "deadline": null,
+      "descripcion": ""
     }
   ]
 }
